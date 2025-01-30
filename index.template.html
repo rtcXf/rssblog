@@ -15,26 +15,23 @@
 
 <main>
     <ol class="postlist">
-        <!-- prettier-ignore -->
+        <!-- prettier-ignore-->
         {{ range .Posts }}
-        <!-- prettier-ignore -->
+        <!-- prettier-ignore-->
         {{ if ne .Content "" }}
+        <!-- prettier-ignore-->
         <li>
-            <a href="posts/{{ .Filename }}" rel="noopener noreferrer">
-                {{ .Title }}
-            </a> ({{ .Host }})
+          <a href="posts/{{ .Filename }}">{{ .Title }}</a> ({{ .Host }})
         </li>
         {{ else }}
         <li>
-            <a href="{{ .Link }}" rel="noopener noreferrer">
-                {{ .Title }}
-            </a> ({{ .Host }})
+          <a href="{{ .Link }}">{{ .Title }}</a> ({{ .Host }})
         </li>
-        <!-- prettier-ignore -->
+        <!-- prettier-ignore-->
         {{ end }}
-        <!-- prettier-ignore -->
+        <!-- prettier-ignore-->
         {{ end }}
-    </ol>
+      </ol>
 </main>
 
 <footer>

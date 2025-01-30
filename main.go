@@ -4,8 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/cixtor/readability"
-	"github.com/mmcdole/gofeed"
 	"html/template"
 	"io"
 	"log"
@@ -17,13 +15,22 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/cixtor/readability"
+	"github.com/mmcdole/gofeed"
 )
 
 var (
 	feeds = []string{
-		"https://blog.boot.dev/index.xml",
-		"https://themargins.substack.com/feed.xml",
+		/* some of my fav*/
+		"https://robertleggett.blog/feed/",
+		"https://jameshfisher.com/feed.xml",
 		"https://jvns.ca/atom.xml",
+		"https://blog.boot.dev/index.xml",
+		"https://ops.tips/index.xml",
+
+		// TODO : check
+		"https://themargins.substack.com/feed.xml",
 		"https://joy.recurse.com/feed.atom",
 		"https://danluu.com/atom.xml",
 		"https://blog.veitheller.de/feed.rss",
