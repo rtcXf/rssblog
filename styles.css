@@ -1,0 +1,90 @@
+@import url("https://fonts.googleapis.com/css2?family=Nanum+Myeongjo&display=swap");
+
+body {
+    font-family: "Nanum Myeongjo", serif;
+    line-height: 1.7;
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 16px;
+    background-color: hsl(0, 0%, 98%);
+    color: hsl(0, 0%, 13%);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1 {
+    font-size: 2.2rem;
+    margin-bottom: 16px;
+    color: hsl(220, 60%, 30%);
+}
+
+a {
+    color: hsl(220, 80%, 45%);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: hsl(220, 80%, 35%);
+}
+
+a:visited {
+    color: hsl(290, 60%, 40%);
+}
+
+header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+header nav a {
+    margin: 0 8px;
+    font-size: 0.9rem;
+}
+
+.postlist {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0;
+}
+
+.postlist li {
+    margin-bottom: 16px;
+}
+
+footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: hsl(0, 0%, 40%);
+}
+
+footer a {
+    color: hsl(220, 80%, 45%);
+}
+
+footer a:hover {
+    color: hsl(220, 80%, 35%);
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: hsl(240, 20%, 10%);
+        color: hsl(0, 0%, 90%);
+    }
+
+    h1 {
+        color: hsl(220, 60%, 70%);
+    }
+
+    a {
+        color: hsl(220, 80%, 75%);
+    }
+
+    a:visited {
+        color: hsl(290, 60%, 70%);
+    }
+
+    footer {
+        color: hsl(0, 0%, 60%);
+    }
+}

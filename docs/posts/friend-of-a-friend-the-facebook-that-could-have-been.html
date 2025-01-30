@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Friend of a Friend: The Facebook That Could Have Been | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://twobithistory.org/2020/01/05/foaf.html" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Friend of a Friend: The Facebook That Could Have Been</h1>
+        <section>
+            
+            <blockquote>
+  <p><em>I express my network in a FOAF file, and that is the start of the revolution.</em>
+—Tim Berners-Lee (2007)</p>
+</blockquote>
+
+<p>The FOAF standard, or Friend of a Friend standard, is a now largely
+defunct/ignored/superseded<sup id="fnref:1" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:1" class="footnote" rel="footnote">1</a></sup> web standard dating from the early 2000s that
+hints at what social networking might have looked like had Facebook not
+conquered the world. Before we talk about FOAF though, I want to talk about the
+New York City Subway.</p>
+
+<p>The New York City Subway is controlled by a single entity, the Metropolitan
+Transportation Agency, better known as the MTA. The MTA has a monopoly on
+subway travel in New York City. There is no legal way to travel in New York
+City by subway without purchasing a ticket from the MTA. The MTA has no
+competitors, at least not in the “subway space.”</p>
+
+<p>This wasn’t always true. Surprisingly, the subway system was once run by two
+corporations that competed with each other. The Inter-borough Rapid Transit
+Company (IRT) operated lines that ran mostly through Manhattan, while the
+Brooklyn-Manhattan Transit Corporation (BMT) operated lines in Brooklyn, some
+of which extended into Manhattan also. In 1932, the City opened its own service
+called the Independent Subway System to compete with the IRT and BMT, and so
+for a while there were <em>three</em> different organizations running subway lines in
+New York City.</p>
+
+<p>One imagines that this was not an effective way to run a subway. It was not.
+Constructing interchanges between the various systems was challenging because
+the IRT and BMT used trains of different widths. Interchange stations also had
+to have at least two different fare-collection areas since passengers switching
+trains would have to pay multiple operators. The City eventually took over the
+IRT and BMT in 1940, bringing the whole system together under one operator, but
+some of the inefficiencies that the original division entailed are still
+problems today: Trains designed to run along lines inherited from the BMT (e.g.
+the A, C, or E) cannot run along lines inherited from the IRT (e.g. the 1, 2,
+or 3) because the IRT tunnels are too narrow. As a result, the MTA has to
+maintain two different fleets of mutually incompatible subway cars, presumably
+at significant additional expense relative to other subway systems in the world
+that only have to deal with a single tunnel width.</p>
+
+<p>This legacy of the competition between the IRT and BMT suggests that subway
+systems naturally tend toward monopoly. It just makes more sense for there to
+be a single operator than for there to be competing operators. Average
+passengers are amply compensated for the loss of choice by never having to
+worry about whether they brought their IRT MetroCard today but forgot their BMT
+MetroCard at home.</p>
+
+<p>Okay, so what does the Subway have to do with social networking? Well, I have
+wondered for a while now whether Facebook has, like the MTA, a natural
+monopoly. Facebook does seem to have <em>a</em> monopoly, whether natural or
+unnatural—not over social media per se (I spend much more time on Twitter), but
+over my internet social connections with real people I know. It has a monopoly
+over, as they call it, my digitized “social graph”; I would quit Facebook
+tomorrow if I didn’t worry that by doing so I might lose many of those
+connections. I get angry about this power that Facebook has over me. I get
+angry in a way that I do not get angry about the MTA, even though the Subway
+is, metaphorically and literally, a sprawling trash fire. And I suppose I get
+angry because at root I believe that Facebook’s monopoly, unlike the MTA’s, is
+not a natural one.</p>
+
+<p>What this must mean is that I think Facebook owns all of our social data
+now because they happened to get there first and then dig a big moat around
+themselves, not because a world with competing Facebook-like platforms is
+inefficient or impossible. Is that true, though? There are some good reasons to
+think it isn’t: Did Facebook simply get there first, or did they instead just
+do social networking better than everyone else? Isn’t the fact that there is
+only one Facebook actually convenient if you are trying to figure out how to
+contact an old friend? In a world of competing Facebooks, what would it mean if
+you and your boyfriend are now Facebook official, but he still hasn’t gotten
+around to updating his relationship status on VisageBook, which still says he
+is in a relationship with his college ex? Which site will people trust? Also,
+if there were multiple sites, wouldn’t everyone spend a lot more time filling
+out web forms?</p>
+
+<p>In the last few years, as the disadvantages of centralized social networks have
+dramatically made themselves apparent, many people have attempted to create
+decentralized alternatives. These alternatives are based on open
+standards that could potentially support an ecosystem of inter-operating social
+networks (see e.g. <a href="https://en.wikipedia.org/wiki/Fediverse">the Fediverse</a>).
+But none of these alternatives has yet supplanted a dominant social network.
+One obvious explanation for why this hasn’t happened is the power of network
+effects: With everyone already on Facebook, any one person thinking of leaving
+faces a high cost for doing so. Some might say this proves that social networks
+are natural monopolies and stop there; I would say that Facebook, Twitter, et
+al. chose to be walled gardens, and given that people have envisioned and even
+built social networks that inter-operate, the network effects that closed
+platforms enjoy tell us little about the inherent nature of social networks.</p>
+
+<p>So the real question, in my mind, is: Do platforms like Facebook continue to
+dominate merely because of their network effects, or is having a single
+dominant social network more efficient in the same way that having a single
+operator for a subway system is more efficient?</p>
+
+<p>Which finally brings me back to FOAF. Much of the world seems to have forgotten
+about the FOAF standard, but FOAF was an attempt to build a decentralized and
+open social network before anyone had even heard of Facebook. If any
+decentralized social network ever had a chance of occupying the redoubt that
+Facebook now occupies before Facebook got there, it was FOAF. Given that a
+large fraction of humanity now has a Facebook account, and given that
+relatively few people know about FOAF, should we conclude that social
+networking, like subway travel, really does lend itself to centralization and
+natural monopoly? Or does the FOAF project demonstrate that decentralized
+social networking was a feasible alternative that never became popular for
+other reasons?</p>
+
+<h2 id="the-future-from-the-early-aughts">The Future from the Early Aughts</h2>
+<p>The FOAF project, begun in 2000, set out to create a universal standard for
+describing people and the relationships between them. That might strike you as
+a wildly ambitious goal today, but aspirations like that were par for the
+course in the late 1990s and early 2000s. The web (as people still called it
+then) had just trounced closed systems like America Online and
+<a href="https://en.wikipedia.org/wiki/Prodigy_(online_service)">Prodigy</a>. It could
+only have been natural to assume that further innovation in computing would
+involve the open, standards-based approach embodied by the web.</p>
+
+<p>Many people believed that the next big thing was for the web to evolve into
+something called the Semantic Web. <a href="https://twobithistory.org/2018/05/27/semantic-web.html">I have written about</a> what exactly the Semantic Web was supposed to be
+and how it was supposed to work before, so I won’t go into detail here. But I
+will sketch the basic vision motivating the people who worked on Semantic Web
+technologies, because the FOAF standard was an application of that vision to
+social networking.</p>
+
+<p>There is an essay called <a href="https://www.ftrain.com/google_takes_all">“How Google beat Amazon and Ebay to the Semantic
+Web”</a> that captures the lofty dream of
+the Semantic Web well. It was written by Paul Ford in 2002. The essay imagines
+a future (as imminent as 2009) in which Google, by embracing the Semantic Web,
+has replaced Amazon and eBay as the dominant e-commerce platform. In this
+future, you can search for something you want to purchase—perhaps a second-hand
+Martin guitar—by entering <code class="language-plaintext highlighter-rouge">buy:martin guitar</code> into Google. Google then shows
+you all the people near your zipcode selling Martin guitars. Google knows about
+these people and their guitars because Google can read RDF, a markup language
+and core Semantic Web technology focused on expressing relationships.
+Regular people can embed RDF on their web pages to advertise (among many other
+things) the items they have to sell. Ford predicts that as the number of people
+searching for and advertising products this way grows, Amazon and eBay will
+lose their near-monopolies over, respectively, first-hand and second-hand
+e-commerce. Nobody will want to search a single centralized database for
+something to buy when they could instead search the whole web. Even Google,
+Ford writes, will eventually lose its advantage, because in theory anyone could
+crawl the web reading RDF and offer a search feature similar to Google’s. At
+the very least, if Google wanted to make money from its Semantic Web
+marketplace by charging a percentage of each transaction, that percentage would
+probably by forced down over time by competitors offering a more attractive
+deal.</p>
+
+<p>Ford’s imagined future was an application of RDF, or the Resource Description
+Framework, to e-commerce, but the exciting thing about RDF was that
+hypothetically it could be used for anything. The RDF standard, along with a
+constellation of related standards, once widely adopted, was supposed to blow
+open database-backed software services on the internet the same way HTML had
+blown open document publishing on the internet.</p>
+
+<p>One arena that RDF and other Semantic Web technologies seemed poised to
+takeover immediately was social networking. The FOAF project, known originally
+as “RDF Web Ring” before being renamed, was the Semantic Web effort offshoot
+that sought to accomplish this. FOAF was so promising in its infancy that some
+people thought it would inevitably make all other social networking sites
+obsolete. A 2004 Guardian article about the project introduced FOAF this way:</p>
+
+<blockquote>
+  <p>In the beginning, way back in 1996, it was SixDegrees. Last year, it was
+Friendster. Last week, it was Orkut. Next week, it could be Flickr. All these
+websites, and dozens more, are designed to build networks of friends, and
+they are currently at the forefront of the trendiest internet development:
+social networking. But unless they can start to offer more substantial
+benefits, it is hard to see them all surviving, once the Friend Of A Friend
+(FOAF) standard becomes a normal part of life on the net.<sup id="fnref:2" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:2" class="footnote" rel="footnote">2</a></sup></p>
+</blockquote>
+
+<p>The article goes on to complain that the biggest problem with social networking
+is that there are too many social networking sites. Something is needed that
+can connect all of the different networks together. FOAF is the solution, and
+it will revolutionize social networking as a result.</p>
+
+<p>FOAF, according to the article, would tie the different networks together by
+doing three key things:</p>
+
+<ul>
+  <li>It would establish a machine-readable format for social data that could be
+read by any social networking site, saving users from having to enter this
+information over and over again</li>
+  <li>It would allow “personal information management programs,” i.e. your
+“Contacts” application, to generate a file in this machine-readable format
+that you could feed to social networking sites</li>
+  <li>It would further allow this machine-readable format to be hosted on personal
+homepages and read remotely by social networking sites, meaning that you
+would be able to keep your various profiles up-to-date by just pushing
+changes to your own homepage</li>
+</ul>
+
+<p>It is hard to believe today, but the problem in 2004, at least for savvy
+webizens and technology columnists aware of all the latest sites, was not the
+lack of alternative social networks but instead the proliferation of them.
+Given <em>that</em> problem—so alien to us now—one can see why it made sense to pursue
+a single standard that promised to make the proliferation of networks less of a
+burden.</p>
+
+<h2 id="the-foaf-spec">The FOAF Spec</h2>
+<p>According to the description currently given on the FOAF project’s website,
+FOAF is “a computer language defining a dictionary of people-related terms that
+can be used in structured data.” Back in 2000, in a document they wrote to
+explain the project’s goals, Dan Brickley and Libby Miller, FOAF’s creators,
+offered a different description that suggests more about the technology’s
+ultimate purpose—they introduced FOAF as a tool that would allow computers to
+read the personal information you put on your homepage the same way that other
+humans do.<sup id="fnref:3" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:3" class="footnote" rel="footnote">3</a></sup> FOAF would “help the web do the sorts of things that are
+currently the proprietary offering of centralised services.”<sup id="fnref:4" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:4" class="footnote" rel="footnote">4</a></sup> By defining a
+standard vocabulary for people and the relationships between them, FOAF would
+allow you to ask the web questions such as, “Find me today’s web
+recommendations made by people who work for Medical organizations,” or “Find me
+recent publications by people I’ve co-authored documents with.”</p>
+
+<p>Since FOAF is a standardized vocabulary, the most important output of the FOAF
+project was the FOAF specification. The FOAF specification defines a small
+collection of RDF <em>classes</em> and RDF <em>properties</em>. (I’m not going to explain RDF
+here, but again see <a href="https://twobithistory.org/2018/05/27/semantic-web.html">my post about the Semantic Web</a> if you want to know more.) The RDF <em>classes</em>
+defined by the FOAF specification represent subjects you might want to
+describe, such as people (the <code class="language-plaintext highlighter-rouge">Person</code> class) and organizations (the
+<code class="language-plaintext highlighter-rouge">Organization</code> class). The RDF <em>properties</em> defined by the FOAF specification
+represent logical statements you might make about the different subjects. A
+person could have, for example, a first name (the <code class="language-plaintext highlighter-rouge">givenName</code> property), a last
+name (the <code class="language-plaintext highlighter-rouge">familyName</code> property), perhaps even a personality type (the
+<code class="language-plaintext highlighter-rouge">myersBriggs</code> property), and be near another person or location (the
+<code class="language-plaintext highlighter-rouge">based_near</code> property). The idea was that these classes and properties would be
+sufficient to represent the kind of the things people say about themselves and
+their friends on their personal homepage.</p>
+
+<p>The FOAF specification gives the following as an example of a well-formed FOAF
+document. This example uses XML, though an equivalent document could be written
+using JSON or a number of other formats:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;foaf:Person rdf:about=&#34;#danbri&#34; xmlns:foaf=&#34;http://xmlns.com/foaf/0.1/&#34;&gt;
+  &lt;foaf:name&gt;Dan Brickley&lt;/foaf:name&gt;
+  &lt;foaf:homepage rdf:resource=&#34;http://danbri.org/&#34; /&gt;
+  &lt;foaf:openid rdf:resource=&#34;http://danbri.org/&#34; /&gt;
+  &lt;foaf:img rdf:resource=&#34;/images/me.jpg&#34; /&gt;
+&lt;/foaf:Person&gt;
+</code></pre></div></div>
+
+<p>This FOAF document describes a person named “Dan Brickley” (one of the
+specification’s authors) that has a homepage at <code class="language-plaintext highlighter-rouge">http://danbri.org</code>, something
+called an “open ID,” and a picture available at <code class="language-plaintext highlighter-rouge">/images/me.jpg</code>, presumably
+relative to the base address of Brickley’s homepage. The FOAF-specific terms
+are prefixed by <code class="language-plaintext highlighter-rouge">foaf:</code>, indicating that they are part of the FOAF namespace,
+while the more general RDF terms are prefixed by <code class="language-plaintext highlighter-rouge">rdf:</code>.</p>
+
+<p>Just to persuade you that FOAF isn’t tied to XML, here is a similar FOAF
+example from Wikipedia, expressed using a format called JSON-LD<sup id="fnref:5" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:5" class="footnote" rel="footnote">5</a></sup>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
+  &#34;@context&#34;: {
+    &#34;name&#34;: &#34;http://xmlns.com/foaf/0.1/name&#34;,
+    &#34;homepage&#34;: {
+      &#34;@id&#34;: &#34;http://xmlns.com/foaf/0.1/workplaceHomepage&#34;,
+      &#34;@type&#34;: &#34;@id&#34;
+    },
+    &#34;Person&#34;: &#34;http://xmlns.com/foaf/0.1/Person&#34;
+  },
+  &#34;@id&#34;: &#34;https://me.example.com&#34;,
+  &#34;@type&#34;: &#34;Person&#34;,
+  &#34;name&#34;: &#34;John Smith&#34;,
+  &#34;homepage&#34;: &#34;https://www.example.com/&#34;
+}
+</code></pre></div></div>
+
+<p>This FOAF document describes a person named John Smith with a homepage at
+<code class="language-plaintext highlighter-rouge">www.example.com</code>.</p>
+
+<p>Perhaps the best way to get a feel for how FOAF works is to play around with
+<a href="http://www.ldodds.com/foaf/foaf-a-matic">FOAF-a-matic</a>, a web tool for
+generating FOAF documents. It allows you to enter information about yourself
+using a web form, then uses that information to create the FOAF document (in
+XML) that represents you. FOAF-a-matic demonstrates how FOAF could have been
+used to save everyone from having to enter their social information into a web
+form ever again—if every social networking site could read FOAF, all you’d need
+to do to sign up for a new site is point the site to the FOAF document that
+FOAF-a-matic generated for you.</p>
+
+<p>Here is a slightly more complicated FOAF example, representing me, that I
+created using FOAF-a-matic:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;rdf:RDF
+      xmlns:rdf=&#34;http://www.w3.org/1999/02/22-rdf-syntax-ns#&#34;
+      xmlns:rdfs=&#34;http://www.w3.org/2000/01/rdf-schema#&#34;
+      xmlns:foaf=&#34;http://xmlns.com/foaf/0.1/&#34;
+      xmlns:admin=&#34;http://webns.net/mvcb/&#34;&gt;
+  &lt;foaf:PersonalProfileDocument rdf:about=&#34;&#34;&gt;
+    &lt;foaf:maker rdf:resource=&#34;#me&#34;/&gt;
+    &lt;foaf:primaryTopic rdf:resource=&#34;#me&#34;/&gt;
+    &lt;admin:generatorAgent rdf:resource=&#34;http://www.ldodds.com/foaf/foaf-a-matic&#34;/&gt;
+    &lt;admin:errorReportsTo rdf:resource=&#34;mailto:leigh@ldodds.com&#34;/&gt;
+  &lt;/foaf:PersonalProfileDocument&gt;
+  &lt;foaf:Person rdf:ID=&#34;me&#34;&gt;
+    &lt;foaf:name&gt;Sinclair Target&lt;/foaf:name&gt;
+    &lt;foaf:givenname&gt;Sinclair&lt;/foaf:givenname&gt;
+    &lt;foaf:family_name&gt;Target&lt;/foaf:family_name&gt;
+    &lt;foaf:mbox rdf:resource=&#34;mailto:sinclairtarget@example.com&#34;/&gt;
+    &lt;foaf:homepage rdf:resource=&#34;sinclairtarget.com&#34;/&gt;
+    &lt;foaf:knows&gt;
+      &lt;foaf:Person&gt;
+        &lt;foaf:name&gt;John Smith&lt;/foaf:name&gt;
+        &lt;foaf:mbox rdf:resource=&#34;mailto:johnsmith@example.com&#34;/&gt;
+        &lt;rdfs:seeAlso rdf:resource=&#34;www.example.com/foaf.rdf&#34;/&gt;
+      &lt;/foaf:Person&gt;
+    &lt;/foaf:knows&gt;
+  &lt;/foaf:Person&gt;
+&lt;/rdf:RDF&gt;
+</code></pre></div></div>
+
+<p>This example has quite a lot of preamble setting up the various XML namespaces
+used by the document. There is also a section containing data about the tool
+that was used to generate the document, largely so that, it seems, people know
+whom to email with complaints. The <code class="language-plaintext highlighter-rouge">foaf:Person</code> element describing me tells
+you my name, email address, and homepage. There is also a nested <code class="language-plaintext highlighter-rouge">foaf:knows</code>
+element telling you that I am friends with John Smith.</p>
+
+<p>This example illustrates another important feature of FOAF documents: They can
+link to each other. If you remember from the previous example, my friend John
+Smith has a homepage at <code class="language-plaintext highlighter-rouge">www.example.com</code>. In this example, where I list John
+Smith as a <code class="language-plaintext highlighter-rouge">foaf:person</code> with whom I have a <code class="language-plaintext highlighter-rouge">foaf:knows</code> relationship, I also
+provide a <code class="language-plaintext highlighter-rouge">rdfs:seeAlso</code> element that points to John Smith’s FOAF document
+hosted on his homepage. Because I have provided this link, any program reading
+my FOAF document could find out more about John Smith by following the link
+and reading his FOAF document. In the FOAF document we have for John Smith
+above, John did not provide any information about his friends (including me,
+meaning, tragically, that our friendship is unidirectional). But if he had,
+then the program reading my document could find out not only about me but also
+about John, his friends, their friends, and so on, until the program has
+crawled the whole social graph that John and I inhabit.</p>
+
+<p>This functionality will seem familiar to anyone that has used Facebook, which
+is to say that this functionality will seem familiar to you. There is no
+<code class="language-plaintext highlighter-rouge">foaf:wall</code> property or <code class="language-plaintext highlighter-rouge">foaf:poke</code> property to replicate Facebook’s feature
+set exactly. Obviously, there is also no slick blue user interface that
+everyone can use to visualize their FOAF social network; FOAF is just a
+vocabulary. But Facebook’s core feature—the feature that I have argued is key
+to Facebook’s monopoly power over, at the very least, myself—is here provided
+in a distributed way. FOAF allows a group of friends to represent their
+real-life social graph digitally by hosting FOAF documents on their own
+homepages. It allows them to do this without surrendering control of their data
+to a centralized database in the sky run by a billionaire android-man who
+spends much of his time apologizing before congressional committees.</p>
+
+<h2 id="foaf-on-ice">FOAF on Ice</h2>
+<p>If you visit the current FOAF project homepage, you will notice that, in the
+top right corner, there is an image of the character Fry from the TV series
+Futurama, stuck inside some sort of stasis chamber. This is a still from the
+pilot episode of Futurama, in which Fry gets frozen in a cryogenic tank in 1999
+only to awake a millennium later in 2999. Brickley, whom I messaged briefly on
+Twitter, told me that he put that image there as a way communicating that the
+FOAF project is currently “in stasis,” though he hopes that there will be a
+future opportunity to resuscitate the project along with its early 2000s
+optimism about how the web should work.</p>
+
+<p>FOAF never revolutionized social networking the way that the 2004 Guardian
+article about it expected it would. Some social networking sites decided to
+support the standard: LiveJournal and MyOpera are examples.<sup id="fnref:6" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:6" class="footnote" rel="footnote">6</a></sup> FOAF even
+played a role in Howard Dean’s presidential campaign in 2004—a group of
+bloggers and programmers got together to create a network of websites they
+called “DeanSpace” to promote the campaign, and these sites used FOAF to keep
+track of supporters and volunteers.<sup id="fnref:7" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:7" class="footnote" rel="footnote">7</a></sup> But today FOAF is known primarily for
+being one of the more widely used vocabularies of RDF, itself a niche standard
+on the modern web. If FOAF is part of your experience of the web today at all,
+then it is as an ancestor to the technology that powers Google’s “knowledge
+panels” (the little sidebars that tell you the basics about a person or a thing
+if you searched for something simple). Google uses vocabularies published by
+the schema.org project—the modern heir to the Semantic Web effort—to populate
+its knowledge panels.<sup id="fnref:8" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:8" class="footnote" rel="footnote">8</a></sup> The schema.org vocabulary for describing people seems
+to be somewhat inspired by FOAF and serves many of the same purposes.</p>
+
+<p>So why didn’t FOAF succeed? Why do we all use Facebook now instead? Let’s
+ignore that FOAF is a simple standard with nowhere near as many features as
+Facebook—that’s true today, clearly, but if FOAF had enjoyed more momentum it’s
+possible that applications could have been built on top of it to deliver a
+Facebook-like experience. The interesting question is: Why didn’t this nascent
+form of distributed social networking catch fire when Facebook was not yet
+around to compete with it?</p>
+
+<p>There probably is no single answer to that question, but if I had to pick one,
+I think the biggest issue is that FOAF only makes sense on a web where
+everyone has a personal website. In the late 1990s and early 2000s, it might
+have been easy to assume the web would eventually look like this, especially
+since so many of the web’s early adopters were, as far as I can tell, prolific
+bloggers or politically engaged technologists excited to have a platform. But
+the reality is that regular people don’t want to have to learn how to host a
+website. FOAF allows you to control your own social information and broadcast
+it to social networks instead of filling out endless web forms, which sounds
+pretty great if you already have somewhere to host that information. But most
+people in practice found it easier to just fill out the web form and sign up
+for Facebook than to figure out how to buy a domain and host some XML.</p>
+
+<p>What does this mean for my original question about whether or not Facebook’s
+monopoly is a natural one? I think I have to concede that the FOAF example is
+evidence that social networking <em>does</em> naturally lend itself to monopoly.</p>
+
+<p>That people did not want to host their own data isn’t especially meaningful
+itself—modern distributed social networks like
+<a href="https://en.wikipedia.org/wiki/Mastodon_(software)">Mastodon</a> have solved that
+problem by letting regular users host their profiles on nodes set up by more
+savvy users. It is a sign, however, of just how much people hate complexity.
+This is bad news for decentralized social networks, because they are inherently
+more complex under the hood than centralized networks in a way that is often
+impossible to hide from users.</p>
+
+<p>Consider FOAF: If I were to write an application that read FOAF data from
+personal websites, what would I do if Sally’s FOAF document mentions a John
+Smith with a homepage at <code class="language-plaintext highlighter-rouge">example.com</code>, and Sue’s FOAF document mentions a John
+Smith with a homepage at <code class="language-plaintext highlighter-rouge">example.net</code>? Are we talking about a single John
+Smith with two websites or two entirely different John Smiths? What if the both
+FOAF documents list John Smith’s email as <code class="language-plaintext highlighter-rouge">johnsmith@gmail.com</code>? This issue of
+identity was an acute one for FOAF. In a 2003 email, Brickley wrote that
+because there does not exist and probably should not exist a “planet-wide
+system for identifying people,” the approach taken by FOAF is
+“pluralistic.”<sup id="fnref:9" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:9" class="footnote" rel="footnote">9</a></sup> Some properties of FOAF people, such as email addresses and
+homepage addresses, are special in that their values are globally unique. So
+these different properties can be used to merge (or, as Libby Miller called it,
+“smoosh”) FOAF documents about people together. But none of these special
+properties are privileged above the others, so it’s not obvious how to handle
+our John Smith case. Do we trust the homepages and conclude we have two
+different people? Or do we trust the email addresses and conclude we have a
+single person? Could I really write an application capable of resolving this
+conflict without involving (and inconveniencing) the user?</p>
+
+<p>Facebook, with its single database and lack of political qualms, could create a
+“planet-wide system for identifying people” and so just gave every person a
+unique Facebook ID. Problem solved.</p>
+
+<p>Complexity alone might not doom distributed social networks if people
+cared about being able to own and control their data. But FOAF’s
+failure to take off demonstrates that people have never valued control very
+highly. As one blogger has put it, “‘Users want to own their own data’ is an
+ideology, not a use case.”<sup id="fnref:10" role="doc-noteref"><a href="https://twobithistory.org/2020/01/05/foaf.html/#fn:10" class="footnote" rel="footnote">10</a></sup> If users do not value control enough to stomach
+additional complexity, and if centralized systems are more simple than
+distributed ones—and if, further, centralized systems tend to be closed and
+thus the successful ones enjoy powerful network effects—then social networks
+are indeed natural monopolies.</p>
+
+<p>That said, I think there is still a distinction to be drawn between the subway
+system case and the social networking case. I am comfortable with the MTA’s
+monopoly on subway travel because I expect subway systems to be natural
+monopolies for a long time to come. If there is going to be only one operator
+of the New York City Subway, then it ought to be the government, which is at
+least nominally more accountable than a private company with no competitors.
+But I do not expect social networks to stay natural monopolies. The Subway is
+carved in granite; the digital world is writ in water. Distributed social
+networks may now be more complicated than centralized networks in the same way
+that carrying two MetroCards is more complicated than carrying one. In the
+future, though, the web, or even the internet, could change in fundamental ways
+that make distributed technology much easier to use.</p>
+
+<p>If that happens, perhaps FOAF will be remembered as the first attempt to build
+the kind of social network that humanity, after a brief experiment with
+corporate mega-databases, does and always will prefer.</p>
+
+<p><em>
+If you enjoyed this post, more like it come out every four weeks! Follow
+<a href="https://twitter.com/TwoBitHistory">
+  @TwoBitHistory
+</a> on Twitter or subscribe to the
+<a href="https://twobithistory.org/feed.xml">
+  RSS feed
+</a>
+to make sure you know when a new post is out.
+</em></p>
+
+<p><em>Previously on TwoBitHistory…</em></p>
+
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">I know it&#39;s been too long since my last post, but my new one is here! I wrote almost 5000 words on John Carmack, Doom, and the history of the binary space partitioning tree.<a href="https://t.co/SVunDZ0hZ1">https://t.co/SVunDZ0hZ1</a></p>— TwoBitHistory (@TwoBitHistory) <a href="https://twitter.com/TwoBitHistory/status/1192196764239093760?ref_src=twsrc%5Etfw">November 6, 2019</a></blockquote>
+<script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>Please note that I did not dare say “dead.” <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:1" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:2" role="doc-endnote">
+      <p>Jack Schofield, “Let’s be Friendsters,” The Guardian, February 19, 2004, accessed January 5, 2020, <a href="https://www.theguardian.com/technology/2004/feb/19/newmedia.media">https://www.theguardian.com/technology/2004/feb/19/newmedia.media</a>. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:2" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:3" role="doc-endnote">
+      <p>Dan Brickley and Libby Miller, “Introducing FOAF,” FOAF Project, 2008, accessed January 5, 2020, <a href="https://web.archive.org/web/20140331104046/http://www.foaf-project.org/original-intro">https://web.archive.org/web/20140331104046/http://www.foaf-project.org/original-intro</a>. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:3" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:4" role="doc-endnote">
+      <p>ibid. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:4" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:5" role="doc-endnote">
+      <p>Wikipedia contributors, “JSON-LD,” Wikipedia: The Free Encyclopedia, December 13, 2019, accessed January 5, 2020, <a href="https://en.wikipedia.org/wiki/JSON-LD">https://en.wikipedia.org/wiki/JSON-LD</a>. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:5" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:6" role="doc-endnote">
+      <p>“Data Sources,” FOAF Project Wiki, December 11 2009, accessed January 5, 2020, <a href="https://web.archive.org/web/20100226072731/http://wiki.foaf-project.org/w/DataSources">https://web.archive.org/web/20100226072731/http://wiki.foaf-project.org/w/DataSources</a>. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:6" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:7" role="doc-endnote">
+      <p>Aldon Hynes, “What is Dean Space?”, Extreme Democracy, accessed January 5, 2020, <a href="http://www.extremedemocracy.com/chapters/Chapter18-Hynes.pdf">http://www.extremedemocracy.com/chapters/Chapter18-Hynes.pdf</a>. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:7" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:8" role="doc-endnote">
+      <p>“Understand how structured data works,” Google Developer Portal, accessed January 5, 2020, <a href="https://developers.google.com/search/docs/guides/intro-structured-data">https://developers.google.com/search/docs/guides/intro-structured-data</a>. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:8" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:9" role="doc-endnote">
+      <p>tef, “Why your distributed network will not work,” Progamming is Terrible, January 2, 2013, <a href="https://programmingisterrible.com/post/39438834308/distributed-social-network">https://programmingisterrible.com/post/39438834308/distributed-social-network</a>. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:9" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:10" role="doc-endnote">
+      <p>Dan Brickley, “Identifying things in FOAF,” rdfweb-dev Mailing List, July 10, 2003, accessed on January 5, 2020, <a href="http://lists.foaf-project.org/pipermail/foaf-dev/2003-July/005463.html">http://lists.foaf-project.org/pipermail/foaf-dev/2003-July/005463.html</a>. <a href="https://twobithistory.org/2020/01/05/foaf.html/#fnref:10" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+  </ol>
+</div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

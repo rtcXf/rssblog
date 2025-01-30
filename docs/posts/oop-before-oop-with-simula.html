@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OOP Before OOP with Simula | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://twobithistory.org/2019/01/31/simula.html" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>OOP Before OOP with Simula</h1>
+        <section>
+            
+            <p>Imagine that you are sitting on the grassy bank of a river. Ahead of you, the
+water flows past swiftly. The afternoon sun has put you in an idle,
+philosophical mood, and you begin to wonder whether the river in front of
+you really exists at all. Sure, large volumes of water are going by only a few
+feet away. But what is this thing that you are calling a “river”? After all,
+the water you see is here and then gone, to be replaced only by more and
+different water. It doesn’t seem like the word “river” refers to any fixed
+thing in front of you at all.</p>
+
+<p>In 2009, Rich Hickey, the creator of Clojure, gave <a href="https://www.infoq.com/presentations/Are-We-There-Yet-Rich-Hickey">an excellent
+talk</a> about
+why this philosophical quandary poses a problem for the object-oriented
+programming paradigm. He argues that we think of an object in a computer
+program the same way we think of a river—we imagine that the object has a
+fixed identity, even though many or all of the object’s properties will change
+over time. Doing this is a mistake, because we have no way of distinguishing
+between an object instance in one state and the same object instance in another
+state. We have no explicit notion of time in our programs. We just breezily use
+the same name everywhere and hope that the object is in the state we expect it
+to be in when we reference it. Inevitably, we write bugs.
+<!--more--></p>
+
+<p>The solution, Hickey concludes, is that we ought to model the world not as a
+collection of mutable objects but a collection of <em>processes</em> acting on
+immutable data. We should think of each object as a “river” of causally related
+states. In sum, you should use a functional language like Clojure.</p>
+
+<p><img src="https://twobithistory.org/images/river.jpg" alt=""/>
+<em>The author, on a hike, pondering the ontological commitments <br/> of
+object-oriented programming.</em></p>
+
+<p>Since Hickey gave his talk in 2009, interest in functional programming
+languages has grown, and functional programming idioms have found their way
+into the most popular object-oriented languages. Even so, most programmers
+continue to instantiate objects and mutate them in place every day. And they
+have been doing it for so long that it is hard to imagine that programming
+could ever look different.</p>
+
+<p>I wanted to write an article about Simula and imagined that it would mostly be
+about when and how object-oriented constructs we are familiar with today were
+added to the language. But I think the more interesting story is about how
+Simula was originally so <em>unlike</em> modern object-oriented programming languages.
+This shouldn’t be a surprise, because the object-oriented paradigm we know now
+did not spring into existence fully formed. There were two major versions of
+Simula: Simula I and Simula 67. Simula 67 brought the world classes, class
+hierarchies, and virtual methods. But Simula I was a first draft that
+experimented with other ideas about how data and procedures could be bundled
+together. The Simula I model is not a functional model like the one Hickey
+proposes, but it does focus on <em>processes</em> that unfold over time rather than
+objects with hidden state that interact with each other. Had Simula 67 stuck
+with more of Simula I’s ideas, the object-oriented paradigm we know today might
+have looked very different indeed—and that contingency should teach us to be
+wary of assuming that the current paradigm will dominate forever.</p>
+
+<h2 id="simula-0-through-67">Simula 0 Through 67</h2>
+<p>Simula was created by two Norwegians, Kristen Nygaard and Ole-Johan Dahl.</p>
+
+<p>In the late 1950s, Nygaard was employed by the Norwegian Defense Research
+Establishment (NDRE), a research institute affiliated with the Norwegian
+military. While there, he developed Monte Carlo simulations used for nuclear
+reactor design and operations research. These simulations were at first done by
+hand and then eventually programmed and run on a Ferranti Mercury.<sup id="fnref:1" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:1" class="footnote" rel="footnote">1</a></sup> Nygaard
+soon found that he wanted a higher-level way to describe these simulations to a
+computer.</p>
+
+<p>The kind of simulation that Nygaard commonly developed is known as a “discrete
+event model.” The simulation captures how a sequence of events change the state
+of a system over time—but the important property here is that the simulation
+can jump from one event to the next, since the events are discrete and nothing
+changes in the system between events. This kind of modeling, according to a
+paper that Nygaard and Dahl presented about Simula in 1966, was increasingly
+being used to analyze “nerve networks, communication systems, traffic flow,
+production systems, administrative systems, social systems, etc.”<sup id="fnref:2" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:2" class="footnote" rel="footnote">2</a></sup> So
+Nygaard thought that other people might want a higher-level way to describe
+these simulations too. He began looking for someone that could help him
+implement what he called his “Simulation Language” or “Monte Carlo
+Compiler.”<sup id="fnref:3" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:3" class="footnote" rel="footnote">3</a></sup></p>
+
+<p>Dahl, who had also been employed by NDRE, where he had worked on language
+design, came aboard at this point to play Wozniak to Nygaard’s Jobs. Over the
+next year or so, Nygaard and Dahl worked to develop what has been called
+“Simula 0.”<sup id="fnref:4" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:4" class="footnote" rel="footnote">4</a></sup> This early version of the language was going to be merely a
+modest extension to ALGOL 60, and the plan was to implement it as a
+preprocessor. The language was then much less abstract than what came later.
+The primary language constructs were “stations” and “customers.” These could be
+used to model certain discrete event networks; Nygaard and Dahl give an example
+simulating airport departures.<sup id="fnref:5" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:5" class="footnote" rel="footnote">5</a></sup> But Nygaard and Dahl eventually came up with
+a more general language construct that could represent both “stations” and
+“customers” and also model a wider range of simulations. This was the first of
+two major generalizations that took Simula from being an application-specific
+ALGOL package to a general-purpose programming language.</p>
+
+<p>In Simula I, there were no “stations” or “customers,” but these could be
+recreated using “processes.” A process was a bundle of data attributes
+associated with a single action known as the process’ <em>operating rule</em>. You
+might think of a process as an object with only a single method, called
+something like <code class="language-plaintext highlighter-rouge">run()</code>. This analogy is imperfect though, because each process’
+operating rule could be suspended or resumed at any time—the operating rules
+were a kind of coroutine. A Simula I program would model a system as a set of
+processes that conceptually all ran in parallel. Only one process could
+actually be “current” at any time, but once a process suspended itself the next
+queued process would automatically take over. As the simulation ran, behind the
+scenes, Simula would keep a timeline of “event notices” that tracked when each
+process should be resumed. In order to resume a suspended process, Simula
+needed to keep track of multiple call stacks. This meant that Simula could no
+longer be an ALGOL preprocessor, because ALGOL had only once call stack.
+Nygaard and Dahl were committed to writing their own compiler.</p>
+
+<p>In their paper introducing this system, Nygaard and Dahl illustrate its use by
+implementing a simulation of a factory with a limited number of machines that
+can serve orders.<sup id="fnref:6" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:6" class="footnote" rel="footnote">6</a></sup> The process here is the order, which starts by looking
+for an available machine, suspends itself to wait for one if none are
+available, and then runs to completion once a free machine is found. There is a
+definition of the order process that is then used to instantiate several
+different order instances, but no methods are ever called on these instances.
+The main part of the program just creates the processes and sets them running.</p>
+
+<p>The first Simula I compiler was finished in 1965. The language grew popular at
+the Norwegian Computer Center, where Nygaard and Dahl had gone to work after
+leaving NDRE. Implementations of Simula I were made available to UNIVAC users
+and to Burroughs B5500 users.<sup id="fnref:7" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:7" class="footnote" rel="footnote">7</a></sup> Nygaard and Dahl did a consulting deal with a
+Swedish company called ASEA that involved using Simula to run job shop
+simulations. But Nygaard and Dahl soon realized that Simula could be used to
+write programs that had nothing to do with simulation at all.</p>
+
+<p>Stein Krogdahl, a professor at the University of Oslo that has written about
+the history of Simula, claims that “the spark that really made the development
+of a new general-purpose language take off” was <a href="https://archive.computerhistory.org/resources/text/algol/ACM_Algol_bulletin/1061032/p39-hoare.pdf">a paper called “Record
+Handling”</a>
+by the British computer scientist C.A.R. Hoare.<sup id="fnref:8" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:8" class="footnote" rel="footnote">8</a></sup> If you read Hoare’s paper
+now, this is easy to believe. I’m surprised that you don’t hear Hoare’s name
+more often when people talk about the history of object-oriented languages.
+Consider this excerpt from his paper:</p>
+
+<blockquote>
+  <p>The proposal envisages the existence inside the computer during the execution
+of the program, of an arbitrary number of records, each of which represents
+some object which is of past, present or future interest to the programmer.
+The program keeps dynamic control of the number of records in existence, and
+can create new records or destroy existing ones in accordance with the
+requirements of the task in hand.</p>
+</blockquote>
+
+<blockquote>
+  <p>Each record in the computer must belong to one of a limited number of
+disjoint record classes; the programmer may declare as many record classes as
+he requires, and he associates with each class an identifier to name it. A
+record class name may be thought of as a common generic term like “cow,”
+“table,” or “house” and the records which belong to these classes represent
+the individual cows, tables, and houses.</p>
+</blockquote>
+
+<p>Hoare does not mention subclasses in this particular paper, but Dahl credits
+him with introducing Nygaard and himself to the concept.<sup id="fnref:9" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:9" class="footnote" rel="footnote">9</a></sup> Nygaard and Dahl
+had noticed that processes in Simula I often had common elements. Using a
+superclass to implement those common elements would be convenient. This also
+raised the possibility that the “process” idea itself could be implemented as a
+superclass, meaning that not every class had to be a process with a single
+operating rule. This then was the second great generalization that would make
+Simula 67 a truly general-purpose programming language. It was such a shift
+of focus that Nygaard and Dahl briefly considered changing the name of the
+language so that people would know it was not just for simulations.<sup id="fnref:10" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:10" class="footnote" rel="footnote">10</a></sup>
+But “Simula” was too much of an established name for them to risk it.</p>
+
+<p>In 1967, Nygaard and Dahl signed a contract with Control Data to implement this
+new version of Simula, to be known as Simula 67. A conference was held in June,
+where people from Control Data, the University of Oslo, and the Norwegian
+Computing Center met with Nygaard and Dahl to establish a specification for
+this new language. This conference eventually led to a document called the
+<a href="http://web.eah-jena.de/~kleine/history/languages/Simula-CommonBaseLanguage.pdf">“Simula 67 Common Base
+Language,”</a>
+which defined the language going forward.</p>
+
+<p>Several different vendors would make Simula 67 compilers. The Association of
+Simula Users (ASU) was founded and began holding annual conferences. Simula 67
+soon had users in more than 23 different countries.<sup id="fnref:11" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:11" class="footnote" rel="footnote">11</a></sup></p>
+
+<h2 id="21st-century-simula">21st Century Simula</h2>
+<p>Simula is remembered now because of its influence on the languages that have
+supplanted it. You would be hard-pressed to find anyone still using Simula to
+write application programs. But that doesn’t mean that Simula is an entirely
+dead language. You can still compile and run Simula programs on your computer
+today, thanks to <a href="https://www.gnu.org/software/cim/">GNU cim</a>.</p>
+
+<p>The cim compiler implements the Simula standard as it was after a
+revision in 1986. But this is mostly the Simula 67 version of the language. You
+can write classes, subclass, and virtual methods just as you would have with
+Simula 67. So you could create a small object-oriented program that looks a lot
+like something you could easily write in Python or Ruby:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>! dogs.sim ;
+Begin
+    Class Dog;
+        ! The cim compiler requires virtual procedures to be fully specified ;
+        Virtual: Procedure bark Is Procedure bark;;
+    Begin
+        Procedure bark;
+        Begin
+            OutText(&#34;Woof!&#34;);
+            OutImage;           ! Outputs a newline ;
+        End;
+    End;
+
+    Dog Class Chihuahua;        ! Chihuahua is &#34;prefixed&#34; by Dog ;
+    Begin
+        Procedure bark;
+        Begin
+            OutText(&#34;Yap yap yap yap yap yap&#34;);
+            OutImage;
+        End;
+    End;
+
+    Ref (Dog) d;
+    d :- new Chihuahua;         ! :- is the reference assignment operator ;
+    d.bark;
+End;
+</code></pre></div></div>
+
+<p>You would compile and run it as follows:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ cim dogs.sim
+Compiling dogs.sim:
+gcc -g -O2 -c dogs.c
+gcc -g -O2 -o dogs dogs.o -L/usr/local/lib -lcim
+$ ./dogs
+Yap yap yap yap yap yap
+</code></pre></div></div>
+
+<p>(You might notice that cim compiles Simula to C, then hands off to a C
+compiler.)</p>
+
+<p>This was what object-oriented programming looked like in 1967, and I hope you
+agree that aside from syntactic differences this is also what object-oriented
+programming looks like in 2019. So you can see why Simula is considered a
+historically important language.</p>
+
+<p>But I’m more interested in showing you the process model that was central to
+Simula I. That process model is still available in Simula 67, but only when you
+use the <code class="language-plaintext highlighter-rouge">Process</code> class and a special <code class="language-plaintext highlighter-rouge">Simulation</code> block.</p>
+
+<p>In order to show you how processes work, I’ve decided to simulate the following
+scenario. Imagine that there is a village full of villagers next to a river.
+The river has lots of fish, but between them the villagers only have one
+fishing rod. The villagers, who have voracious appetites, get hungry every 60
+minutes or so. When they get hungry, they have to use the fishing rod to catch
+a fish. If a villager cannot use the fishing rod because another villager is
+waiting for it, then the villager queues up to use the fishing rod. If a
+villager has to wait more than five minutes to catch a fish, then the villager
+loses health. If a villager loses too much health, then that villager has
+starved to death.</p>
+
+<p>This is a somewhat strange example and I’m not sure why this is what first came
+to mind. But there you go. We will represent our villagers as Simula processes
+and see what happens over a day’s worth of simulated time in a village with
+four villagers.</p>
+
+<p>The full program is <a href="https://gist.github.com/sinclairtarget/6364cd521010d28ee24dd41ab3d61a96">available here as a
+Gist</a>.</p>
+
+<p>The last lines of my output look like the following. Here we are seeing what
+happens in the last few hours of the day:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1299.45: John is hungry and requests the fishing rod.
+1299.45: John is now fishing.
+1311.39: John has caught a fish.
+1328.96: Betty is hungry and requests the fishing rod.
+1328.96: Betty is now fishing.
+1331.25: Jane is hungry and requests the fishing rod.
+1340.44: Betty has caught a fish.
+1340.44: Jane went hungry waiting for the rod.
+1340.44: Jane starved to death waiting for the rod.
+1369.21: John is hungry and requests the fishing rod.
+1369.21: John is now fishing.
+1379.33: John has caught a fish.
+1409.59: Betty is hungry and requests the fishing rod.
+1409.59: Betty is now fishing.
+1419.98: Betty has caught a fish.
+1427.53: John is hungry and requests the fishing rod.
+1427.53: John is now fishing.
+1437.52: John has caught a fish.
+</code></pre></div></div>
+
+<p>Poor Jane starved to death. But she lasted longer than Sam, who didn’t even
+make it to 7am. Betty and John sure have it good now that only two of them need
+the fishing rod.</p>
+
+<p>What I want you to see here is that the main, top-level part of the program
+does nothing but create the four villager processes and get them going. The
+processes manipulate the fishing rod object in the same way that we would
+manipulate an object today. But the main part of the program does not call any
+methods or modify and properties on the processes. The processes have internal
+state, but this internal state only gets modified by the process itself.</p>
+
+<p>There are still fields that get mutated in place here, so this style of
+programming does not directly address the problems that pure functional
+programming would solve. But as Krogdahl observes, “this mechanism invites the
+programmer of a simulation to model the underlying system as a set of
+processes, each describing some natural sequence of events in that
+system.”<sup id="fnref:12" role="doc-noteref"><a href="https://twobithistory.org/2019/01/31/simula.html/#fn:12" class="footnote" rel="footnote">12</a></sup> Rather than thinking primarily in terms of nouns or
+actors—objects that do things to other objects—here we are thinking of
+ongoing processes. The benefit is that we can hand overall control of our
+program off to Simula’s event notice system, which Krogdahl calls a “time
+manager.” So even though we are still mutating processes in place, no process
+makes any assumptions about the state of another process. Each process
+interacts with other processes only indirectly.</p>
+
+<p>It’s not obvious how this pattern could be used to build, say, a compiler or an
+HTTP server. (On the other hand, if you’ve ever programmed games in the Unity
+game engine, this should look familiar.) I also admit that even though we have
+a “time manager” now, this may not have been exactly what Hickey meant when he
+said that we need an explicit notion of time in our programs. (I think he’d
+want something like the superscript notation <a href="https://twobithistory.org/2018/08/18/ada-lovelace-note-g.html">that Ada Lovelace used</a> to distinguish between the
+different values a variable assumes through time.) All the same, I think it’s
+really interesting that right there at the beginning of object-oriented
+programming we can find a style of programming that is not all like the
+object-oriented programming we are used to. We might take it for granted that
+object-oriented programming simply works one way—that a program is just a
+long list of the things that certain objects do to other objects in the exact
+order that they do them. Simula I’s process system shows that there are other
+approaches. Functional languages are probably a better thought-out
+alternative, but Simula I reminds us that the very notion of alternatives
+to modern object-oriented programming should come as no surprise.</p>
+
+<p><em>
+If you enjoyed this post, more like it come out every four weeks! Follow
+<a href="https://twitter.com/TwoBitHistory">
+  @TwoBitHistory
+</a> on Twitter or subscribe to the
+<a href="https://twobithistory.org/feed.xml">
+  RSS feed
+</a>
+to make sure you know when a new post is out.
+</em></p>
+
+<p><em>Previously on TwoBitHistory…</em></p>
+
+<blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">Hey everyone! I sadly haven&#39;t had time to do any new writing but I&#39;ve just put up an updated version of my history of RSS. This version incorporates interviews I&#39;ve since done with some of the key people behind RSS like Ramanathan Guha and Dan Libby.<a href="https://t.co/WYPhvpTGqB">https://t.co/WYPhvpTGqB</a></p>— TwoBitHistory (@TwoBitHistory) <a href="https://twitter.com/TwoBitHistory/status/1075075139543449600?ref_src=twsrc%5Etfw">December 18, 2018</a></blockquote>
+<script async="" src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>Jan Rune Holmevik, “The History of Simula,” accessed January 31, 2019, <a href="http://campus.hesge.ch/daehne/2004-2005/langages/simula.htm">http://campus.hesge.ch/daehne/2004-2005/langages/simula.htm</a>. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:1" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:2" role="doc-endnote">
+      <p>Ole-Johan Dahl and Kristen Nygaard, “SIMULA—An ALGOL-Based Simulation Langauge,” Communications of the ACM 9, no. 9 (September 1966): 671, accessed January 31, 2019, <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.95.384&amp;rep=rep1&amp;type=pdf">http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.95.384&amp;rep=rep1&amp;type=pdf</a>. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:2" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:3" role="doc-endnote">
+      <p>Stein Krogdahl, “The Birth of Simula,” 2, accessed January 31, 2019, <a href="http://heim.ifi.uio.no/~steinkr/papers/HiNC1-webversion-simula.pdf">http://heim.ifi.uio.no/~steinkr/papers/HiNC1-webversion-simula.pdf</a>. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:3" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:4" role="doc-endnote">
+      <p>ibid. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:4" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:5" role="doc-endnote">
+      <p>Ole-Johan Dahl and Kristen Nygaard, “The Development of the Simula Languages,” ACM SIGPLAN Notices 13, no. 8 (August 1978): 248, accessed January 31, 2019, <a href="https://hannemyr.com/cache/knojd_acm78.pdf">https://hannemyr.com/cache/knojd_acm78.pdf</a>. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:5" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:6" role="doc-endnote">
+      <p>Dahl and Nygaard (1966), 676. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:6" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:7" role="doc-endnote">
+      <p>Dahl and Nygaard (1978), 257. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:7" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:8" role="doc-endnote">
+      <p>Krogdahl, 3. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:8" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:9" role="doc-endnote">
+      <p>Ole-Johan Dahl, “The Birth of Object-Orientation: The Simula Languages,” 3, accessed January 31, 2019, <a href="http://www.olejohandahl.info/old/birth-of-oo.pdf">http://www.olejohandahl.info/old/birth-of-oo.pdf</a>. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:9" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:10" role="doc-endnote">
+      <p>Dahl and Nygaard (1978), 265. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:10" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:11" role="doc-endnote">
+      <p>Holmevik. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:11" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+    <li id="fn:12" role="doc-endnote">
+      <p>Krogdahl, 4. <a href="https://twobithistory.org/2019/01/31/simula.html/#fnref:12" class="reversefootnote" role="doc-backlink">↩</a></p>
+    </li>
+  </ol>
+</div>
+        </section>
+    </article>
+</main>
+</body>
+</html>
