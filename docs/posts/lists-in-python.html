@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lists in Python | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/tutorials/python/lists/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Lists in Python</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <h2 id="lists">
+  <span> Lists</span> <a href="#lists">🔗</a></h2>
+<p>A natural way to organize and store data is in a <code>List</code>. Some languages call them “arrays”, but in Python, we just call them lists. Think of all the apps you use and how many of the items in the app are organized into lists.</p>
+<p>For example:</p>
+<ul>
+<li>An X (formerly Twitter) feed is a list of posts</li>
+<li>An online store is a list of products</li>
+<li>The state of a chess game is a list of moves</li>
+<li>This list is a list of things that are lists</li>
+</ul>
+<p>Lists in Python are declared using square brackets, with commas separating each item:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>inventory</span> <span>=</span> <span>[</span><span>&#34;Iron Breastplate&#34;</span><span>,</span> <span>&#34;Healing Potion&#34;</span><span>,</span> <span>&#34;Leather Scraps&#34;</span><span>]</span>
+</span></span></code></pre></div><p>Lists can contain items of any data type, in our example above we have a <code>List</code> of strings.</p>
+<p><em>We’re making all the static content from our Boot.dev courses available for free here on the blog. This one is the “Lists” chapter from <a href="https://www.boot.dev/courses/learn-code-python">Learn to Code in Python</a>. If you want to try the far more interactive version of the course, do check it out!</em></p>
+<p>Sometimes when we’re manually creating lists it can be hard to read if all the items are on the same line of code. We can declare the list using multiple lines if we want to:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>flower_types</span> <span>=</span> <span>[</span>
+</span></span><span><span>    <span>&#34;daffodil&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;rose&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;chrysanthemum&#34;</span>
+</span></span><span><span><span>]</span>
+</span></span><span><span>
+</span></span><span><span><span>player_ages</span> <span>=</span> <span>[</span>
+</span></span><span><span>    <span>23</span><span>,</span>
+</span></span><span><span>    <span>18</span><span>,</span>
+</span></span><span><span>    <span>31</span><span>,</span>
+</span></span><span><span>    <span>42</span>
+</span></span><span><span><span>]</span>
+</span></span></code></pre></div><p>Keep in mind this is just a styling change. The code will run correctly either way.</p>
+<h2 id="counting-in-programming">
+  <span> Counting in Programming</span> <a href="#counting-in-programming">🔗</a></h2>
+<p>In the world of programming, counting is a bit strange! We don’t start counting at <code>1</code>, we start at <code>0</code> instead.</p>
+<h3 id="indexes">
+  <span> Indexes</span> <a href="#indexes">🔗</a></h3>
+<p>Each item in a list has an index that refers to its spot in the list.</p>
+<p>Take the following list as an example:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>names</span> <span>=</span> <span>[</span><span>&#34;Bob&#34;</span><span>,</span> <span>&#34;Lane&#34;</span><span>,</span> <span>&#34;Alice&#34;</span><span>,</span> <span>&#34;Breanna&#34;</span><span>]</span>
+</span></span></code></pre></div><ul>
+<li>Index 0: <code>Bob</code></li>
+<li>Index 1: <code>Lane</code></li>
+<li>Index 2: <code>Alice</code></li>
+<li>Index 3: <code>Breanna</code></li>
+</ul>
+<h2 id="indexing-into-lists">
+  <span> Indexing into Lists</span> <a href="#indexing-into-lists">🔗</a></h2>
+<p>Now that we know how to create new lists, we need to know how to access specific items in the list.</p>
+<p>We access items in a list directly by using their <em>index</em>. Indexes start at 0 (the first item) and increment by one with each successive item. The syntax is as follows:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>best_languages</span> <span>=</span> <span>[</span><span>&#34;JavaScript&#34;</span><span>,</span> <span>&#34;Go&#34;</span><span>,</span> <span>&#34;Rust&#34;</span><span>,</span> <span>&#34;Python&#34;</span><span>,</span> <span>&#34;C&#34;</span><span>]</span>
+</span></span><span><span><span>print</span><span>(</span><span>best_languages</span><span>[</span><span>1</span><span>])</span>
+</span></span><span><span><span># prints &#34;Go&#34;, because index 1 was provided</span>
+</span></span></code></pre></div><h2 id="list-length">
+  <span> List length</span> <a href="#list-length">🔗</a></h2>
+<p>The length of a List can be calculated using the <code>len()</code> function.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>fruits</span> <span>=</span> <span>[</span><span>&#34;apple&#34;</span><span>,</span> <span>&#34;banana&#34;</span><span>,</span> <span>&#34;pear&#34;</span><span>]</span>
+</span></span><span><span><span>length</span> <span>=</span> <span>len</span><span>(</span><span>fruits</span><span>)</span>
+</span></span><span><span><span># 3</span>
+</span></span></code></pre></div><p>The length of the list is equal to the number of items present. Don’t be fooled by the fact that the length is not equal to the index of the last element, in fact, it will always be one greater.</p>
+<h2 id="list-updates">
+  <span> List Updates</span> <a href="#list-updates">🔗</a></h2>
+<p>We can also change the item that exists at a given index. For example, we can change <code>Leather</code> to <code>Leather Armor</code> in the <code>inventory</code> list in the following way:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>inventory</span> <span>=</span> <span>[</span><span>&#34;Leather&#34;</span><span>,</span> <span>&#34;Iron Ore&#34;</span><span>,</span> <span>&#34;Healing Potion&#34;</span><span>]</span>
+</span></span><span><span><span>inventory</span><span>[</span><span>0</span><span>]</span> <span>=</span> <span>&#34;Leather Armor&#34;</span>
+</span></span><span><span><span># inventory: [&#39;Leather Armor&#39;, &#39;Iron Ore&#39;, &#39;Healing Potion&#39;]</span>
+</span></span></code></pre></div><h2 id="appending-in-python">
+  <span> Appending in Python</span> <a href="#appending-in-python">🔗</a></h2>
+<p>It’s common to create an empty list then fill it with values using a loop. We can add values to the end of a list using the <code>.append()</code> method:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>cards</span> <span>=</span> <span>[]</span>
+</span></span><span><span><span>cards</span><span>.</span><span>append</span><span>(</span><span>&#34;nvidia&#34;</span><span>)</span>
+</span></span><span><span><span>cards</span><span>.</span><span>append</span><span>(</span><span>&#34;amd&#34;</span><span>)</span>
+</span></span><span><span><span># the cards list is now [&#39;nvidia&#39;, &#39;amd&#39;]</span>
+</span></span></code></pre></div><h2 id="pop-values">
+  <span> Pop Values</span> <a href="#pop-values">🔗</a></h2>
+<p><code>.pop()</code> is the opposite of <code>.append()</code>. Pop removes the last element from a list and returns it for use. For example:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>vegetables</span> <span>=</span> <span>[</span><span>&#34;broccoli&#34;</span><span>,</span> <span>&#34;cabbage&#34;</span><span>,</span> <span>&#34;kale&#34;</span><span>,</span> <span>&#34;tomato&#34;</span><span>]</span>
+</span></span><span><span><span>last_vegetable</span> <span>=</span> <span>vegetables</span><span>.</span><span>pop</span><span>()</span>
+</span></span><span><span><span># vegetables = [&#39;broccoli&#39;, &#39;cabbage&#39;, &#39;kale&#39;]</span>
+</span></span><span><span><span># last_vegetable = &#39;tomato&#39;</span>
+</span></span></code></pre></div><h2 id="counting-the-items-in-a-list">
+  <span> Counting the items in a list</span> <a href="#counting-the-items-in-a-list">🔗</a></h2>
+<p>Remember that we can iterate over all the elements in a list using a <a href="https://blog.boot.dev/tutorials/python/loops">loop</a>. For example, the following code will print each item in the <code>sports</code> list.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>sports</span> <span>=</span> <span>[</span><span>&#34;soccer&#34;</span><span>,</span> <span>&#34;basketball&#34;</span><span>,</span> <span>&#34;baseball&#34;</span><span>]</span>
+</span></span><span><span><span>for</span> <span>i</span> <span>in</span> <span>range</span><span>(</span><span>0</span><span>,</span> <span>len</span><span>(</span><span>sports</span><span>)):</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>sports</span><span>[</span><span>i</span><span>])</span>
+</span></span></code></pre></div><h2 id="no-index-syntax">
+  <span> No-index Syntax</span> <a href="#no-index-syntax">🔗</a></h2>
+<p>In my opinion, Python has <em>the most elegant</em> syntax for iterating directly over the items in a list without worrying about index numbers. If you don’t need the index number you can use the following syntax:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>trees</span> <span>=</span> <span>[</span><span>&#39;oak&#39;</span><span>,</span> <span>&#39;pine&#39;</span><span>,</span> <span>&#39;maple&#39;</span><span>]</span>
+</span></span><span><span><span>for</span> <span>tree</span> <span>in</span> <span>trees</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>tree</span><span>)</span>
+</span></span><span><span><span># Prints:</span>
+</span></span><span><span><span># oak</span>
+</span></span><span><span><span># pine</span>
+</span></span><span><span><span># maple</span>
+</span></span></code></pre></div><p><code>tree</code>, the variable declared using the <code>in</code> keyword, directly accesses the value in the list rather than the index of the value. If we don’t need to update the item and only need to access its value then this is a more clean way to write the code.</p>
+<h2 id="find-an-item-in-a-list">
+  <span> Find an item in a list</span> <a href="#find-an-item-in-a-list">🔗</a></h2>
+<p>Practice the “no-index” or “no-range” syntax:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>fruits</span> <span>=</span> <span>[</span><span>&#34;apple&#34;</span><span>,</span> <span>&#34;banana&#34;</span><span>,</span> <span>&#34;cherry&#34;</span><span>]</span>
+</span></span><span><span><span>for</span> <span>fruit</span> <span>in</span> <span>fruits</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>fruit</span><span>)</span>
+</span></span><span><span><span># Prints:</span>
+</span></span><span><span><span># apple</span>
+</span></span><span><span><span># banana</span>
+</span></span><span><span><span># cherry</span>
+</span></span></code></pre></div><h2 id="slicing-lists">
+  <span> Slicing lists</span> <a href="#slicing-lists">🔗</a></h2>
+<p>Python makes it easy to slice and dice lists to work only with the section you care about. One way to do this is to use the simple slicing operator, which is just a colon <code>:</code>.</p>
+<p>With this operator, you can specify where to start and end the slice, and how to step through the original list. List slicing returns a <em>new list</em> from the existing list.</p>
+<p>The syntax is as follows:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>my_list</span><span>[</span> <span>start</span> <span>:</span> <span>stop</span> <span>:</span> <span>step</span> <span>]</span>
+</span></span></code></pre></div><p>For example:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>scores</span> <span>=</span> <span>[</span><span>50</span><span>,</span> <span>70</span><span>,</span> <span>30</span><span>,</span> <span>20</span><span>,</span> <span>90</span><span>,</span> <span>10</span><span>,</span> <span>50</span><span>]</span>
+</span></span><span><span><span># Display list</span>
+</span></span><span><span><span>print</span><span>(</span><span>scores</span><span>[</span><span>1</span><span>:</span><span>5</span><span>:</span><span>2</span><span>])</span>
+</span></span><span><span><span># Prints [70, 20]</span>
+</span></span></code></pre></div><p>The above reads as “give me a slice of the <code>scores</code> list from index 1, up to but not including 5, skipping every 2nd value. <em>All of the sections are optional</em>.</p>
+<h3 id="omitting-sections">
+  <span> Omitting sections</span> <a href="#omitting-sections">🔗</a></h3>
+<p>You can also omit various sections (“start”, “stop”, or “step”). For example, <code>numbers[:3]</code> means “get all items from the start up to (but not including) index 3”. <code>numbers[3:]</code> means “get all items from index 3 to the end”.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>numbers</span> <span>=</span> <span>[</span><span>0</span><span>,</span> <span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>,</span> <span>6</span><span>,</span> <span>7</span><span>,</span> <span>8</span><span>,</span> <span>9</span><span>]</span>
+</span></span><span><span><span>numbers</span><span>[:</span><span>3</span><span>]</span> <span># Gives [0, 1, 2]</span>
+</span></span><span><span><span>numbers</span><span>[</span><span>3</span><span>:]</span> <span># Gives [3, 4, 5, 6, 7, 8, 9]</span>
+</span></span></code></pre></div><h3 id="using-only-the-step-section">
+  <span> Using only the “step” section</span> <a href="#using-only-the-step-section">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>numbers</span> <span>=</span> <span>[</span><span>0</span><span>,</span> <span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>,</span> <span>6</span><span>,</span> <span>7</span><span>,</span> <span>8</span><span>,</span> <span>9</span><span>]</span>
+</span></span><span><span><span>numbers</span><span>[::</span><span>2</span><span>]</span> <span># Gives [0, 2, 4, 6, 8]</span>
+</span></span></code></pre></div><h3 id="negative-indices">
+  <span> Negative Indices</span> <a href="#negative-indices">🔗</a></h3>
+<p>Negative indices count from the end of the list. For example, <code>numbers[-1]</code> gives the last item in the list, <code>numbers[-2]</code> gives the second last item, and so on.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>numbers</span> <span>=</span> <span>[</span><span>0</span><span>,</span> <span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>,</span> <span>6</span><span>,</span> <span>7</span><span>,</span> <span>8</span><span>,</span> <span>9</span><span>]</span>
+</span></span><span><span><span>numbers</span><span>[</span><span>-</span><span>3</span><span>:]</span> <span># Gives [7, 8, 9]</span>
+</span></span></code></pre></div><h2 id="list-operations---concatenate">
+  <span> List Operations - Concatenate</span> <a href="#list-operations---concatenate">🔗</a></h2>
+<p>Concatenating two lists (smushing them together) is easy in Python, just use the <code>+</code> operator.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>total</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>]</span> <span>+</span> <span>[</span><span>4</span><span>,</span> <span>5</span><span>,</span> <span>6</span><span>]</span>
+</span></span><span><span><span>print</span><span>(</span><span>total</span><span>)</span>
+</span></span><span><span><span># Prints: [1, 2, 3, 4, 5, 6]</span>
+</span></span></code></pre></div><h2 id="list-operations---contains">
+  <span> List Operations - Contains</span> <a href="#list-operations---contains">🔗</a></h2>
+<p>Checking whether a value exists in a list is also really easy in Python, just use the <code>in</code> keyword.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>fruits</span> <span>=</span> <span>[</span><span>&#34;apple&#34;</span><span>,</span> <span>&#34;orange&#34;</span><span>,</span> <span>&#34;banana&#34;</span><span>]</span>
+</span></span><span><span><span>print</span><span>(</span><span>&#34;banana&#34;</span> <span>in</span> <span>fruits</span><span>)</span>
+</span></span><span><span><span># Prints: True</span>
+</span></span></code></pre></div><h2 id="list-deletion">
+  <span> List deletion</span> <a href="#list-deletion">🔗</a></h2>
+<p>Python has a built-in keyword <a href="https://docs.python.org/3/tutorial/datastructures.html#the-del-statement">del</a> that deletes items from objects. In the case of a list, you can delete specific indexes or entire slices.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>nums</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>,</span> <span>6</span><span>,</span> <span>7</span><span>,</span> <span>8</span><span>,</span> <span>9</span><span>]</span>
+</span></span><span><span>
+</span></span><span><span><span># delete the fourth item</span>
+</span></span><span><span><span>del</span> <span>nums</span><span>[</span><span>3</span><span>]</span>
+</span></span><span><span><span>print</span><span>(</span><span>nums</span><span>)</span>
+</span></span><span><span><span># Output: [1, 2, 3, 5, 6, 7, 8, 9]</span>
+</span></span><span><span>
+</span></span><span><span><span># delete the second item up to (but not including) the fourth item</span>
+</span></span><span><span><span>nums</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>,</span> <span>6</span><span>,</span> <span>7</span><span>,</span> <span>8</span><span>,</span> <span>9</span><span>]</span>
+</span></span><span><span><span>del</span> <span>nums</span><span>[</span><span>1</span><span>:</span><span>3</span><span>]</span>
+</span></span><span><span><span>print</span><span>(</span><span>nums</span><span>)</span>
+</span></span><span><span><span># Output: [1, 4, 5, 6, 7, 8, 9]</span>
+</span></span><span><span>
+</span></span><span><span><span># delete all elements</span>
+</span></span><span><span><span>nums</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>,</span> <span>6</span><span>,</span> <span>7</span><span>,</span> <span>8</span><span>,</span> <span>9</span><span>]</span>
+</span></span><span><span><span>del</span> <span>nums</span><span>[:]</span>
+</span></span><span><span><span>print</span><span>(</span><span>nums</span><span>)</span>
+</span></span><span><span><span># Output: []</span>
+</span></span></code></pre></div><h2 id="first-element">
+  <span> First Element</span> <a href="#first-element">🔗</a></h2>
+<p>To access the first element of a list, you simply refer to index <code>0</code>. This is because list indexing starts at <code>0</code> in Python.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>animals</span> <span>=</span> <span>[</span><span>&#34;cat&#34;</span><span>,</span> <span>&#34;dog&#34;</span><span>,</span> <span>&#34;bird&#34;</span><span>]</span>
+</span></span><span><span><span>first_animal</span> <span>=</span> <span>animals</span><span>[</span><span>0</span><span>]</span>
+</span></span><span><span><span>print</span><span>(</span><span>first_animal</span><span>)</span>
+</span></span><span><span><span># Output: cat</span>
+</span></span></code></pre></div><h2 id="example-reverse-a-list">
+  <span> <strong>Example</strong>: Reverse a List</span> <a href="#example-reverse-a-list">🔗</a></h2>
+<p>Python provides a simple way to reverse the order of elements in a list. You can use slicing to reverse the list.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>numbers</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]</span>
+</span></span><span><span><span>reversed_numbers</span> <span>=</span> <span>numbers</span><span>[::</span><span>-</span><span>1</span><span>]</span>
+</span></span><span><span><span>print</span><span>(</span><span>reversed_numbers</span><span>)</span>
+</span></span><span><span><span># Output: [5, 4, 3, 2, 1]</span>
+</span></span></code></pre></div><p>Alternatively, you can use the <code>reverse()</code> method, which reverses the list in place.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>numbers</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]</span>
+</span></span><span><span><span>numbers</span><span>.</span><span>reverse</span><span>()</span>
+</span></span><span><span><span>print</span><span>(</span><span>numbers</span><span>)</span>
+</span></span><span><span><span># Output: [5, 4, 3, 2, 1]</span>
+</span></span></code></pre></div><h2 id="xample-filter-messages">
+  <span> <strong>xample</strong>: Filter Messages</span> <a href="#xample-filter-messages">🔗</a></h2>
+<p>When working with lists, you may need to filter out certain elements based on a condition. Python provides a powerful feature called list comprehension to achieve this.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>messages</span> <span>=</span> <span>[</span><span>&#34;Hello world&#34;</span><span>,</span> <span>&#34;Python is great&#34;</span><span>,</span> <span>&#34;Have a nice day&#34;</span><span>]</span>
+</span></span><span><span><span>filtered_messages</span> <span>=</span> <span>[</span><span>message</span> <span>for</span> <span>message</span> <span>in</span> <span>messages</span> <span>if</span> <span>&#34;Python&#34;</span> <span>in</span> <span>message</span><span>]</span>
+</span></span><span><span><span>print</span><span>(</span><span>filtered_messages</span><span>)</span>
+</span></span><span><span><span># Output: [&#39;Python is great&#39;]</span>
+</span></span></code></pre></div><p>In the example above, we created a new list <code>filtered_messages</code> containing only the messages that include the word “Python”. List comprehensions allow for a concise and expressive way to filter lists.</p>
+<p>Hope this helps, best of luck writing your lists in Python!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

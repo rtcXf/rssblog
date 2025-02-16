@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>On that flickering blur in Chrome | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://jameshfisher.com/2024/04/23/backdrop-blur-without-the-flickering/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>On that flickering blur in Chrome</h1>
+        <section>
+            
+            <p><code>backdrop-filter: blur</code> is a popular design for navbars.
+But it’s unusable in its current state, due to its flickery appearance in Chrome.
+Here’s an example:</p>
+<div style="width: 25em; height: 15em; background: #eef; font-size: 0.8em; backdrop-filter: blur(0px); position: relative;">
+  <div style="position: absolute; inset: 0; padding: 1em; overflow: scroll;">
+    <div style="font-size: 2em; font-weight: bold; margin-top: 2em;">A heading</div>
+    <p>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+    </p>
+  </div>
+  <div style="position: absolute; top: 1em; left: 1em; right: 1em; padding: 0.5em; border-radius: 0.5em; font-weight: bold; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); background: #aaa3;">
+    Nav with a blurred background
+  </div>
+</div>
+<p>In Chrome, notice how even a 1px scroll
+can cause the color to completely change.
+Here’s a recording:</p>
+<video controls autoplay loop muted playsinline style="max-width: 20em;">
+  <source src="./recording.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
+<p>Here’s the general problem:
+a blur operation,
+at the edges of the image,
+needs to know what the content is <em>outside</em> the image.
+The <em>correct</em> approach would be to give the blur filter
+enough of the background content to work with.
+But in Chrome, the blur is only given the pixels immediately behind the element.
+So, as a hack, the blur must guess what the content is outside the nav.
+<a href="https://en.wikipedia.org/wiki/Kernel_(image_processing)#Edge_handling">Wikipedia calls this “edge handling”.</a></p>
+<p>Chrome seems to take the <em>extend</em> strategy:
+it guesses that the pixels at the edge of the background image
+extend infinitely in all directions.
+This is why the blur flickers so much:
+a tiny scroll causes the edge pixels to change,
+which causes the extended pixels to completely change.</p>
+<p>One better edge-handing strategy is <em>mirroring</em>.
+Mirroring is better because, even though it’s inaccurate, it results in smoother transitions.</p>
+<p>Neither Firefox nor Safari have this problem,
+although I’m not sure which approach they take to edge handling.</p>
+        </section>
+    </article>
+</main>
+</body>
+</html>

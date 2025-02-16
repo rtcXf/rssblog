@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>`window.ai` hello world | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://jameshfisher.com/2024/06/29/windowai-hello-world/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>`window.ai` hello world</h1>
+        <section>
+            
+            <p>If you’re running Chrome with the <code>window.ai</code> API,
+here’s a UI to prompt an LLM running locally in your browser:</p>
+<div>
+  <div style="display: flex; flex-direction: column">
+    <h3>Prompt</h3>
+    <textarea id="prompt" placeholder="Enter a prompt" style="width: 100%; height: 100px;"></textarea>
+    <div style="display: flex; flex-direction: row; gap: 10px;">
+      <label>
+        Top K:
+        <input type="number" id="topK" value="1" min="1" max="100" step="1" style="width: 100%; margin-bottom: 10px;">
+      </label>
+      <label>
+        Temperature:
+        <input type="number" id="temperature" value="0.5" min="0" max="5" step="0.1" style="width: 100%; margin-bottom: 10px;">
+      </label>
+    </div>
+    <button id="run" style="display: block;">Run prompt</button>
+  </div>
+  <div>
+    <div>
+      Status: <span id="status"></span>
+    </div>
+    <h3>Output</h3>
+    <div id="output" style="border: 1px solid #ccc; padding: 10px; font-family: monospace;"></div>
+  </div>
+</div>
+<script type="module" src="./script.js"></script>
+<p>I wrote these TypeScript type definitions for the API:</p>
+<pre class="language-ts"><code class="language-ts"><span class="token keyword">declare</span> global <span class="token punctuation">{</span>
+  <span class="token keyword">interface</span> <span class="token class-name">WindowOrWorkerGlobalScope</span> <span class="token punctuation">{</span>
+    <span class="token keyword">readonly</span> ai<span class="token operator">?</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token function">canCreateTextSession</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token string">"readily"</span> <span class="token operator">|</span> <span class="token string">"after-download"</span> <span class="token operator">|</span> <span class="token string">"no"</span><span class="token operator">></span><span class="token punctuation">;</span>
+      <span class="token function">createTextSession</span><span class="token punctuation">(</span>
+        options<span class="token operator">?</span><span class="token operator">:</span> Partial<span class="token operator">&lt;</span>AITextSessionOptions<span class="token operator">></span><span class="token punctuation">,</span>
+      <span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span>AITextSession<span class="token operator">></span><span class="token punctuation">;</span>
+      <span class="token function">defaultTextSessionOptions</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span>AITextSessionOptions<span class="token operator">></span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">type</span> <span class="token class-name">AITextSession</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token function">prompt</span><span class="token punctuation">(</span>input<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token builtin">Promise</span><span class="token operator">&lt;</span><span class="token builtin">string</span><span class="token operator">></span><span class="token punctuation">;</span>
+  <span class="token function">promptStreaming</span><span class="token punctuation">(</span>input<span class="token operator">:</span> <span class="token builtin">string</span><span class="token punctuation">)</span><span class="token operator">:</span> AsyncIterable<span class="token operator">&lt;</span><span class="token builtin">string</span><span class="token operator">></span><span class="token punctuation">;</span>
+  <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">:</span> <span class="token keyword">void</span><span class="token punctuation">;</span>
+  <span class="token function">clone</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">:</span> AITextSession<span class="token punctuation">;</span> <span class="token comment">// Not yet implemented!</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">type</span> <span class="token class-name">AITextSessionOptions</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+  topK<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+  temperature<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span></code></pre>
+        </section>
+    </article>
+</main>
+</body>
+</html>

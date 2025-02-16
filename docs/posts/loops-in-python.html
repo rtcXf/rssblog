@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Loops in Python | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/tutorials/python/loops/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Loops in Python</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>If you’re new to Python, or perhaps coding in general (welcome!), loops are what allow us to do the same thing over and over and over again, without having to re-type the same code each time. For example, let’s pretend I want to print the numbers 0-9.</p>
+<p>I <em>could</em> do this:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>print</span><span>(</span><span>0</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>1</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>2</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>3</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>4</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>5</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>6</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>7</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>8</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>9</span><span>)</span>
+</span></span></code></pre></div><p>However, it would save me a lot of time typing to use a <em>loop</em>. Especially if I wanted to do the same thing <em>one thousand</em> or <em>one million</em> times.</p>
+<p>A <em>“for loop”</em> in Python is written like this:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>for</span> <span>i</span> <span>in</span> <span>range</span><span>(</span><span>0</span><span>,</span> <span>10</span><span>):</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>i</span><span>)</span>
+</span></span></code></pre></div><p><code>i</code> replaces the numbers <code>0</code> to <code>9</code>. In English, the code says:</p>
+<ol>
+<li>Start with <code>i</code> equals <code>0</code>. (<code>i in range(0)</code>)</li>
+<li>If <code>i</code> is not less than 10 (<code>range(0, 10)</code>), exit the loop. Else:
+<ol>
+<li>Print <code>i</code> to the console. (<code>print(i)</code>)</li>
+<li>Add <code>1</code> to <code>i</code>. (<code>range</code> defaults to incrementing by 1)</li>
+<li>Go back to step <code>2</code>.</li>
+</ol>
+</li>
+</ol>
+<p>The result is that the numbers <code>0-9</code> are logged to the console in order.</p>
+<p><em>We’re making all the static content from our Boot.dev courses available for free here on the blog. This one is the “Loops” chapter from <a href="https://www.boot.dev/courses/learn-code-python">Learn to Code in Python</a>. If you want to try the far more interactive version of the course, do check it out!</em></p>
+<p><strong>By the way, whitespace matters in Python!</strong></p>
+<p>The body of a for-loop <em>must</em> be indented; otherwise, you’ll get a syntax error. Every line in the body of the loop must be indented in the same way - we use the “4 spaces” convention. Pressing the <code>&lt;tab&gt;</code> key should automatically insert 4 spaces.</p>
+<h2 id="range-continued">
+  <span> Range Continued</span> <a href="#range-continued">🔗</a></h2>
+<p>The <code>range()</code> <a href="https://blog.boot.dev/tutorials/python/functions">function</a> we’ve been using in our <code>for</code> loops actually has an optional 3rd parameter: the “step”.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>for</span> <span>i</span> <span>in</span> <span>range</span><span>(</span><span>0</span><span>,</span> <span>10</span><span>,</span> <span>2</span><span>):</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>i</span><span>)</span>
+</span></span><span><span><span># prints:</span>
+</span></span><span><span><span># 0</span>
+</span></span><span><span><span># 2</span>
+</span></span><span><span><span># 4</span>
+</span></span><span><span><span># 6</span>
+</span></span><span><span><span># 8</span>
+</span></span></code></pre></div><p>The “step” parameter determines how much to add to <code>i</code> in each iteration of the loop. You can even go backwards:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>for</span> <span>i</span> <span>in</span> <span>range</span><span>(</span><span>3</span><span>,</span> <span>0</span><span>,</span> <span>-</span><span>1</span><span>):</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>i</span><span>)</span>
+</span></span><span><span><span># prints:</span>
+</span></span><span><span><span># 3</span>
+</span></span><span><span><span># 2</span>
+</span></span><span><span><span># 1</span>
+</span></span></code></pre></div><h2 id="iterating-over-lists">
+  <span> Iterating over lists</span> <a href="#iterating-over-lists">🔗</a></h2>
+<p>While explictly looping from one number to another is <em>useful</em>, more often than not you’ll probably want to iterate over all the elements in a <a href="https://blog.boot.dev/tutorials/python/lists">list</a>. In my opinion, Python has <em>the most elegant</em> syntax for iterating directly over the items in a list without worrying about index numbers. If you don’t need the index number you can use the following syntax:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>trees</span> <span>=</span> <span>[</span><span>&#39;oak&#39;</span><span>,</span> <span>&#39;pine&#39;</span><span>,</span> <span>&#39;maple&#39;</span><span>]</span>
+</span></span><span><span><span>for</span> <span>tree</span> <span>in</span> <span>trees</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>tree</span><span>)</span>
+</span></span><span><span><span># Prints:</span>
+</span></span><span><span><span># oak</span>
+</span></span><span><span><span># pine</span>
+</span></span><span><span><span># maple</span>
+</span></span></code></pre></div><p><code>tree</code>, the <a href="https://blog.boot.dev/tutorials/python/variables">variable</a> declared using the <code>in</code> keyword, directly accesses the value in the list rather than the index of the value. If we don’t need to update the item and only need to access its value then this is a more clean way to write the code.</p>
+<h2 id="while">
+  <span> While</span> <a href="#while">🔗</a></h2>
+<p>Python has another type of loop, the <code>while</code> loop. It’s a loop that continues <code>while</code> a condition remains <code>True</code>. The syntax is simple:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>while</span> <span>1</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;1 evaluates to True&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span># prints:</span>
+</span></span><span><span><span># 1 evaluates to True</span>
+</span></span><span><span><span># 1 evaluates to True</span>
+</span></span><span><span><span># (...continuing)</span>
+</span></span></code></pre></div><p>The example above is hardcoded to continue forever, creating an infinite loop. Typically, a <code>while</code> loop’s condition will have an explicit comparison that determines when the loop ends:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>num</span> <span>=</span> <span>0</span>
+</span></span><span><span><span>while</span> <span>num</span> <span>&lt;</span> <span>3</span><span>:</span>
+</span></span><span><span>    <span>num</span> <span>+=</span> <span>1</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>num</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span># prints:</span>
+</span></span><span><span><span># 1</span>
+</span></span><span><span><span># 2</span>
+</span></span><span><span><span># 3</span>
+</span></span><span><span><span># (the loop stops when num &gt;= 3)</span>
+</span></span></code></pre></div><p>With loops, we can efficiently automate repetitive tasks, manage data sequences, and streamline complex processes in programming. Mastering loops empowers us to write cleaner, more efficient code, and to embrace the true power of programming automation.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

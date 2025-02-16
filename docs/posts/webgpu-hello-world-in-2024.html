@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebGPU hello world in 2024 | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://jameshfisher.com/2024/05/25/webgpu-hello-world-2024/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>WebGPU hello world in 2024</h1>
+        <section>
+            
+            <p>Below is a Game of Life simulation.
+It uses WebGPU.</p>
+<div>
+  <canvas id="example-canvas" width="600" height="600"></canvas>
+</div>
+<p>Here’s the essential JavaScript:</p>
+<pre class="language-js"><code class="language-js"><span class="token keyword">const</span> canvas <span class="token operator">=</span> document<span class="token punctuation">.</span><span class="token function">getElementById</span><span class="token punctuation">(</span><span class="token string">"example-canvas"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>navigator<span class="token punctuation">.</span>gpu<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span><span class="token string">"WebGPU not supported on this browser."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">const</span> adapter <span class="token operator">=</span> <span class="token keyword">await</span> navigator<span class="token punctuation">.</span>gpu<span class="token punctuation">.</span><span class="token function">requestAdapter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>adapter<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span><span class="token string">"No appropriate GPUAdapter found."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token keyword">const</span> device <span class="token operator">=</span> <span class="token keyword">await</span> adapter<span class="token punctuation">.</span><span class="token function">requestDevice</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> context <span class="token operator">=</span> canvas<span class="token punctuation">.</span><span class="token function">getContext</span><span class="token punctuation">(</span><span class="token string">"webgpu"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>context<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span><span class="token punctuation">(</span><span class="token string">"Canvas context not found"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+context<span class="token punctuation">.</span><span class="token function">configure</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  <span class="token literal-property property">device</span><span class="token operator">:</span> device<span class="token punctuation">,</span>
+  <span class="token literal-property property">format</span><span class="token operator">:</span> navigator<span class="token punctuation">.</span>gpu<span class="token punctuation">.</span><span class="token function">getPreferredCanvasFormat</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> encoder <span class="token operator">=</span> device<span class="token punctuation">.</span><span class="token function">createCommandEncoder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> pass <span class="token operator">=</span> encoder<span class="token punctuation">.</span><span class="token function">beginRenderPass</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  <span class="token literal-property property">colorAttachments</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span>
+      <span class="token literal-property property">view</span><span class="token operator">:</span> context<span class="token punctuation">.</span><span class="token function">getCurrentTexture</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">createView</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+      <span class="token literal-property property">loadOp</span><span class="token operator">:</span> <span class="token string">"clear"</span><span class="token punctuation">,</span>
+      <span class="token literal-property property">clearValue</span><span class="token operator">:</span> <span class="token punctuation">{</span> <span class="token literal-property property">r</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token literal-property property">g</span><span class="token operator">:</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token literal-property property">b</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token literal-property property">a</span><span class="token operator">:</span> <span class="token number">1</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token literal-property property">storeOp</span><span class="token operator">:</span> <span class="token string">"store"</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">]</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+pass<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+device<span class="token punctuation">.</span>queue<span class="token punctuation">.</span><span class="token function">submit</span><span class="token punctuation">(</span><span class="token punctuation">[</span>encoder<span class="token punctuation">.</span><span class="token function">finish</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<p>This is derived from <a href="https://codelabs.developers.google.com/your-first-webgpu-app">this tutorial</a>.</p>
+<script type="module" src="script.js"></script>
+        </section>
+    </article>
+</main>
+</body>
+</html>

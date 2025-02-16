@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Automatic differentiation with dual numbers | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://jameshfisher.com/2024/04/02/automatic-differentiation-with-dual-numbers/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Automatic differentiation with dual numbers</h1>
+        <section>
+            
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous" onload="renderMath()"></script>
+<script>
+  function renderMath() {
+    renderMathInElement(document.body,{
+              delimiters: [
+                  {left: "\\[", right: "\\]", display: true},
+                  {left: "$", right: "$", display: false},
+              ]
+    });
+  }
+</script>
+<p>Differentiation is the heart of most machine learning,
+but how can we differentiate arbitrary functions?
+Perhaps the simplest accurate method is using <em>dual numbers</em>.</p>
+<p>Here’s an example in JavaScript.
+Say we’re calculating the distance between two points using JavaScript:</p>
+<pre class="language-js"><code class="language-js"><span class="token keyword">function</span> <span class="token function">distance</span><span class="token punctuation">(</span><span class="token parameter">x<span class="token punctuation">,</span> y</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> Math<span class="token punctuation">.</span><span class="token function">sqrt</span><span class="token punctuation">(</span>x <span class="token operator">*</span> x <span class="token operator">+</span> y <span class="token operator">*</span> y<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<pre><code>&gt; distance(3,4)
+5</code></pre>
+<p>Now we want to ask:
+how does tweaking <code>x = 3</code> change the output?
+In math-speak, what’s the <em>derivative</em> of the distance with respect to <code>x</code>?</p>
+<p>The poor man’s way to answer this is <a href="/2024/04/01/what-is-numerical-differentiation/"><em>numerical differentiation</em></a>.
+We add a little bit to <code>x</code>,
+and see how much it changes the output:</p>
+<pre class="language-js"><code class="language-js"><span class="token keyword">const</span> changeToInput <span class="token operator">=</span> <span class="token number">0.00000001</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> changeToOutput <span class="token operator">=</span> <span class="token function">distance</span><span class="token punctuation">(</span><span class="token number">3</span> <span class="token operator">+</span> changeToInput<span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token function">distance</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> derivative <span class="token operator">=</span> changeToOutput <span class="token operator">/</span> changeToInput<span class="token punctuation">;</span></code></pre>
+<p>We get that <code>derivative = 0.5999999608263806</code>.
+That’s <code>0.6</code>.
+Well ... almost.
+The numerical error is due to our <code>changeToInput = 0.00000001</code> not being infinitesimally small.</p>
+<p>Now let’s calcuate the derivative without this numerical error!</p>
+<p>We’ll start by saying that $\varepsilon$, or <em>epsilon</em>, is a special number that’s infinitesimally small.
+More precisely:
+$\varepsilon$ is not so small as to be zero,
+but $\varepsilon$ is so small that <em>when you square it, you get zero</em>.</p>
+<p>Then we’ll calculate $\text{distance}(3+\varepsilon, 4)$ in JS,
+and see how many $\varepsilon$s are in the output.
+And that will be the true derivative!</p>
+<p>Does $\varepsilon$ really exist?
+Not in our ordinary real numbers.
+We’ll just say it’s a different kind of number!</p>
+<p>What is $42 + 7\varepsilon$?
+Well, because $\varepsilon$ is a different kind of number,
+we can’t simplify this expression,
+so we just leave it as $42 + 7\varepsilon$.</p>
+<p>In general, we call these <a href="https://en.wikipedia.org/wiki/Dual_number"><em>dual numbers</em></a>.
+They’re of the form $a + b\varepsilon$,
+and we can represent them in TypeScript as:</p>
+<pre class="language-ts"><code class="language-ts"><span class="token keyword">type</span> <span class="token class-name">Dual</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token comment">// The ordinary real value part</span>
+  val<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+
+  <span class="token comment">// How many tiny epsilons we have</span>
+  der<span class="token operator">:</span> <span class="token builtin">number</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span></code></pre>
+<p>You might vaguely remember rules from school,
+like the derivative of $x^n$ is $nx^{n-1}$,
+or something about limits.
+But dual numbers let us forget these rules and just use algebra!
+For example, let’s find the derivative of $x^2$ at $x = 5$.
+We’ll start by adding $\varepsilon$ to the input, to get $x = 5 + \varepsilon$.
+Then we simplify $x^2$ with ordinary algebra:</p>
+<div>
+  \[
+  \begin{aligned}
+  x^2 &= x \times x                                             \\
+      &= (5 + \varepsilon)(5 + \varepsilon)                   \\
+      &= (5 \times 5) + (\varepsilon \times 5) + (5\times\varepsilon) + \varepsilon^2 \\
+      &= 25 + (2 \times 5 \times \varepsilon)                \\
+      &= 25 + 10\varepsilon                                   \\
+  \end{aligned}
+  \]
+<div>
+<p>The value $10$ there is the derivative of $x^2$ at $x=5$!
+We just used ordinary arithmetic, plus the rule that $\varepsilon^2 = 0$.</p>
+<p>Now we can write this in TypeScript:</p>
+<pre class="language-ts"><code class="language-ts"><span class="token keyword">function</span> <span class="token function">mul</span><span class="token punctuation">(</span>x<span class="token operator">:</span> Dual<span class="token punctuation">,</span> y<span class="token operator">:</span> Dual<span class="token punctuation">)</span><span class="token operator">:</span> Dual <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token punctuation">{</span>
+    val<span class="token operator">:</span> x<span class="token punctuation">.</span>val <span class="token operator">*</span> y<span class="token punctuation">.</span>val<span class="token punctuation">,</span>
+    der<span class="token operator">:</span> x<span class="token punctuation">.</span>der <span class="token operator">*</span> y<span class="token punctuation">.</span>val <span class="token operator">+</span> x<span class="token punctuation">.</span>val <span class="token operator">*</span> y<span class="token punctuation">.</span>der<span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>If we do the same exercise for other primitive operations like <code>add</code> and <code>sqrt</code>,
+we end up with:</p>
+<pre class="language-ts"><code class="language-ts"><span class="token keyword">function</span> <span class="token function">add</span><span class="token punctuation">(</span>a<span class="token operator">:</span> Dual<span class="token punctuation">,</span> b<span class="token operator">:</span> Dual<span class="token punctuation">)</span><span class="token operator">:</span> Dual <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token punctuation">{</span>
+    val<span class="token operator">:</span> a<span class="token punctuation">.</span>val <span class="token operator">+</span> b<span class="token punctuation">.</span>val<span class="token punctuation">,</span>
+    der<span class="token operator">:</span> a<span class="token punctuation">.</span>der <span class="token operator">+</span> b<span class="token punctuation">.</span>der<span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">function</span> <span class="token function">sqrt</span><span class="token punctuation">(</span>a<span class="token operator">:</span> Dual<span class="token punctuation">)</span><span class="token operator">:</span> Dual <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token punctuation">{</span>
+    val<span class="token operator">:</span> Math<span class="token punctuation">.</span><span class="token function">sqrt</span><span class="token punctuation">(</span>a<span class="token punctuation">.</span>val<span class="token punctuation">)</span><span class="token punctuation">,</span>
+    der<span class="token operator">:</span> a<span class="token punctuation">.</span>der <span class="token operator">/</span> <span class="token punctuation">(</span><span class="token number">2</span> <span class="token operator">*</span> Math<span class="token punctuation">.</span><span class="token function">sqrt</span><span class="token punctuation">(</span>a<span class="token punctuation">.</span>val<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>Now we can re-write our original <code>distance</code> function
+to work with dual numbers instead of ordinary <code>number</code>s:</p>
+<pre class="language-ts"><code class="language-ts"><span class="token keyword">function</span> <span class="token function">distance</span><span class="token punctuation">(</span>x<span class="token operator">:</span> Dual<span class="token punctuation">,</span> y<span class="token operator">:</span> Dual<span class="token punctuation">)</span><span class="token operator">:</span> Dual <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token function">sqrt</span><span class="token punctuation">(</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token function">mul</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">mul</span><span class="token punctuation">(</span>y<span class="token punctuation">,</span> y<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>Now <code>distance</code> will give us the ordinary output, plus the derivative!</p>
+<pre><code>&gt; distance(
+  { val: 3, der: 1 },  // adding \varepsilon to the first argument
+  { val: 4, der: 0 }
+)
+
+{ val: 5, der: 0.6 }</code></pre>
+<p>Do modern machine learning systems use this dual number trick?
+No, because efficiency.
+Above, you have to run the function once for every parameter you want to know about.
+For GPT4, you’d have to run it 1.76 trillion times to tweak each parameter just once!</p>
+<p>In the next post, we’ll see <em>reverse-mode differentation</em>,
+which lets us find the derivative for each parameter,
+while running the function just once.
+If you can’t wait, take a look at <a href="https://github.com/karpathy/micrograd">Andrej Karpathy’s micrograd</a>,
+a famous implementation of reverse-mode autodiff.</p>
+        </section>
+    </article>
+</main>
+</body>
+</html>

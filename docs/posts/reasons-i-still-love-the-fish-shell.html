@@ -153,21 +153,17 @@ myself, and I really appreciate that.</p>
 terminal and then you need to remember to press Ctrl+Q to unfreeze it). It&rsquo;s a
 feature that I&rsquo;ve never wanted and I&rsquo;m happy to not have it.</p>
 <p>Apparently you can disable <code>Ctrl+S</code> in other shells with <code>stty -ixon</code>.</p>
-<h3 id="10-fish-add-path">10. <code>fish_add_path</code></h3>
-<p>I have mixed feelings about this one, but in Fish you can use <code>fish_add_path /opt/whatever/bin</code> to add a path to your PATH, globally, permanently, across
-all open shell sessions. This can get a bit confusing if you forget where
-those PATH entries are configured but overall I think I appreciate it.</p>
-<h3 id="11-nice-syntax-highlighting">11. nice syntax highlighting</h3>
+<h3 id="10-nice-syntax-highlighting">10. nice syntax highlighting</h3>
 <p>By default commands that don&rsquo;t exist are highlighted in red, like this.</p>
 <img src="https://jvns.ca/images/fish-syntax-2024.png">
-<h3 id="12-easier-loops">12. easier loops</h3>
+<h3 id="11-easier-loops">11. easier loops</h3>
 <p>I find the loop syntax in fish a lot easier to type than the bash syntax. It looks like this:</p>
 <pre><code>for i in *.yaml
   echo $i
 end
 </code></pre>
 <p>Also it&rsquo;ll add indentation in your loops which is nice.</p>
-<h3 id="13-easier-multiline-editing">13. easier multiline editing</h3>
+<h3 id="12-easier-multiline-editing">12. easier multiline editing</h3>
 <p>Related to loops: you can edit multiline commands much more easily than in bash
 (just use the arrow keys to navigate the multiline command!). Also when you use
 the up arrow to get a multiline command from your history, it&rsquo;ll show you the
@@ -181,7 +177,7 @@ $ for i in *.png
 $ # press up arrow
 $ for i in *.png; do echo $i; done ink
 </code></pre>
-<h3 id="14-ctrl-left-arrow">14. Ctrl+left arrow</h3>
+<h3 id="13-ctrl-left-arrow">13. Ctrl+left arrow</h3>
 <p>This might just be me, but I really appreciate that fish has the <code>Ctrl+left arrow</code> / <code>Ctrl+right arrow</code> keyboard shortcut for moving between
 words when writing a command.</p>
 <p>I&rsquo;m honestly a bit confused about where this keyboard shortcut is coming from
@@ -209,6 +205,25 @@ a long time now.</li>
 <p>My biggest day-to-day to annoyance is probably that for whatever reason I&rsquo;m
 still not  used to fish&rsquo;s syntax for setting environment variables, I get confused
 about <code>set</code> vs <code>set -x</code>.</p>
+<h3 id="another-downside-fish-add-path">another downside: <code>fish_add_path</code></h3>
+<p>fish has a function called <code>fish_add_path</code> that you can run to add a directory
+to your <code>PATH</code> like this:</p>
+<pre><code>fish_add_path /some/directory
+</code></pre>
+<p>I love the idea of it and I used to use it all the time, but I&rsquo;ve stopped using
+it for two reasons:</p>
+<ol>
+<li>Sometimes <code>fish_add_path</code> will update the <code>PATH</code> for every session in the
+future (with a &ldquo;universal variable&rdquo;) and sometimes it will update the <code>PATH</code>
+just for the current session. It&rsquo;s hard for me to tell which one it will
+do: in theory the docs explain this but I could not understand them.</li>
+<li>If you ever need to <em>remove</em> the directory from your <code>PATH</code> a few weeks or
+months later because maybe you made a mistake, that&rsquo;s also kind of hard to do
+(there are <a href="https://github.com/fish-shell/fish-shell/issues/8604">instructions in this comments of this github issue though</a>).</li>
+</ol>
+<p>Instead I just update my PATH like this, similarly to how I&rsquo;d do it in bash:</p>
+<pre><code>set PATH $PATH /some/directory/bin
+</code></pre>
 <h3 id="on-posix-compatibility">on POSIX compatibility</h3>
 <p>When I started using fish, you couldn&rsquo;t do things like <code>cmd1 &amp;&amp; cmd2</code> &ndash; it
 would complain &ldquo;no, you need to run <code>cmd1; and cmd2</code>&rdquo; instead.</p>
