@@ -136,7 +136,7 @@ steps are:</p>
 <ol>
 <li>Set up an import map in your HTML</li>
 <li>Put import statements like <code>import { configureOAuth } from '@atcute/oauth-browser-client';</code> in your JS code</li>
-<li>Include your JS code in your HTML liek this: <code>&lt;script type=&quot;module&quot; src=&quot;YOURSCRIPT.js&quot;&gt;&lt;/script&gt;</code></li>
+<li>Include your JS code in your HTML like this: <code>&lt;script type=&quot;module&quot; src=&quot;YOURSCRIPT.js&quot;&gt;&lt;/script&gt;</code></li>
 </ol>
 <p>The reason we need an import map instead of just doing something like <code>import { BrowserOAuthClient } from &quot;./oauth-client-browser.js&quot;</code> is that internally the module has more import statements like <code>import {something} from @atcute/client</code>, and we need to tell the browser where to get the code for <code>@atcute/client</code> and all of its other dependencies.</p>
 <p>Here&rsquo;s what the importmap I used looks like for <code>@atcute/oauth-browser-client</code>:</p>
@@ -239,8 +239,8 @@ build system &ndash; it&rsquo;s just that esm.sh is running the build instead of
 main concerns with this approach are:</p>
 <ul>
 <li>I don&rsquo;t really trust CDNs to keep working forever &ndash; usually I like to copy dependencies into my repository so that they don&rsquo;t go away for some reason in the future.</li>
-<li>I&rsquo;ve heard of some issues with CDNs having security compromises which scares me. Also I don&rsquo;t</li>
-<li>I don&rsquo;t really understand what esm.sh is doing and</li>
+<li>I&rsquo;ve heard of some issues with CDNs having security compromises which scares me.</li>
+<li>I don&rsquo;t really understand what esm.sh is doing.</li>
 </ul>
 <h3 id="esbuild-can-also-convert-commonjs-modules-into-es-modules">esbuild can also convert CommonJS modules into ES modules</h3>
 <p>I also learned that you can also use <code>esbuild</code> to convert a CommonJS module
