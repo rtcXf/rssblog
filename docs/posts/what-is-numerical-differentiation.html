@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What is numerical differentiation? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://jameshfisher.com/2024/04/01/what-is-numerical-differentiation/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>What is numerical differentiation?</h1>
+        <section>
+            
+            <p>In school, we learned how to differentiate some functions.
+Maybe you remember that the derivative of <code>x^2</code> is <code>2x</code>.
+But could you differentiate an <em>arbitrary JavaScript function</em>?
+And what would that even mean?</p>
+<p>Let’s start small:</p>
+<pre class="language-js"><code class="language-js"><span class="token keyword">function</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token parameter">x</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token number">7</span> <span class="token operator">*</span> x<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>How might you differentiate <code>f</code>?
+Let’s start with the stupidest thing that works!:</p>
+<pre><code>&gt; f(3)
+21
+&gt; f(3.01)
+21.07</code></pre>
+<p>What happened here?
+We increased the input <code>x</code> by <code>0.01</code>,
+and as a result, the output increased by <code>0.07</code>.
+The output increase was 7 times more than our change to the input.
+In math-speak, we say that the <em>derivative</em> of <code>f(3)</code> with respect to <code>x</code> is 7.</p>
+<p>We’ve just discovered the simplest, stupidest form of differentiation:</p>
+<pre class="language-js"><code class="language-js"><span class="token keyword">function</span> <span class="token function">derivative</span><span class="token punctuation">(</span><span class="token parameter">f</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token parameter">x</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+    <span class="token keyword">const</span> changeToInput <span class="token operator">=</span> <span class="token number">0.00000001</span><span class="token punctuation">;</span>
+    <span class="token keyword">const</span> changeToOutput <span class="token operator">=</span> <span class="token function">f</span><span class="token punctuation">(</span>x <span class="token operator">+</span> changeToInput<span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token function">f</span><span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">return</span> changeToOutput <span class="token operator">/</span> changeToInput<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>With our magic <code>derivative</code> function,
+we can differentiate <code>x^2</code> to get a function equivalent to <code>2x</code>:</p>
+<pre><code>&gt; function square(x) { return x * x; }
+&gt; const derivative_of_square = derivative(square);
+&gt; derivative_of_square(-13)
+-26</code></pre>
+<p>But JS functions can have multiple parameters.
+Here’s one that multiplies its arguments:</p>
+<pre class="language-js"><code class="language-js"><span class="token keyword">function</span> <span class="token function">mul</span><span class="token punctuation">(</span><span class="token parameter">a<span class="token punctuation">,</span> b</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> a <span class="token operator">*</span> b<span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>What would it even mean to find the derivative of <code>mul(2, 3)</code>?
+Which argument are we tweaking, <code>a</code> or <code>b</code>?
+Let’s try it with both:</p>
+<pre><code>&gt; mul(2, 3)
+6
+&gt; mul(2.01, 3)
+6.03
+&gt; mul(2, 3.01)
+6.02</code></pre>
+<p>Above, we see that the derivative for <code>a</code> is <code>0.03 / 0.01 = 3</code>,
+and the derivative for <code>b</code> is <code>0.02 / 0.01 = 2</code>.
+We can package this up nicely as the array <code>[3, 2]</code>.
+In math-speak, the values in this array are called <em>partial derivatives</em>,
+and the entire array is called the <em>Jacobian</em> of the <code>sum</code> function.</p>
+<p>We can modify our <code>derivative</code> function to
+find the partial derivative for each parameter,
+and return the array:</p>
+<pre class="language-js"><code class="language-js"><span class="token keyword">function</span> <span class="token function">derivative</span><span class="token punctuation">(</span><span class="token parameter">f</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token parameter"><span class="token operator">...</span>args</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">{</span>
+    <span class="token keyword">const</span> changeToInput <span class="token operator">=</span> <span class="token number">0.00000001</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">const</span> derivatives <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">let</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> args<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">const</span> changedArgs <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token operator">...</span>args<span class="token punctuation">]</span><span class="token punctuation">;</span>
+      changedArgs<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">+=</span> changeToInput<span class="token punctuation">;</span>
+      <span class="token keyword">const</span> changeToOutput <span class="token operator">=</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token operator">...</span>changedArgs<span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token function">f</span><span class="token punctuation">(</span><span class="token operator">...</span>args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      derivatives<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>changeToOutput <span class="token operator">/</span> changeToInput<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">return</span> derivatives<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code></pre>
+<p>Using this, we can find the derivative of <code>mul</code> at the arguments <code>(2, 3)</code>:</p>
+<pre><code>&gt; derivative(mul)(2, 3)
+[ 3, 2 ]</code></pre>
+<p>This is the simplest numerical differentiation method.
+Its biggest problem is efficiency.
+If the function <code>f</code> has a million parameters,
+then evaluating <code>derivative(f)(...)</code> calls the function <code>f</code> two million times!
+In the next post, we’ll see <em>automatic differentiation</em>,
+a technique that only calls <code>f</code> once.</p>
+        </section>
+    </article>
+</main>
+</body>
+</html>
