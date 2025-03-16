@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>18 Months with GPT-4: Now Can I Fire my Developers? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/computer-science/18-months-with-gpt-4/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>18 Months with GPT-4: Now Can I Fire my Developers?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>As the founder of a company where my largest static expense is engineering salaries, I’m over here just chomping at the bit, eagerly awaiting the moment I can fire everyone and line my pockets with all those juicy savings. See, about one year ago, I wrote an article titled, <a href="https://blog.boot.dev/computer-science/ai-taking-programming-jobs">“9 Months with GPT-4: Can I Fire my Developers Yet?”</a> and I thought I’d give you a little update on Allan’s employment status.</p>
+<p>…he’s still here.</p>
+<p><img src="https://media.tenor.com/kSmVJHqqPtgAAAAM/ron-swanson-no.gif" alt="ron swanson glare"/></p>
+<p>Actually, we’ve doubled the size of our dev team. So, what’s the deal? Do I hate money? Is it because it’s actually the new gpt4-o-3-preview-lightning that’s the one that will make us all obsolete? Or am I maybe just a really bad prompt engineer?</p>
+<p>Well, I can assure you <a href="https://www.boot.dev/pricing">I don’t hate money</a>. And maybe the next model will be a game changer, but I’m not holding my breath. And honestly, I always considered myself a good Googler, and I think I’m a pretty good prompter.</p>
+<p>So I don’t know, but let’s dig into some of my experiences over the last year.</p>
+<h2 id="whats-changed-the-most">
+  <span> What’s changed the most?</span> <a href="#whats-changed-the-most">🔗</a></h2>
+<p>First off, the quality of code-related-responses from the “top” models like gpt-4o, and Anthropic’s Claude Sonnet 3.5 are… <em>pretty amazing</em>. I mean, we’re all kinda used to it now, but had you shown my workflow today to my developer self in 2019 I would have been floored.</p>
+<p><em>LLMs are great, and our whole team uses them daily</em>.</p>
+<p>As a backend developer, I used to Google stuff… 50 times a day? Maybe more. It was a lot. Anytime I had even the smallest question, I’d hit Google. I would find docs, ask stack overflow, reference a blog post, research best practices, look for a vendor or library, the list goes on.</p>
+<p><em>But</em>, today <strong>about 50% of those queries</strong> I now send to an LLM instead of Google. That’s a crazy number. But, it saves me time. Finding what I wanted via Google took maybe 2-3x times longer, because I now have an LLM chat directly in my editor at all times (shoutout <a href="https://zed.dev/">Zed</a> btw).</p>
+<p>If I’m skeptical of the response, its not working the way I expect, or I need a source, sure, I still use Google, but in many cases I actually trust the LLM <em>more</em> than an outdated post on Reddit that’s still somehow dominating the SERP. For example, the other day I was trying to use the Google Analytics API, and the feature I needed (I swear to God I searched for hours) wasn’t documented anywhere. But, because the LLM had slurped up enough weird web forum data, it knew what I should try. I tried it. It worked.</p>
+<p>So at least on that front, Google is losing some ground to LLMs, but I’m still not any closer to firing Allan.</p>
+<p>So, what’s changed the most for me in the last 9 months? <strong>More of my questions are sent to the AI</strong>.</p>
+<h2 id="reformatting">
+  <span> Reformatting</span> <a href="#reformatting">🔗</a></h2>
+<p>Another one of my favorite uses for an LLM is to give it a dump of nasty data and to just ask it to put it in a nicer format. “Hey, my coworker sent me this JSON, can you put it into a Go struct”? Or, “I have this CSV, can you make it into a markdown table”?</p>
+<p>I probably shouldn’t trust it as much as I do, but I’ve yet to <em>notice</em> an issue, and it does save me a lot of time.</p>
+<h2 id="what-about-code-generation">
+  <span> What about code generation?</span> <a href="#what-about-code-generation">🔗</a></h2>
+<p>Code generation honestly is less useful to me than just having a chat open where I can ask questions. That said, I do make use of inline code generation tools. My take? <em>It mostly just saves me typing time</em>. And I’m all for that, because I’m not the fastest typist in the world… I’m ashamed to say that after using a computer my entire life I only clock in around 80 wpm. Which actually isn’t <em>too</em> bad if you consider that I retaught myself to type the correct way just one year ago.</p>
+<p>I’ve also found that I move a lot faster, particularly when writing Go. Go is a simple but fairly verbose language. It doesn’t have much built-in syntactic sugar. My single most generated snippet of code?</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>fmt</span><span>.</span><span>Errorf</span><span>(</span><span>&#34;can&#39;t do the thing: %w&#34;</span><span>,</span> <span>err</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>I use inline code gen for other things as well, but honestly, I have been completely underwhelmed with its ability to <em>solve high level problems</em>. I’ve been impressed with its ability to predict the next couple of lines I was going to type, but all the problem solving typically happens as I’m <em>structuring</em> my code and dancing around the codebase looking for clues, not as I’m <em>writing</em> the solution.</p>
+<p>For example, all before the auto complete has a chance to help, I’m busy:</p>
+<ul>
+<li>Reading the ticket</li>
+<li>Finding the disparate parts of the system it applies to</li>
+<li>Thinking through how potential solutions will affect existing users, existing infra, and the features I know we have planned for later</li>
+<li>Writing the shells of the functions I need to implement</li>
+</ul>
+<p><em>Most</em> of the work of a developer has more to do with understanding the problem, the system, and how the users will interact with it than it does with the actual writing of the code. So, yes, I generate code, it saves me some time (particularly typing time) but I can’t just give my barista a ChatGPT subscription and expect them to perform well on our dev team.</p>
+<p>In my last article I said:</p>
+<blockquote>
+<p>ChatGPT and Copilot make us about 20-30% more effective with our (programming) work</p>
+</blockquote>
+<p>That number hasn’t really changed over the last year for me. Maybe it’s up a percent or two, but its not a measureable difference.</p>
+<h2 id="anything-else-llms-have-been-good-for">
+  <span> Anything else LLMs have been good for?</span> <a href="#anything-else-llms-have-been-good-for">🔗</a></h2>
+<p>If we set aside the idea of automating traditional programming (product development) work, <strong>yes</strong>, there are a few things we’ve had massive (like 4x) efficiency improvements in thanks to LLMs.</p>
+<h3 id="1-generating-summaries">
+  <span> 1. Generating summaries</span> <a href="#1-generating-summaries">🔗</a></h3>
+<p>We write a lot of courses, and we write them by hand. AI slop is mostly just that, slop. It doesn’t have personality, supplies no real world experiences, and has a terrible sense of humor. However, when we feed the <em>good, detailed, personable</em> thing that we wrote by hand into the LLM, we can generate great cheatsheets of the material. That’s what made it possible for us to quickly launch Boot.dev’s new spellbooks feature.</p>
+<h3 id="2-customer-support">
+  <span> 2. Customer support</span> <a href="#2-customer-support">🔗</a></h3>
+<p>I do think LLMs pose a real threat to customer support roles. If your role can mostly be reduced to “read a thing someone sent in, categorize it into 1 of 6 common issues, and do a pre-defined thing” then you’re probably going to be replaced by an LLM fairly soon.</p>
+<p>We’ve built an internal bot that triages customer reported issues. It’s not perfect, but we’re always updating its prompt and examples, and we would spend at least 2x more time on customer issues if we didn’t have it. It’s also worth noting however, that the LLM isn’t the <em>only</em> part of that bot. A lot of the logic in the bot is just standard programming stuff, and would be <em>worse</em> if we used an LLM. Things like connecting the customer’s account to the issue, checking for duplicates, and chaining issues together are all done by “normal” code.</p>
+<h3 id="3-translating-programming-languages">
+  <span> 3. Translating programming languages</span> <a href="#3-translating-programming-languages">🔗</a></h3>
+<p>This one’s pretty unique to us, but we spend months writing these in-depth, interactive coding courses, and then we want students to be able to take them in other programming languages. Same concept or project, new language. At the moment, we’re translating a lot of our Go content into TypeScript. We’ve had a lot of success by feeding an LLM some well written Go code, and getting back some TypeScript that does mostly the same thing.</p>
+<p>It’s far from perfect. Maybe 50% of the output code is useable, and the rest needs to be refactored or rewritten, but I actually think there’s some promise here. We don’t do many leetcode-style practice challenges at the moment (like challenges not tied to a specific concept) but we have some ideas for how we could use LLMs to save us a ton of time creating pretty incredible practice and review problems… I’ll have to update you on that next year.</p>
+<h2 id="wait-what-about-new-reasoning-models">
+  <span> Wait, what about new “reasoning” models?</span> <a href="#wait-what-about-new-reasoning-models">🔗</a></h2>
+<p>OpenAI’s o1 and o3 models are interesting - but they’re currently <em>way</em> slower and <em>way</em> more expensive. They outperform on a lot of tasks by taking advantage of “thinking time”. OpenAI calls it “private chain of thought”. I’ve had more success with o1 than with gpt-4o when it comes to more complex single-shot prompts (e.g. do this, then do that, then do that, then give me the result). The problem is, I just don’t <em>have</em> many problems that need extra boost of “thinking time”. I usually need a simple piece of information, a bit of code reformatted, or a line of code generated.</p>
+<p>I think reasoning models like o1 and o3 will have a big impact on specific problems, but they’ve had less impact on my day to day as a developer than gpt-4o and Claude Sonnet 3.5 due to the speed and cost.</p>
+<p>That said, the elephant in the room is Deepseek’s brand new model R1 reasoning model. It’s open source, incredibly cheap by comparison (<a href="https://api-docs.deepseek.com/quick_start/pricing">$0.55/M input tokens and $2.19/M output tokens</a> vs o1’s <a href="https://beta.openai.com/pricing/">$15.00/M input tokens and $60.00/M output tokens</a>), and it’s faster (At least as far as I can tell). The interesting thing about AI is how much its potential use cases change as it becomes cheaper and faster - I still think that even with nearly free and instant responses, the quality of the responses have to hit a much higher <em>quality</em> mark to automate a significant portion of a developer’s work flow. There might be some tasks that are low hanging fruit, however. For example, I think it is <em>very</em> likely that we start getting a lot of useful CI/CD tools that use LLMs. Fix a small bug given a ticket, point out a better way to write a new function, etc. But implementing new features that span many files in a large codebase seems unlikely without <strong>more massive improvements</strong> in the <em>quality</em> (not just speed and cost) of the responses.</p>
+<h2 id="predictions-for-the-next-year">
+  <span> Predictions for the next year</span> <a href="#predictions-for-the-next-year">🔗</a></h2>
+<ol>
+<li>Developers will continue to use copilot-like tools more and more</li>
+<li>More Google search queries will be replaced by LLMs</li>
+<li>More developers will write code using LLMs to power internal automations for their companies</li>
+<li>More developers will write code using LLMs to power user facing product features</li>
+<li>Developers will continue to develop</li>
+</ol>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>
