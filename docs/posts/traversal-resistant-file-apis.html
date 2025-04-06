@@ -119,7 +119,7 @@ that provides path traversal-resistant functions for opening a potentially-untru
 filename within a specific directory.</p>
 <h2 id="introducing-osroot">Introducing <code>os.Root</code></h2>
 <p>In Go 1.24, we are introducing new APIs in the <code>os</code> package to safely open
-a file in a location in a traversal-resistent fashion.</p>
+a file in a location in a traversal-resistant fashion.</p>
 <p>The new <a href="/pkg/os#Root"><code>os.Root</code></a> type represents a directory somewhere
 in the local filesystem. Open a root with the <a href="/pkg/os#OpenRoot"><code>os.OpenRoot</code></a>
 function:</p>
@@ -174,10 +174,10 @@ The open handle prevents that directory from being renamed or deleted until the 
 <p><code>Root</code> prevents access to reserved Windows device names such as <code>NUL</code> and <code>COM1</code>.</p>
 <h3 id="wasi">WASI</h3>
 <p>On WASI, the <code>os</code> package uses the WASI preview 1 filesystem API,
-which are intended to provide traversal-resistent filesystem access.
+which are intended to provide traversal-resistant filesystem access.
 Not all WASI implementations fully support filesystem sandboxing,
 however, and <code>Root</code>&rsquo;s defense against traversal is limited to that provided
-by the WASI impementation.</p>
+by the WASI implementation.</p>
 <h3 id="goosjs">GOOS=js</h3>
 <p>When GOOS=js, the <code>os</code> package uses the Node.js file system API.
 This API does not include the openat family of functions,
@@ -231,6 +231,8 @@ operations. A list of additional functions in progress is in
     
     <div class="Article prevnext">
     
+    
+      
     
       
     
