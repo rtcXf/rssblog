@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Use Mutexes in Go | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/golang-mutex/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Use Mutexes in Go</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Golang is King when it comes to concurrency. No other language has so many tools right out of the box, and one of those tools is the standard library’s <a href="https://pkg.go.dev/sync#Mutex">sync.Mutex{}</a>. Mutexes let us safely control access to data across multiple goroutines.</p>
+<h2 id="what-problem-do-mutexes-solve">
+  <span> What problem do mutexes solve?</span> <a href="#what-problem-do-mutexes-solve">🔗</a></h2>
+<p>We don’t want multiple threads accessing the same memory at the same time. In concurrent programming, we have many different threads (or in Go, <a href="https://blog.boot.dev/rust/concurrency-in-rust-can-it-stack-up-against-gos-goroutines/">goroutines</a>) that all potentially have access to the same variables in memory.</p>
+<p>One case that mutexes help us avoid is the <strong>concurrent read/write problem</strong>. This occurs when one thread is writing to a variable while another variable is concurrently reading from that same variable. The program will panic because the reader could be reading bad data that is being mutated in place.</p>
+<h2 id="what-is-a-mutex">
+  <span> What is a mutex?</span> <a href="#what-is-a-mutex">🔗</a></h2>
+<p>Mutex is short for <em>mutual exclusion</em>. Mutexes keep track of which thread has access to a variable at any given time.</p>
+<p><img src="https://blog.boot.dev/img/800/mutex.png" alt="mutex diagram"/></p>
+<p>Let’s see some examples! Consider the following program:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>m</span> <span>:=</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>{}</span>
+</span></span><span><span>	<span>go</span> <span>writeLoop</span><span>(</span><span>m</span><span>)</span>
+</span></span><span><span>	<span>go</span> <span>readLoop</span><span>(</span><span>m</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// stop program from exiting, must be killed
+</span></span></span><span><span><span></span>	<span>block</span> <span>:=</span> <span>make</span><span>(</span><span>chan</span> <span>struct</span><span>{})</span>
+</span></span><span><span>	<span>&lt;-</span><span>block</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>writeLoop</span><span>(</span><span>m</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>for</span> <span>{</span>
+</span></span><span><span>		<span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>100</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>			<span>m</span><span>[</span><span>i</span><span>]</span> <span>=</span> <span>i</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>readLoop</span><span>(</span><span>m</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>for</span> <span>{</span>
+</span></span><span><span>		<span>for</span> <span>k</span><span>,</span> <span>v</span> <span>:=</span> <span>range</span> <span>m</span> <span>{</span>
+</span></span><span><span>			<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>k</span><span>,</span> <span>&#34;-&#34;</span><span>,</span> <span>v</span><span>)</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The program creates a map, then starts two goroutines which each have access to that same map. One goroutine continuously mutates the values stored in the map, while the other prints the values it finds in the map.</p>
+<p>If we run the program, we get the following output:</p>
+<pre tabindex="0"><code>fatal error: concurrent map iteration and map write
+</code></pre><p>In Go, it isn’t safe to read from and write to the same map at the same time.</p>
+<h2 id="mutexes-to-the-rescue">
+  <span> Mutexes to the rescue</span> <a href="#mutexes-to-the-rescue">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span>	<span>&#34;sync&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>m</span> <span>:=</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>{}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>mux</span> <span>:=</span> <span>&amp;</span><span>sync</span><span>.</span><span>Mutex</span><span>{}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>go</span> <span>writeLoop</span><span>(</span><span>m</span><span>,</span> <span>mux</span><span>)</span>
+</span></span><span><span>	<span>go</span> <span>readLoop</span><span>(</span><span>m</span><span>,</span> <span>mux</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// stop program from exiting, must be killed
+</span></span></span><span><span><span></span>	<span>block</span> <span>:=</span> <span>make</span><span>(</span><span>chan</span> <span>struct</span><span>{})</span>
+</span></span><span><span>	<span>&lt;-</span><span>block</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>writeLoop</span><span>(</span><span>m</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>,</span> <span>mux</span> <span>*</span><span>sync</span><span>.</span><span>Mutex</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>for</span> <span>{</span>
+</span></span><span><span>		<span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>100</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>			<span>mux</span><span>.</span><span>Lock</span><span>()</span>
+</span></span><span><span>			<span>m</span><span>[</span><span>i</span><span>]</span> <span>=</span> <span>i</span>
+</span></span><span><span>			<span>mux</span><span>.</span><span>Unlock</span><span>()</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>readLoop</span><span>(</span><span>m</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>,</span> <span>mux</span> <span>*</span><span>sync</span><span>.</span><span>Mutex</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>for</span> <span>{</span>
+</span></span><span><span>		<span>mux</span><span>.</span><span>Lock</span><span>()</span>
+</span></span><span><span>		<span>for</span> <span>k</span><span>,</span> <span>v</span> <span>:=</span> <span>range</span> <span>m</span> <span>{</span>
+</span></span><span><span>			<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>k</span><span>,</span> <span>&#34;-&#34;</span><span>,</span> <span>v</span><span>)</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>		<span>mux</span><span>.</span><span>Unlock</span><span>()</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>In the code above we create a <code>sync.Mutex{}</code> and <a href="https://blog.boot.dev/clean-code/naming-variables/">name it mux</a>. In the write loop, we <code>Lock()</code> the mutex before writing, and <code>Unlock()</code> it when we’re done. This ensures that no other threads can <code>Lock()</code> the mutex while we have it locked - those threads will block and wait until we <code>Unlock()</code> it.</p>
+<p>In the reading loop we <code>Lock()</code> before iterating over the map, and likewise <code>Unlock()</code> when we’re done.</p>
+<h2 id="what-is-a-readwrite-mutex-or-rwmutex">
+  <span> What is a read/write mutex, or RWMutex?</span> <a href="#what-is-a-readwrite-mutex-or-rwmutex">🔗</a></h2>
+<p>Maps are safe for concurrent read access, just not concurrent read/write or write/write access. A read/write mutex allows all readers to access the map at the same time, but a writer will lock out everyone else.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span>	<span>&#34;sync&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>m</span> <span>:=</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>{}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>mux</span> <span>:=</span> <span>&amp;</span><span>sync</span><span>.</span><span>RWMutex</span><span>{}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>go</span> <span>writeLoop</span><span>(</span><span>m</span><span>,</span> <span>mux</span><span>)</span>
+</span></span><span><span>	<span>go</span> <span>readLoop</span><span>(</span><span>m</span><span>,</span> <span>mux</span><span>)</span>
+</span></span><span><span>	<span>go</span> <span>readLoop</span><span>(</span><span>m</span><span>,</span> <span>mux</span><span>)</span>
+</span></span><span><span>	<span>go</span> <span>readLoop</span><span>(</span><span>m</span><span>,</span> <span>mux</span><span>)</span>
+</span></span><span><span>	<span>go</span> <span>readLoop</span><span>(</span><span>m</span><span>,</span> <span>mux</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// stop program from exiting, must be killed
+</span></span></span><span><span><span></span>	<span>block</span> <span>:=</span> <span>make</span><span>(</span><span>chan</span> <span>struct</span><span>{})</span>
+</span></span><span><span>	<span>&lt;-</span><span>block</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>writeLoop</span><span>(</span><span>m</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>,</span> <span>mux</span> <span>*</span><span>sync</span><span>.</span><span>RWMutex</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>for</span> <span>{</span>
+</span></span><span><span>		<span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>100</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>			<span>mux</span><span>.</span><span>Lock</span><span>()</span>
+</span></span><span><span>			<span>m</span><span>[</span><span>i</span><span>]</span> <span>=</span> <span>i</span>
+</span></span><span><span>			<span>mux</span><span>.</span><span>Unlock</span><span>()</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>readLoop</span><span>(</span><span>m</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span><span>,</span> <span>mux</span> <span>*</span><span>sync</span><span>.</span><span>RWMutex</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>for</span> <span>{</span>
+</span></span><span><span>		<span>mux</span><span>.</span><span>RLock</span><span>()</span>
+</span></span><span><span>		<span>for</span> <span>k</span><span>,</span> <span>v</span> <span>:=</span> <span>range</span> <span>m</span> <span>{</span>
+</span></span><span><span>			<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>k</span><span>,</span> <span>&#34;-&#34;</span><span>,</span> <span>v</span><span>)</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>		<span>mux</span><span>.</span><span>RUnlock</span><span>()</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>By using a <a href="https://golang.org/pkg/sync/#RWMutex">sync.RWMutex</a>, our program becomes more efficient. We can have as many readers as we want to access our data, but at the same time can assure that writers have exclusive access.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Understanding Stacks: Python Implementation of a Core Data Structure | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/python/stack-data-structure-python/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Understanding Stacks: Python Implementation of a Core Data Structure</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>A <strong>stack</strong> is an abstract data type that serves as a collection of elements. The name “stack” originates from the analogy of items physically stacked on top of each other. Just like a stack of plates at a buffet, plates can be added, removed, and viewed from the top. However, plates further down are not immediately accessible.</p>
+<p><img src="https://blog.boot.dev/img/800/stackclass.png.webp" alt="Stack Image"/></p>
+<p>A stack operates on a <code>LIFO</code> (last in, first out) principle. This means that the most recently added item will be the first to be removed (as opposed to a <a href="https://blog.boot.dev/python/queue-data-structure-python/">queue</a>, which is <code>FIFO</code>).</p>
+
+<p>
+  <iframe src="https://www.youtube.com/embed/SD45xbKReT4" allowfullscreen="" title="YouTube Video"></iframe>
+</p>
+
+
+
+<h3 id="basic-stack-operations">
+  <span> Basic Stack Operations:</span> <a href="#basic-stack-operations">🔗</a></h3>
+<ul>
+<li><strong>Push</strong>: <code>stack.push(item)</code> - Adds a new item on top of the stack</li>
+<li><strong>Pop</strong>: <code>stack.pop()</code> - Removes the top item from the stack</li>
+<li><strong>Peek</strong>: <code>stack.peek()</code> - Returns the top item without removing it</li>
+<li><strong>Size</strong>: <code>stack.size()</code> - Returns the number of items in the stack</li>
+</ul>
+<h3 id="when-might-you-use-a-stack">
+  <span> When might you use a stack?</span> <a href="#when-might-you-use-a-stack">🔗</a></h3>
+<p>Let’s take the and example from the world of game development.</p>
+<p>When designing a weapon system in a video game, especially for weapons with magazines like a repeater crossbow, a stack can be an ideal choice for the underlying data structure. A magazine that holds arrows, for instance, would benefit from the LIFO principle: the last arrow loaded is the first one fired.</p>
+<p>Here’s the code:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>class</span> <span>Magazine</span><span>:</span>
+</span></span><span><span>    <span>def</span> <span>__init__</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>arrows</span> <span>=</span> <span>[]</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>push</span><span>(</span><span>self</span><span>,</span> <span>arrow</span><span>):</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>arrows</span><span>.</span><span>append</span><span>(</span><span>arrow</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>pop</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>if</span> <span>not</span> <span>self</span><span>.</span><span>arrows</span><span>:</span>
+</span></span><span><span>            <span>return</span> <span>None</span>
+</span></span><span><span>        <span>return</span> <span>self</span><span>.</span><span>arrows</span><span>.</span><span>pop</span><span>()</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>peek</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>if</span> <span>not</span> <span>self</span><span>.</span><span>arrows</span><span>:</span>
+</span></span><span><span>            <span>return</span> <span>None</span>
+</span></span><span><span>        <span>return</span> <span>self</span><span>.</span><span>arrows</span><span>[</span><span>-</span><span>1</span><span>]</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>size</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>return</span> <span>len</span><span>(</span><span>self</span><span>.</span><span>arrows</span><span>)</span>
+</span></span></code></pre></div><p>You could then use the <code>Magazine</code> class:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>magazine</span> <span>=</span> <span>Magazine</span><span>()</span>
+</span></span><span><span><span>magazine</span><span>.</span><span>push</span><span>(</span><span>&#34;Arrow 1&#34;</span><span>)</span>
+</span></span><span><span><span>magazine</span><span>.</span><span>push</span><span>(</span><span>&#34;Arrow 2&#34;</span><span>)</span>
+</span></span><span><span><span>magazine</span><span>.</span><span>push</span><span>(</span><span>&#34;Arrow 3&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>print</span><span>(</span><span>magazine</span><span>.</span><span>peek</span><span>())</span> <span># Arrow 3</span>
+</span></span><span><span>
+</span></span><span><span><span>print</span><span>(</span><span>magazine</span><span>.</span><span>pop</span><span>())</span> <span># Arrow 3</span>
+</span></span><span><span><span>print</span><span>(</span><span>magazine</span><span>.</span><span>pop</span><span>())</span> <span># Arrow 2</span>
+</span></span><span><span><span>print</span><span>(</span><span>magazine</span><span>.</span><span>pop</span><span>())</span> <span># Arrow 1</span>
+</span></span></code></pre></div><h2 id="are-stacks-fast">
+  <span> Are stacks fast?</span> <a href="#are-stacks-fast">🔗</a></h2>
+<p>Stacks are fast. All operations are <code>O(1)</code>, which means they take the same amount of time regardless of the size of the stack. Stack of 10 items? Stack of 10,000 items? It doesn’t matter, pushing and popping will be <em>blazingly</em> fast.</p>
+<p>Think about it: you can only add or remove from the top of the stack. You <em>never</em> have to iterate through the entire stack to find an item.</p>
+<p>Now, to be fair, if for some reason you know that an item exists in a Stack, you can <code>pop()</code> until you find it. This would be <code>O(n)</code>, but if that’s a use case for you, you should probably be using a different data structure.</p>
+<h2 id="the-origin-of-stack-overflow">
+  <span> The Origin of “Stack Overflow”</span> <a href="#the-origin-of-stack-overflow">🔗</a></h2>
+<p>While many developers are familiar with the website <a href="https://stackoverflow.com/">Stack Overflow</a>, not everyone knows the term’s origin. A programming language, such as Python, uses a stack data structure to manage function calls and their scope.</p>
+<p>Consider this simple program:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>function_one</span><span>():</span>
+</span></span><span><span>    <span>function_two</span><span>()</span>
+</span></span><span><span>    <span>function_two</span><span>()</span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>function_two</span><span>():</span>
+</span></span><span><span>    <span>function_three</span><span>()</span>
+</span></span><span><span>    <span>function_three</span><span>()</span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>function_three</span><span>():</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;function three&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>function_one</span><span>()</span>
+</span></span></code></pre></div><p>Here, each function call is represented by a <a href="https://en.wikipedia.org/wiki/Call_stack">call frame</a> in memory. When a function is invoked, a new frame is pushed onto the runtime stack. When the function completes its execution, its frame is popped off the stack.</p>
+<h3 id="the-dreaded-stack-overflow">
+  <span> The Dreaded Stack Overflow</span> <a href="#the-dreaded-stack-overflow">🔗</a></h3>
+<p>A “stack overflow” refers to an error that occurs when the stack exceeds its capacity. The limit of this capacity varies based on numerous factors like the programming language and available memory. If a program surpasses this limit, the stack overflows, which often results in the program crashing. Python, however, takes measures to prevent the interpreter stack from growing excessively large, thereby averting a stack overflow. Instead, a runtime exception is raised.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CI/CD Isn&#39;t Just About Efficiency | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/devops/cicd-is-devx/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>CI/CD Isn&#39;t Just About Efficiency</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>DevOps principles, and CI/CD specifically, are generally presented as a more efficient way to run a software development organization. While I hold the belief that CI/CD <em>is</em> more efficient and effective than manually testing and deploying code, I’d like to talk about something we don’t bring up quite as often.</p>
+<p>Put simply, CI/CD <em>makes us happy</em>.</p>
+<h2 id="developer-happiness-matters">
+  <span> Developer happiness matters</span> <a href="#developer-happiness-matters">🔗</a></h2>
+<p>There are great resources out there that demonstrate the practical benefits of CI/CD. Fewer bugs, faster features, tighter release schedules, etc. If you’re interested in that data, I’d recommend the book “Accelerate”, but let’s forget about all of that for a moment.</p>
+<p>Tech companies spend <em>a lot</em> of money to keep employees happy. Provided the budget exists, they set up ping-pong tables, buy soda machines, host meetups and hire baristas. All those perks are great, but if I’m ssh’ing onto a server multiple times each day to pull down new code and manually restart the back-end, I’m not a happy camper.</p>
+<p><strong>Good engineers want to automate the boring stuff.</strong></p>
+<h2 id="people-dont-quit-bad-jobs-they-quit-bad-developer-experiences">
+  <span> People don’t quit bad jobs, they quit bad developer experiences</span> <a href="#people-dont-quit-bad-jobs-they-quit-bad-developer-experiences">🔗</a></h2>
+<p>There’s a saying:</p>
+<blockquote>
+<p>People don’t quit bad jobs, they quit bad bosses</p>
+</blockquote>
+<p>There’s truth there of course, but I for one will quit a job, even if I <em>do</em> have a good boss if I <em>hate</em> the developer experience. Now, I’m also the kind of person that will go to great lengths to <em>upgrade</em> the developer experience before quitting, but sometimes there are simply too many roadblocks.</p>
+<p>I <em>really</em> do not like doing manual tasks that can be easily automated. I do <em>not</em> like deploying code. I <em>do</em> like merging PRs. I do <em>not</em> like pulling down my coworker’s 4-line PR so I can run <code>go test</code>. I <em>do</em> like seeing that the tests passed in the PR.</p>
+<h2 id="is-it-worth-it-to-set-up-automation">
+  <span> Is it worth it to set up automation?</span> <a href="#is-it-worth-it-to-set-up-automation">🔗</a></h2>
+<p>One of my favorite comics about automation is this classic <a href="https://xkcd.com/1319/">XKCD</a>.</p>
+<p><img src="https://imgs.xkcd.com/comics/automation_2x.png" alt="xkcd automation"/></p>
+<p>However, there is a problematic assumption that some people make in regard to automation. I do <em>not</em> think this is the right equation:</p>
+<pre tabindex="0"><code>should_automate = time_to_automate &lt; time_for_task * num_tasks
+</code></pre><p>The equation is far too practical. Humans are emotional creatures. I think there needs to me more leeway given to account for the fact that it’s generally <em>more enjoyable</em> to write automation than to do a manual task over and over.</p>
+<p>For completely selfish reasons, I would rather spend 8 hours writing a script to move some data into a database than spend 6 hours manually copying and pasting. One of the tasks is soul-sucking, finger-numbing, painfully <em>boring</em> work. The other will probably be a bit of fun.</p>
+<p>Perhaps a good analogy is, “To earn $100, would you rather spend 4 hours shoveling rock or 6 hours playing videogames?”</p>
+<h2 id="the-remaining-manual-tasks-become-more-enjoyable">
+  <span> The remaining manual tasks become more enjoyable</span> <a href="#the-remaining-manual-tasks-become-more-enjoyable">🔗</a></h2>
+<p>Imagine that a bug is reported, and you know <em>exactly</em> what the problem is. If you’ve got some nice automation pipelines set up, fixing the problem for your users is <em>almost</em> as easy as simply making the code change.</p>
+<p>However, if you don’t have any automation in place, it’s an annoying pain in the ass. Changing the code still only takes 30 seconds, but you’re now going to spend 15 minutes manually getting the new code running in production. You think, “Maybe this deployment can wait until the end of the day when we were going to deploy anyways.”</p>
+<p>I guess what I’m saying is that I’m <em>extraordinarily</em> lazy, and I’m aware of it. I keep myself motivated and effective by making sure I like my job as much as possible. Automation isn’t just about being more effective in an absolute sense; though it <em>is</em> that as well. Automation is also about being more effective by making my job more enjoyable so that I’m more motivated to do it.</p>
+<h2 id="whats-your-point">
+  <span> What’s your point?</span> <a href="#whats-your-point">🔗</a></h2>
+<p>I’m not going to automate everything - I haven’t thrown efficiency to the wind. However, I bias toward automating because I’m not a machine, I’m human, and I enjoy it.</p>
+<p>Edit: We now have a full <a href="https://www.boot.dev/courses/learn-ci-cd-github-docker">course on CI/CD that you can check out here</a> if you’re interested!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

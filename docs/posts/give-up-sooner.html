@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Give Up Sooner | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/give-up-sooner/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Give Up Sooner</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>As a developer, how many times each day do you look something up online? I’m not talking about a simple piece of syntax, I’m talking about the things that are a bit harder to find. For example:</p>
+<ul>
+<li>Is there a good way to compile C to WebAssembly and run it in a browser without needing to modify the code itself?</li>
+<li>Can the Stripe UI export promotion code redemptions as a CSV?</li>
+<li>Is there a <em>good</em> tool for hot module reloading in Go?</li>
+<li>Is it socially acceptable to go out in public in South Dakota with blue hair?</li>
+</ul>
+<p>While working as a team lead a few years ago, I remember asking Jeffy, a developer on my team:</p>
+<blockquote>
+<p>“Is there a way to get <a href="https://sqlc.dev/">sqlc</a> to use pointers for nullable columns instead of the sql.Null types?”</p>
+</blockquote>
+<p>Jeffy went heads down for… much longer than I would have expected. After more than a full day of research, he came back with:</p>
+<blockquote>
+<p>“No, there isn’t a way. I found something that seemed promising, but it doesn’t work. I think we should fork the project and add it ourselves.”</p>
+</blockquote>
+<p><em>Hol’ up.</em> I’ve got some questions.</p>
+<p>First, you’re telling me that you found what we want in the API of a well-known open-source project, but it’s broken and <em>no one else</em> knows that it’s broken but you? You are confident there aren’t any skill issues involved?</p>
+<p>Second, you’re telling me that your recommended course of action is for our team of four to fork a project with many thousands of lines of code and maintain our own version ad infinitum? All for a little quality of life improvement?</p>
+<p><img src="https://blog.boot.dev/img/800/typesafesqlwestley.png.webp" alt="type safe sql princess bride"/></p>
+<p><em>No, Jeffy. No.</em></p>
+<h2 id="what-was-jeffys-problem">
+  <span> What was Jeffy’s problem?</span> <a href="#what-was-jeffys-problem">🔗</a></h2>
+<p>Counterintuitively, I believe Jeffy’s problem was that he didn’t know when to give up. I don’t mean on the task as a whole, I mean on each individual path he was taking to find the answer. Here’s a chart.</p>
+<p><img src="https://blog.boot.dev/img/800/jeffylocalmax.png.webp" alt="Jeffy’s Local Maximum"/></p>
+<p>Jeffy was too attached to his initial searching methods. Maybe he was too attached to one page from the docs, to his initial search query, or to Google as a search mechanism altogether. Jeffy found a <em>local maximum</em> and became stuck. He should have bailed <strong>so much sooner</strong> and tried looking elsewhere.</p>
+<p>If I don’t find good evidence that the answer I’m looking for exists in the place I’m searching, I’m bailing pronto. That doesn’t mean I’m 100% certain it doesn’t exist, but you usually don’t have to read an entire Stack Overflow thread to know whether or not it relates to your problem.</p>
+<p>I’m honestly amazed at how some developers take so long to look stuff up. Now, in their defense, even if you’re an efficient searcher, you can still get stuck in a “quagmire”: a local maximum. If you’re not careful, you can find yourself reading on and on about a topic that seems like <em>exactly</em> what you’re looking for, only for it to skim over the details that you actually need. Bummer.</p>
+<p>I’m a big <a href="https://blog.boot.dev/computer-science/ai-taking-programming-jobs/">fan of using AI</a> as a replacement for some of my would-be Google searches, but Chat GPT is the <em>ultimate</em> quagmire, that is the ultimate local maximum. It’s the worst kind of quagmire because at every step it will confidently reassure you that it does in fact know the answer. When you insist that it’s wrong, it confidently continues to provide information that sounds correct, but isn’t.</p>
+<p>If you use Chat GPT for programming assistance, you <em>need</em> to develop a strong sense of when Chat GPT is making stuff up. In short, <em>you need to know when to bail.</em></p>
+<h2 id="rtfm">
+  <span> RTFM</span> <a href="#rtfm">🔗</a></h2>
+<p>Sometimes we talk about “Googling things” as a skill unto itself, and it kind of is. But similar to Chat GPT, it’s less about formulating the most pristine search query, and it’s more about knowing when to give up on a goose chase.</p>
+<ul>
+<li>Does the SERP indicate that your original search query was a good one? No? Bail.</li>
+<li>Does the first page you visit have a directly relevant title or first paragraph? No? Bail.</li>
+<li>After spending another minute on the page are you still convinced the answer is somewhere below? No? Bail.</li>
+<li>Is it likely the answer can be found more easily in the docs, the user manual, or, <em>gasp</em>, the code itself? Yes? Bail.</li>
+</ul>
+<p>Reading the manual, perusing the official docs, or digging through the source code usually takes longer than skimming an on-topic article or tutorial, but SEO-spammed articles often coalesce into an entire sea of local maxima. They tease you by scratching the surface of what you’re looking for, but if your issue isn’t the most common one, you can waste hours trudging through the garbage.</p>
+<p>Sometimes, taking the <a href="https://blog.boot.dev/education/learn-to-code-the-slow-way/">time to go deep</a> into the topic is the fastest (only?) way to find answers to the more esoteric questions.</p>
+<h2 id="back-to-jeffy">
+  <span> Back to Jeffy</span> <a href="#back-to-jeffy">🔗</a></h2>
+<p>I don’t want to leave you hanging on this story. As it turned out, the documentation for SQLC was complete, but it was tricky to understand how to use pointers for nullable columns if you landed on the wrong page. There are a lot of configuration options for SQLC, and it’s easy to get lost.</p>
+<p>I just cloned the repo, grepped for “pointer”, and found the code that parsed the configuration option. It was clear after just a few minutes of reading the source that we just needed to do three things:</p>
+<ol>
+<li>Specify the <code>go_type</code> we want (e.g. “string” instead of <code>sql.NullString</code>)</li>
+<li>Set <code>nullable: true</code></li>
+<li>Set <code>pointer: true</code></li>
+</ol>
+<p>Here’s the code:</p>
+<div><pre tabindex="0"><code data-lang="yaml"><span><span><span>overrides</span><span>:</span><span>
+</span></span></span><span><span><span>  </span>- <span>db_type</span><span>:</span><span> </span><span>&#34;text&#34;</span><span>
+</span></span></span><span><span><span>    </span><span>nullable</span><span>:</span><span> </span><span>true</span><span>
+</span></span></span><span><span><span>    </span><span>go_type</span><span>:</span><span>
+</span></span></span><span><span><span>      </span><span>type</span><span>:</span><span> </span><span>&#34;string&#34;</span><span>
+</span></span></span><span><span><span>      </span><span>pointer</span><span>:</span><span> </span><span>true</span><span>
+</span></span></span></code></pre></div><p>Sometimes you gotta rtfm. Sometimes you gotta suck it up and grep the code.</p>
+<p><em>btw, <a href="https://sqlc.dev/">sqlc</a> is awesome and if you like Go you should be aware of it.</em></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

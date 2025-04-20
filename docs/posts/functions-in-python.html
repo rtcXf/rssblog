@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Functions in Python | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/tutorials/python/functions/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Functions in Python</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Functions in Python allow us to <em>reuse</em> and <em>organize</em> code. For example, say we have some code that calculates the area of a circle:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>radius</span> <span>=</span> <span>5</span>
+</span></span><span><span><span>area</span> <span>=</span> <span>3.14</span> <span>*</span> <span>radius</span> <span>*</span> <span>radius</span>
+</span></span></code></pre></div><p>That works! The problem is when we want to calculate the area of <em>other</em> circles, each with its own radius. We <em>could</em> just copy the code and change the variable names like this:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>radius</span> <span>=</span> <span>5</span>
+</span></span><span><span><span>area1</span> <span>=</span> <span>3.14</span> <span>*</span> <span>radius</span> <span>*</span> <span>radius</span>
+</span></span><span><span>
+</span></span><span><span><span>radius2</span> <span>=</span> <span>7</span>
+</span></span><span><span><span>area2</span> <span>=</span> <span>3.14</span> <span>*</span> <span>radius2</span> <span>*</span> <span>radius2</span>
+</span></span></code></pre></div><p>But we want to <em>reuse</em> our code! Why would we want to redo our work? What if we wanted to calculate the area of thousands of circles??? <strong>That’s where functions help.</strong></p>
+<p><em>We’re making all the static content from our Boot.dev courses available for free here on the blog. This one is the “Functions” chapter from <a href="https://www.boot.dev/courses/learn-code-python">Learn to Code in Python</a>. If you want to try the far more immersive version of the course, do check it out!</em></p>
+<p>Instead, we can define a new function called <code>area_of_circle</code> using the <code>def</code> keyword.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>area_of_circle</span><span>(</span><span>r</span><span>):</span>
+</span></span><span><span>    <span>pi</span> <span>=</span> <span>3.14</span>
+</span></span><span><span>    <span>result</span> <span>=</span> <span>pi</span> <span>*</span> <span>r</span> <span>*</span> <span>r</span>
+</span></span><span><span>    <span>return</span> <span>result</span>
+</span></span></code></pre></div><p>Let’s break this <code>area_of_circle</code> function down:</p>
+<ul>
+<li>It takes one input (aka “parameter” or “argument”) called <code>r</code></li>
+<li>The body of the function is indented - this is the code that will run each time we use (aka “call”) the function</li>
+<li>It <code>return</code>s a single value (the output of the function). In this case, it’s the value stored in the <code>result</code> variable</li>
+</ul>
+<p>To <a href="https://en.wikibooks.org/wiki/Python_Programming/Functions#Function_Calls">“call”</a> this function (fancy programmer speak for “use this function”) we can pass in any number as the argument (in this case, <code>5</code>) for the parameter <code>r</code>, and capture the output into a new variable:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>area</span> <span>=</span> <span>area_of_circle</span><span>(</span><span>5</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>area</span><span>)</span>
+</span></span><span><span><span># 78.5</span>
+</span></span></code></pre></div><ol>
+<li><code>5</code> goes in as the input <code>r</code></li>
+<li>The body of the function runs, which stores <code>78.5</code> in the <code>result</code> variable</li>
+<li>The function returns the value <code>78.5</code>, which means the <code>area_of_circle(5)</code> expression evaluates to <code>78.5</code></li>
+<li><code>78.5</code> is stored in the <code>area</code> variable and then printed</li>
+</ol>
+<p>Because we’ve already <em>defined</em> the function, now we can use it as many times as we want with different inputs!</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>area</span> <span>=</span> <span>area_of_circle</span><span>(</span><span>6</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>area</span><span>)</span>
+</span></span><span><span><span># 113.04</span>
+</span></span><span><span>
+</span></span><span><span><span>area</span> <span>=</span> <span>area_of_circle</span><span>(</span><span>7</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>area</span><span>)</span>
+</span></span><span><span><span># 153.86</span>
+</span></span></code></pre></div><p>Functions are tricky! It takes a minute to get used to them, but after that they’ll be second nature to you. You might find yourself slowing down a bit, and if you do, that’s totally normal.</p>
+
+<p>
+  <iframe src="https://www.youtube.com/embed/Q5A9_UdFm5Q" allowfullscreen="" title="YouTube Video"></iframe>
+</p>
+
+
+
+<p>Let’s break down this function line by line so you can understand every nook and cranny of it.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>area_of_circle</span><span>(</span><span>r</span><span>):</span>
+</span></span><span><span>    <span>pi</span> <span>=</span> <span>3.14</span>
+</span></span><span><span>    <span>result</span> <span>=</span> <span>pi</span> <span>*</span> <span>r</span> <span>*</span> <span>r</span>
+</span></span><span><span>    <span>return</span> <span>result</span>
+</span></span><span><span>
+</span></span><span><span><span>radius</span> <span>=</span> <span>5</span>
+</span></span><span><span><span>area</span> <span>=</span> <span>area_of_circle</span><span>(</span><span>radius</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>area</span><span>)</span>
+</span></span><span><span><span># 78.5</span>
+</span></span></code></pre></div><p>Here’s a chronological explanation of what happens when the above code is executed:</p>
+<ol>
+<li><code>def area_of_circle(r)</code>: The <code>area_of_circle</code> function is defined for later use, but <em>not</em> called. It accepts a single input, the arbitrarily named <code>r</code>. The body of the function (<code>pi = 3.14</code>… etc) is ignored for now.</li>
+<li><code>radius = 5</code>: A new variable called <code>radius</code> is created and set to the value <code>5</code>.</li>
+<li><code>area_of_circle(radius)</code>: The <code>area_of_circle</code> function is called with <code>radius</code> (in this case 5) as the input. Finally, we jump back to the function definition.</li>
+<li><code>def area_of_circle(r)</code>: We will now start executing the body of the function, and <code>r</code> is set to <code>5</code>.</li>
+<li><code>pi = 3.14</code>: A new variable called <code>pi</code> is created with a value of <code>3.14</code>.</li>
+<li><code>result = pi * r * r</code>: Some simple math is evaluated (<code>3.14 * 5 * 5</code>) and stored in the <code>result</code> variable.</li>
+<li><code>return result</code>: The result variable is returned from the function as output.</li>
+<li><code>area = area_of_circle(radius)</code>: The returned value is stored in a new variable called <code>area</code> (in this case <code>78.5</code>).</li>
+<li><code>print(area)</code>: The value of <code>area</code> is printed to the console.</li>
+</ol>
+<h2 id="multiple-parameters">
+  <span> Multiple Parameters</span> <a href="#multiple-parameters">🔗</a></h2>
+<p>Functions can have multiple parameters (“parameter” being a fancy word for “input”). For example, this <code>subtract</code> function accepts 2 parameters: <code>a</code> and <code>b</code>.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>subtract</span><span>(</span><span>a</span><span>,</span> <span>b</span><span>):</span>
+</span></span><span><span>    <span>result</span> <span>=</span> <span>a</span> <span>-</span> <span>b</span>
+</span></span><span><span>    <span>return</span> <span>result</span>
+</span></span></code></pre></div><p>The name of a parameter doesn’t matter when it comes to which values will be assigned to which parameter. It’s <strong>position</strong> that matters. The first parameter will become the first value that’s passed in, the second parameter is the second value that’s passed in, and so on. In this example, the <code>subtract</code> function is called with <code>a = 5</code> and <code>b = 3</code>:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>result</span> <span>=</span> <span>subtract</span><span>(</span><span>5</span><span>,</span> <span>3</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>result</span><span>)</span>
+</span></span><span><span><span># 2</span>
+</span></span></code></pre></div><p>Here’s an example with four parameters:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>create_introduction</span><span>(</span><span>name</span><span>,</span> <span>age</span><span>,</span> <span>height</span><span>,</span> <span>weight</span><span>):</span>
+</span></span><span><span>    <span>first_part</span> <span>=</span> <span>&#34;Your name is &#34;</span> <span>+</span> <span>name</span> <span>+</span> <span>&#34; and you are &#34;</span> <span>+</span> <span>age</span> <span>+</span> <span>&#34; years old.&#34;</span>
+</span></span><span><span>    <span>second_part</span> <span>=</span> <span>&#34;You are &#34;</span> <span>+</span> <span>height</span> <span>+</span> <span>&#34; meters tall and weigh &#34;</span> <span>+</span> <span>weight</span> <span>+</span> <span>&#34; kilograms.&#34;</span>
+</span></span><span><span>    <span>full_intro</span> <span>=</span> <span>first_part</span> <span>+</span> <span>&#34; &#34;</span> <span>+</span> <span>second_part</span>
+</span></span><span><span>    <span>return</span> <span>full_intro</span>
+</span></span></code></pre></div><p>It can be called like this:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>my_name</span> <span>=</span> <span>&#34;John&#34;</span>
+</span></span><span><span><span>my_age</span> <span>=</span> <span>&#34;30&#34;</span>
+</span></span><span><span>
+</span></span><span><span><span>intro</span> <span>=</span> <span>create_introduction</span><span>(</span><span>my_name</span><span>,</span> <span>my_age</span><span>,</span> <span>&#34;1.8&#34;</span><span>,</span> <span>&#34;80&#34;</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>intro</span><span>)</span>
+</span></span><span><span><span># Your name is John and you are 30 years old. You are 1.8 meters tall and weigh 80 kilograms.</span>
+</span></span></code></pre></div><h2 id="printing-vs-returning">
+  <span> Printing vs Returning</span> <a href="#printing-vs-returning">🔗</a></h2>
+<p>Some new developers get hung up on the difference between <code>print()</code> and <code>return</code>.</p>
+<p>It can be particularly confusing when the test suite we provide simply prints the output of your functions to the console. It makes it <em>seem</em> like <code>print()</code> and <code>return</code> are interchangeable, <em>but they are not</em>!</p>
+<ul>
+<li><code>print()</code> is a function that:
+<ol>
+<li>Prints a value to the console</li>
+<li>Does <em>not</em> return a value</li>
+</ol>
+</li>
+<li><code>return</code> is a keyword that:
+<ol>
+<li>Ends the current function’s execution</li>
+<li>Provides a value (or values) back to the caller of the function</li>
+<li>Does <em>not</em> print anything to the console (unless the return value is later <code>print()</code>ed)</li>
+</ol>
+</li>
+</ul>
+<h3 id="printing-to-debug-your-code">
+  <span> Printing to debug your code</span> <a href="#printing-to-debug-your-code">🔗</a></h3>
+<p>Printing values and running your code is a great way to debug your code. You can see what values are stored in various <a href="https://blog.boot.dev/tutorials/python/variables">variables</a>, find your mistakes, and fix them. Add print statements and run your code as you go! It’s a great habit to get into to make sure that each line you write is doing what you expect it to do.</p>
+<p>In the real world, it’s rare to leave <code>print()</code> statements in your code when you’re done debugging. Similarly, you need to remember to remove any <code>print()</code> statements from your code before submitting your work because it will interfere with the tests!</p>
+<h2 id="where-to-declare-functions">
+  <span> Where to Declare Functions</span> <a href="#where-to-declare-functions">🔗</a></h2>
+<p>You’ve probably noticed that a variable needs to be declared <em>before</em> it’s used. For example, the following doesn’t work:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>print</span><span>(</span><span>my_name</span><span>)</span>
+</span></span><span><span><span>my_name</span> <span>=</span> <span>&#39;Lane Wagner&#39;</span>
+</span></span></code></pre></div><p>It needs to be:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>my_name</span> <span>=</span> <span>&#39;Lane Wagner&#39;</span>
+</span></span><span><span><span>print</span><span>(</span><span>my_name</span><span>)</span>
+</span></span></code></pre></div><p>Code executes in <em>order from top to bottom</em>, so a variable needs to be created before it can be used. That means that if you define a function, you can’t call that function until <em>after</em> the definition.</p>
+<h2 id="order-of-functions">
+  <span> Order of functions</span> <a href="#order-of-functions">🔗</a></h2>
+<p>All functions <em>must</em> be defined before they’re used.</p>
+<p>You might think this would make structuring Python code hard because the order of the functions needs to be <em>just right</em>. As it turns out, there’s a simple trick that makes it super easy.</p>
+<p>Most Python developers solve this problem by defining <em>all</em> the functions in their program first, then they call an “entry point” function <em>last</em>. That way <em>all</em> of the functions have been read by the Python interpreter before the first one is called.</p>
+<p>Note: <em>conventionally this “entry point” function is usually called <code>main</code> to keep things simple and consistent</em>.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>main</span><span>():</span>
+</span></span><span><span>    <span>health</span> <span>=</span> <span>10</span>
+</span></span><span><span>    <span>armor</span> <span>=</span> <span>5</span>
+</span></span><span><span>    <span>add_armor</span><span>(</span><span>health</span><span>,</span> <span>armor</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>add_armor</span><span>(</span><span>h</span><span>,</span> <span>a</span><span>):</span>
+</span></span><span><span>    <span>new_health</span> <span>=</span> <span>h</span> <span>+</span> <span>a</span>
+</span></span><span><span>    <span>print_health</span><span>(</span><span>new_health</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>print_health</span><span>(</span><span>new_health</span><span>):</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>f</span><span>&#34;The player now has </span><span>{</span><span>new_health</span><span>}</span><span> health&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span># call entrypoint last</span>
+</span></span><span><span><span>main</span><span>()</span>
+</span></span></code></pre></div><h2 id="none-return">
+  <span> None Return</span> <a href="#none-return">🔗</a></h2>
+<p>When no return value is specified in a function, it will automatically return <code>None</code>. For example, maybe it’s a function that prints some text to the console but doesn’t explicitly return a value. The following code snippets all return the same value, <code>None</code>:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>my_func</span><span>():</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;I do nothing&#34;</span><span>)</span>
+</span></span><span><span>    <span>return</span> <span>None</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>my_func</span><span>():</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;I do nothing&#34;</span><span>)</span>
+</span></span><span><span>    <span>return</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>my_func</span><span>():</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;I do nothing&#34;</span><span>)</span>
+</span></span></code></pre></div><h2 id="multiple-return-values">
+  <span> Multiple return values</span> <a href="#multiple-return-values">🔗</a></h2>
+<p>A function can return more than one value by separating them with commas.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>cast_iceblast</span><span>(</span><span>wizard_level</span><span>,</span> <span>start_mana</span><span>):</span>
+</span></span><span><span>    <span>damage</span> <span>=</span> <span>wizard_level</span> <span>*</span> <span>2</span>
+</span></span><span><span>    <span>new_mana</span> <span>=</span> <span>start_mana</span> <span>-</span> <span>10</span>
+</span></span><span><span>    <span>return</span> <span>damage</span><span>,</span> <span>new_mana</span> <span># return two values</span>
+</span></span></code></pre></div><h3 id="receiving-multiple-values">
+  <span> Receiving multiple values</span> <a href="#receiving-multiple-values">🔗</a></h3>
+<p>When calling a function that returns multiple values, you can assign them to multiple variables.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>dmg</span><span>,</span> <span>mana</span> <span>=</span> <span>cast_iceblast</span><span>(</span><span>5</span><span>,</span> <span>100</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>f</span><span>&#34;Damage: </span><span>{</span><span>dmg</span><span>}</span><span>, Remaining Mana: </span><span>{</span><span>mana</span><span>}</span><span>&#34;</span><span>)</span>
+</span></span><span><span><span># Damage: 10, Remaining Mana: 90</span>
+</span></span></code></pre></div><p>When <code>cast_iceblast</code> is called, it returns two values. The first value is assigned to <code>dmg</code>, and the second value is assigned to <code>mana</code>. Just like function inputs, it’s the <em>order</em> of the values that matters, not the variable names. We could just as easily call the variables <code>one</code> and <code>two</code>:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>one</span><span>,</span> <span>two</span> <span>=</span> <span>cast_iceblast</span><span>(</span><span>5</span><span>,</span> <span>100</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>f</span><span>&#34;Damage: </span><span>{</span><span>one</span><span>}</span><span>, Remaining Mana: </span><span>{</span><span>two</span><span>}</span><span>&#34;</span><span>)</span>
+</span></span><span><span><span># Damage: 10, Remaining Mana: 90</span>
+</span></span></code></pre></div><p>That said, descriptive variable names make your code easy to understand, so use them!</p>
+<h3 id="what-happened-to-the-variables">
+  <span> What happened to the variables?</span> <a href="#what-happened-to-the-variables">🔗</a></h3>
+<p>The <code>damage</code> and <code>new_mana</code> variables from <code>cast_iceblast</code>’s function body only exist <em>inside</em> of the function. They can’t be used outside of the function. We’ll explain that more later when we talk about scope.</p>
+<h2 id="parameters-vs-arguments">
+  <span> Parameters vs arguments</span> <a href="#parameters-vs-arguments">🔗</a></h2>
+<p>Parameters are the names used for inputs when <em>defining</em> a function. Arguments are the values of the inputs supplied when a function is <em>called</em>.</p>
+<p>To reiterate, <strong>arguments are the actual values</strong> that go into the function, such as <code>42.0</code>, <code>&#34;the dark knight&#34;</code>, or <code>True</code>. <strong>Parameters are the names</strong> we use in the function definition to refer to those values, which at the time of writing the function, can be whatever we like.</p>
+<p>That said, this is all semantics, and frankly, developers are really lazy with these definitions. You’ll often hear the words “arguments” and “parameters” used interchangeably.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span># a and b are parameters</span>
+</span></span><span><span><span>def</span> <span>add</span><span>(</span><span>a</span><span>,</span> <span>b</span><span>):</span>
+</span></span><span><span>    <span>return</span> <span>a</span> <span>+</span> <span>b</span>
+</span></span><span><span>
+</span></span><span><span><span># 5 and 6 are arguments</span>
+</span></span><span><span><span>sum</span> <span>=</span> <span>add</span><span>(</span><span>5</span><span>,</span> <span>6</span><span>)</span>
+</span></span></code></pre></div><h2 id="default-values">
+  <span> Default values</span> <a href="#default-values">🔗</a></h2>
+<p>In Python, you can specify a <a href="https://docs.python.org/3/glossary.html#term-parameter">default</a> value for a function argument. It’s nice for when a function has arguments that are “optional”. You as the function definer can specify a specific default value in case the caller doesn’t provide one.</p>
+<p>A default value is created by using the assignment (<code>=</code>) operator in the function signature.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>get_greeting</span><span>(</span><span>email</span><span>,</span> <span>name</span><span>=</span><span>&#34;there&#34;</span><span>):</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;Hello&#34;</span><span>,</span> <span>name</span><span>,</span> <span>&#34;welcome! You&#39;ve registered your email:&#34;</span><span>,</span> <span>email</span><span>)</span>
+</span></span></code></pre></div><p>If the second parameter is omitted, the default <code>&#34;there&#34;</code> value will be used in its place. As you may have guessed, for this structure to work, optional arguments (the ones with defaults) must come <em>after</em> all required arguments.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

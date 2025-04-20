@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Are Pointers in Go Faster Than Values? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/pointers-faster-than-values/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Are Pointers in Go Faster Than Values?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I was recently working on a lesson about pointer performance for Boot.dev’s <a href="https://www.boot.dev/learn/learn-golang">Golang course</a> when I found myself repeating some advice I’ve given many times before.</p>
+<p><em>Begin quote:</em></p>
+<p>Occasionally, new Go developers hear “pointers don’t pass copies” and take that to a logical extreme, concluding: “Pointers are always faster because copying is slow. I’ll always use pointers!”</p>
+<p><em>No. Bad. Stop.</em></p>
+<p><strong>Here are my rules of thumb:</strong></p>
+<ol>
+<li>First, worry about writing clear, correct, maintainable code.</li>
+<li>If you have a performance problem, fix it.</li>
+</ol>
+<p>Before even thinking about using pointers to optimize your code, use pointers when you need a shared reference to a value; otherwise, just use values.</p>
+<p><strong>If you <em>do</em> have a performance problem, consider:</strong></p>
+<ol>
+<li><a href="https://go.dev/doc/faq#stack_or_heap">Stack vs. Heap</a></li>
+<li>Copying</li>
+</ol>
+<p>Interestingly, local non-pointer variables are generally faster to pass around than pointers because they’re stored on the <a href="https://computersciencewiki.org/index.php?title=Stack_memory">stack</a>, which is faster to access than the <a href="https://computersciencewiki.org/index.php/Heap_memory">heap</a>. Even though copying is involved, the stack is so fast that it’s no big deal.</p>
+<p>Once the value becomes large enough that copying is the greater problem, it can be worth using a pointer to avoid copying. That value will probably go to the heap, so the gain from avoiding copying needs to be greater than the loss from moving to the heap.</p>
+<p>One of the reasons Go programs tend to use less memory than Java and C# programs is that Go tends to allocate more on the stack.</p>
+<p><em>End quote</em></p>
+<h2 id="is-this-advice-accurate-how-can-we-know">
+  <span> Is this advice accurate? How can we know?</span> <a href="#is-this-advice-accurate-how-can-we-know">🔗</a></h2>
+<p>While my research into the Go docs, various community articles, and even consulting the all-knowing (lul) Chat GPT confirmed the validity of my advice, I wanted to see for myself.</p>
+<p>So, I wrote this benchmark that you can try for yourself if you’re curious!</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span>	<span>&#34;testing&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>type</span> <span>data</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>a</span><span>,</span> <span>b</span><span>,</span> <span>c</span><span>,</span> <span>d</span><span>,</span> <span>e</span><span>,</span> <span>f</span><span>,</span> <span>g</span><span>,</span> <span>h</span><span>,</span> <span>i</span><span>,</span> <span>j</span> <span>int64</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>var</span> <span>globalPtr</span> <span>*</span><span>data</span>
+</span></span><span><span><span>var</span> <span>globalValue</span> <span>data</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>newDataPtr</span><span>(</span><span>i</span> <span>int</span><span>)</span> <span>*</span><span>data</span> <span>{</span>
+</span></span><span><span>	<span>data</span> <span>:=</span> <span>&amp;</span><span>data</span><span>{</span><span>int64</span><span>(</span><span>i</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>1</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>2</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>3</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>4</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>5</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>6</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>7</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>8</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>9</span><span>)}</span>
+</span></span><span><span>	<span>return</span> <span>data</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>newData</span><span>(</span><span>i</span> <span>int</span><span>)</span> <span>data</span> <span>{</span>
+</span></span><span><span>	<span>data</span> <span>:=</span> <span>data</span><span>{</span><span>int64</span><span>(</span><span>i</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>1</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>2</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>3</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>4</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>5</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>6</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>7</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>8</span><span>),</span> <span>int64</span><span>(</span><span>i</span> <span>+</span> <span>9</span><span>)}</span>
+</span></span><span><span>	<span>return</span> <span>data</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>BenchmarkProcessValue</span><span>(</span><span>b</span> <span>*</span><span>testing</span><span>.</span><span>B</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>b</span><span>.</span><span>N</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>		<span>globalValue</span> <span>=</span> <span>newData</span><span>(</span><span>i</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>// use it to avoid compiler optimization
+</span></span></span><span><span><span></span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>globalValue</span><span>.</span><span>a</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>BenchmarkProcessPointer</span><span>(</span><span>b</span> <span>*</span><span>testing</span><span>.</span><span>B</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>b</span><span>.</span><span>N</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>		<span>globalPtr</span> <span>=</span> <span>newDataPtr</span><span>(</span><span>i</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>// use it to avoid compiler optimization
+</span></span></span><span><span><span></span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>globalPtr</span><span>.</span><span>a</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Slap that in a <code>bench_test.go</code> file and run <code>go test -bench=. -benchmem</code> to see the results. This is what I got:</p>
+<pre tabindex="0"><code>wagslane@MacBook-Pro-2 test % go test -bench=. -benchmem
+
+goos: darwin
+goarch: arm64
+pkg: github.com/bootdotdev/go-api-gate/test
+BenchmarkProcessValue-12        273343356                4.236 ns/op           0 B/op          0 allocs/op
+BenchmarkProcessPointer-12      61566219                17.72 ns/op           80 B/op          1 allocs/op
+PASS
+ok      github.com/bootdotdev/go-api-gate/test  2.912s
+</code></pre><p>As you can see, passing by value rather than reference (pointer) is indeed faster in this case, even though the value is being copied.</p>
+<p>That said, I admit it took me about 20 minutes of trial and error to get this benchmark into the state that I wanted to make sure it was testing what I wanted to test. There were initial drafts that I <em>thought</em> were copying to the heap, but they weren’t. That in and of itself is a good lesson: the Go compiler is pretty smart and will optimize things for you. Don’t go crazy trying to use pointers or non-pointers to optimize your code until you have something tangible to benchmark and optimize!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

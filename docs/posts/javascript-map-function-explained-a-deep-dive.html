@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JavaScript Map Function Explained - A Deep Dive | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/javascript-map-function/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>JavaScript Map Function Explained - A Deep Dive</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>The built-in JavaScript <code>map</code> function returns a new array, where each element in the new array is the result of the corresponding element in the old array after being passed through a callback function. Later in the article, we’ll do a deep dive into some more advanced concepts regarding the map function and its uses.</p>
+<h2 id="map-function-syntax">
+  <span> Map Function Syntax</span> <a href="#map-function-syntax">🔗</a></h2>
+<h3 id="example-usage">
+  <span> Example Usage</span> <a href="#example-usage">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>let</span> <span>newArray</span> <span>=</span> <span>oldArray</span><span>.</span><span>map</span><span>(</span><span>function</span> <span>callback</span><span>(</span><span>currentValue</span><span>,</span> <span>index</span><span>,</span> <span>array</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>// return element for new_array
+</span></span></span><span><span><span></span><span>},</span> <span>thisArg</span><span>)</span>
+</span></span></code></pre></div><p>The Array object’s built-in <code>map</code> method takes a function definition as its first parameter. The function whose definition we pass in will have 3 arguments available to it and will be called for each element in the original array. Each return value that the function creates will be the elements for the new array.</p>
+<p>For instance, a simple example would look like:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>oldArray</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>4</span><span>,</span> <span>9</span><span>,</span> <span>16</span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>function</span> <span>double</span><span>(</span><span>val</span><span>,</span> <span>index</span><span>,</span> <span>arr</span><span>){</span>
+</span></span><span><span>  <span>return</span> <span>val</span> <span>*</span> <span>2</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>newArray</span> <span>=</span> <span>oldArray</span><span>.</span><span>map</span><span>(</span><span>double</span><span>);</span>
+</span></span><span><span>
+</span></span><span><span><span>// newArray = [2, 8, 18, 32]
+</span></span></span></code></pre></div><p>There is also an optional second parameter to the map function that we will go over later, a way to override <code>thi</code>s.</p>
+<h2 id="syntactic-sugar">
+  <span> Syntactic Sugar</span> <a href="#syntactic-sugar">🔗</a></h2>
+<p>In the above example, to double each value in the original array, we only used the <code>val</code> argument. It’s <em>extremely</em> common to only care about the <code>val</code> argument in the map function. When that’s all we need we can simplify the syntax, and even throw in some es6 arrow functions:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>oldArray</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>4</span><span>,</span> <span>9</span><span>,</span> <span>16</span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>double</span> <span>=</span> <span>arr</span> <span>=&gt;</span> <span>arr</span> <span>*</span> <span>2</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>newArray</span> <span>=</span> <span>oldArray</span><span>.</span><span>map</span><span>(</span><span>double</span><span>);</span>
+</span></span><span><span>
+</span></span><span><span><span>// newArray = [2, 8, 18, 32]
+</span></span></span></code></pre></div><p>By only specifying one argument in our function definition, the interpreter will only give our function the <code>val</code> parameter, which is okay if it’s the only thing we care about.</p>
+<p>We can also use an anonymous function, which means defining the function in the map’s input instead of giving it a name. This keeps our code clean and readable (assuming we don’t need to reuse the callback function elsewhere)</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>oldArray</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>4</span><span>,</span> <span>9</span><span>,</span> <span>16</span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>newArray</span> <span>=</span> <span>oldArray</span><span>.</span><span>map</span><span>(</span><span>arr</span> <span>=&gt;</span> <span>arr</span> <span>*</span> <span>2</span><span>);</span>
+</span></span><span><span>
+</span></span><span><span><span>// newArray = [2, 8, 18, 32]
+</span></span></span></code></pre></div><h2 id="index-parameter">
+  <span> Index Parameter</span> <a href="#index-parameter">🔗</a></h2>
+<p>If you remember from earlier, the callback function definition has a second parameter, the index:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>callback</span><span>(</span><span>currentValue</span><span>,</span> <span>index</span><span>,</span> <span>array</span><span>)</span>
+</span></span></code></pre></div><p>By using the index parameter we can do some more interesting calculations based on the position in the array:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>oldArray</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>4</span><span>,</span> <span>9</span><span>,</span> <span>16</span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>newArray</span> <span>=</span> <span>oldArray</span><span>.</span><span>map</span><span>((</span><span>val</span><span>,</span> <span>index</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>return</span> <span>val</span> <span>*</span> <span>index</span>
+</span></span><span><span><span>});</span>
+</span></span><span><span>
+</span></span><span><span><span>// newArray = [0, 4, 18, 48]
+</span></span></span></code></pre></div><h2 id="array-parameter">
+  <span> Array Parameter</span> <a href="#array-parameter">🔗</a></h2>
+<p>The third and final parameter made available to our callback is a copy of the original array. This can be useful if we care about more than just the value or index that we are currently operating on. We can look forward or backward in the array and use other elements as part of our mapping:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>oldArray</span> <span>=</span> <span>[</span><span>16</span><span>,</span> <span>9</span><span>,</span> <span>4</span><span>,</span> <span>1</span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>newArray</span> <span>=</span> <span>oldArray</span><span>.</span><span>map</span><span>((</span><span>val</span><span>,</span> <span>index</span><span>,</span> <span>arr</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>let</span> <span>nextItem</span> <span>=</span> <span>index</span> <span>+</span> <span>1</span> <span>&lt;</span> <span>arr</span><span>.</span><span>length</span> <span>?</span> <span>arr</span><span>[</span><span>index</span> <span>+</span> <span>1</span><span>]</span> <span>:</span> <span>0</span>
+</span></span><span><span>  <span>return</span> <span>val</span> <span>-</span> <span>nextItem</span><span>;</span>
+</span></span><span><span><span>});</span>
+</span></span><span><span>
+</span></span><span><span><span>// newArray = [7, 5, 3, 1]
+</span></span></span></code></pre></div><h2 id="overriding-this">
+  <span> Overriding ‘This’</span> <a href="#overriding-this">🔗</a></h2>
+<p>The map function has an often-overlooked optional second parameter. We can provide an object that will become ’this’ within the scope of our callback.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>let</span> <span>newArray</span> <span>=</span> <span>oldArray</span><span>.</span><span>map</span><span>(</span><span>callbackFunction</span><span>,</span> <span>thisArg</span><span>)</span>
+</span></span></code></pre></div><p>For example, maybe we have a callback that is used in other places in our code, and we want to reuse it, but we just need to change the environment it operates in:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>oldArray</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>4</span><span>,</span> <span>9</span><span>,</span> <span>16</span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>function</span> <span>ourFunc</span><span>(</span><span>val</span><span>,</span> <span>index</span><span>,</span> <span>arr</span><span>){</span>
+</span></span><span><span>  <span>return</span> <span>val</span> <span>*</span> <span>this</span><span>.</span><span>windowSize</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>newArray</span> <span>=</span> <span>oldArray</span><span>.</span><span>map</span><span>(</span><span>ourFunc</span><span>,</span> <span>{</span><span>windowSize</span><span>:</span> <span>10</span><span>});</span>
+</span></span><span><span>
+</span></span><span><span><span>// newArray = [10, 40, 90, 169]
+</span></span></span></code></pre></div><p>Now we can reuse that callback, but change its parameters by modifying ’this&#39;.</p>
+<h2 id="using-map-in-react">
+  <span> Using .map() in React</span> <a href="#using-map-in-react">🔗</a></h2>
+<p>It’s super common in React.js or Vue.js to need to render a list of data on a page, and the <code>.map()</code> method is a great way to do it. <a href="https://scrimba.com/articles/react-list-array-with-map-function/">This Scrimba post</a> gives us a great example:</p>
+<div><pre tabindex="0"><code data-lang="jsx"><span><span><span>const</span> <span>heroes</span> <span>=</span> <span>[</span><span>&#34;Superman&#34;</span><span>,</span> <span>&#34;Batman&#34;</span><span>,</span> <span>&#34;Wonder Woman&#34;</span><span>]</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>Headings</span> <span>=</span> <span>()</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>const</span> <span>headings</span> <span>=</span> <span>heroes</span><span>.</span><span>map</span><span>((</span><span>hero</span><span>,</span> <span>index</span><span>)=&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>h1</span> <span>key</span><span>=</span><span>{</span><span>index</span><span>}&gt;{</span><span>hero</span><span>}&lt;/</span><span>h1</span><span>&gt;)</span>
+</span></span><span><span>  <span>return</span> <span>&lt;</span><span>header</span><span>&gt;{</span><span>headings</span><span>}&lt;/</span><span>header</span><span>&gt;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Make Maps and Slices in Golang - A Guide to Initialization | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/golang-make-maps-and-slices/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Make Maps and Slices in Golang - A Guide to Initialization</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>There are quite a few ways to create new maps and slices in Go, for example, they can both be initialized using the <code>make()</code> function, the <code>new()</code> function, as literals, or by using the <code>var</code> keyword. With so many choices, which option is best? Or perhaps better asked, which one is best in your situation? Let’s take a look.</p>
+<h2 id="slices">
+  <span> Slices</span> <a href="#slices">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>var</span> <span>varStyle</span> <span>[]</span><span>string</span>
+</span></span><span><span>
+</span></span><span><span><span>literalStyle</span> <span>:=</span> <span>[]</span><span>string</span><span>{}</span>
+</span></span><span><span>
+</span></span><span><span><span>newStyle</span> <span>:=</span> <span>new</span><span>([]</span><span>string</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>makeStyle</span> <span>:=</span> <span>make</span><span>([]</span><span>string</span><span>,</span> <span>0</span><span>)</span>
+</span></span></code></pre></div><p><code>var varStyle []string</code> is the idiomatic way to declare an <em>empty</em> slice. The slice is actually <code>nil</code>, which means it will be <code>null</code> when <a href="https://blog.boot.dev/golang/json-golang/">marshalled to JSON</a> and will succeed nil checks.</p>
+<p><code>literalStyle := []string{}</code> should probably only be used when the literal is going to <strong>start with values in it</strong>, as in <code>literalStyle := []string{&#34;cat&#34;, &#34;dog&#34;, etc}</code>. Otherwise prefer <code>make()</code></p>
+<p><code>newStyle := new([]string)</code> returns a pointer to the slice. Same as <code>ptrStyle := &amp;[]string{}</code>. <strong>Only use if you want a pointer.</strong></p>
+<p><code>makeStyle := make([]string, 0)</code> is the same as the literal style, but is preferred for idiomatic reasons when the <strong>slice doesn’t need non-zero starting values</strong>. Make() allows the slice to be initialized with a starting length and capacity, which can have good performance implications in some circumstances:</p>
+<p><strong>makeStyle := make([]string, len, cap)</strong></p>
+<h2 id="maps">
+  <span> Maps</span> <a href="#maps">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>var</span> <span>varStyle</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>int</span>
+</span></span><span><span>
+</span></span><span><span><span>literalStyle</span> <span>=</span> <span>map</span><span>[</span><span>string</span><span>]</span><span>int</span><span>{}</span>
+</span></span><span><span>
+</span></span><span><span><span>newStyle</span> <span>:=</span> <span>new</span><span>(</span><span>map</span><span>[</span><span>string</span><span>]</span><span>int</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>makeStyle</span> <span>:=</span> <span>make</span><span>(</span><span>map</span><span>[</span><span>string</span><span>]</span><span>int</span><span>)</span>
+</span></span></code></pre></div><p><code>var varStyle map[int]int</code> creates a nil map. Writing (but not reading interestingly enough) will cause a panic. You probably don’t want a nil map.</p>
+<p><code>literalStyle := map[string]int{}</code> using the literal syntax is just fine, though idiomatically it’s probably best to use a make function. Developers are more used to seeing a make function and make offer some additional features.</p>
+<p><code>newStyle := new(map[string]int)</code> creates a pointer to a nil map… very often not what you want.</p>
+<p><code>makeStyle := make(map[string]int)</code> <em>This is probably what you want</em>! If you know your space requirements you can optimize for allocation by passing in a size:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// Give me a map with room for 10 items before needing to allocate more space
+</span></span></span><span><span><span></span><span>makeStyle</span> <span>:=</span> <span>make</span><span>(</span><span>map</span><span>[</span><span>string</span><span>]</span><span>int</span><span>,</span> <span>10</span><span>)</span>
+</span></span></code></pre></div><p>Check out our <a href="https://blog.boot.dev/golang/golang-constant-maps-slices/">How To: Global Constant Maps and Slices</a> article if you want to learn more about the proper use of maps and slices in Go.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

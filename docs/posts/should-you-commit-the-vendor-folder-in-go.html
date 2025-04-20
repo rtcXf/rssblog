@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Should You Commit the Vendor Folder in Go? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/should-you-commit-the-vendor-folder-in-go/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Should You Commit the Vendor Folder in Go?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>If you’re asking “should I commit the vendor folder in my Go project to Git?”, the answer is “almost always”. Let’s talk about why committing is generally better than not.</p>
+<h2 id="what-is-the-vendor-folder-anyways">
+  <span> What is the vendor folder anyways?</span> <a href="#what-is-the-vendor-folder-anyways">🔗</a></h2>
+<p>If you are coming from Node.js land, Golang’s vendor directory is basically the same as Node’s <code>node_modules</code>. It is a directory found at the root of a Go module that stores a copy of all the code the module depends on. The vendor code is used to compile the final executable when the <code>go build</code> command is run. As you can imagine, at the heart of the “should we commit vendor?” discussion is the problem of repo size.</p>
+<p><code>node_modules</code> is infamous for its large size.</p>
+<p><img src="https://blog.boot.dev/img/800/tfugj4n3l6ez-300x216.png" alt="node_modules is the heaviest object in the universe"/></p>
+<p>As a result, conventional wisdom in the Node community is to add <code>node_modules</code> to the <code>.gitignore</code> file to save space. After all, a quick <code>npm install</code> (or in Go’s case <code>go get</code>) will pull down all the dependencies everything right?</p>
+<p>Yeah. Yeah, it will. Most of the time…</p>
+<blockquote>
+<p>left-pad has entered the chat</p>
+</blockquote>
+<p><code>npm Err! 404 &#39;left-pad&#39; is not in the npm registry</code></p>
+<p>The error code above famously <a href="https://qz.com/646467/how-one-programmer-broke-the-internet-by-deleting-a-tiny-piece-of-code/">plagued the developer world</a> because developers were too lazy, or perhaps too sloppy, to write a few simple lines of code. Had a copy of the dependency been committed to all the projects that depended on <code>leftpad</code>, nothing would have been broken when the package was removed from the central <code>NPM</code> servers.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>// the entire left-pad library
+</span></span></span><span><span><span></span><span>module</span><span>.</span><span>exports</span> <span>=</span> <span>leftpad</span><span>;</span>
+</span></span><span><span><span>function</span> <span>leftpad</span><span>(</span><span>str</span><span>,</span> <span>len</span><span>,</span> <span>ch</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>str</span> <span>=</span> <span>String</span><span>(</span><span>str</span><span>);</span>
+</span></span><span><span>  <span>var</span> <span>i</span> <span>=</span> <span>-</span><span>1</span><span>;</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>!</span><span>ch</span> <span>&amp;&amp;</span> <span>ch</span> <span>!==</span> <span>0</span><span>)</span> <span>ch</span> <span>=</span> <span>&#34; &#34;</span><span>;</span>
+</span></span><span><span>  <span>len</span> <span>=</span> <span>len</span> <span>-</span> <span>str</span><span>.</span><span>length</span><span>;</span>
+</span></span><span><span>  <span>while</span> <span>(</span><span>++</span><span>i</span> <span>&lt;</span> <span>len</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>str</span> <span>=</span> <span>ch</span> <span>+</span> <span>str</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>return</span> <span>str</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="why-should-gos-vendor-folder-be-any-different-than-node_modules">
+  <span> Why should Go’s vendor folder be any different than node_modules?</span> <a href="#why-should-gos-vendor-folder-be-any-different-than-node_modules">🔗</a></h2>
+<p>Luckily, up to this point, the <a href="https://research.swtch.com/deps">Go community has been much more rigorous</a> about using few dependencies. When dependencies are kept to a minimum, it’s easy to commit the entire <code>vendor</code> folder without incurring the huge data cost that the average <code>node_modules</code> folder would demand.</p>
+<p>That said, once dependencies get out of control, the only option is to stop committing the folder to source control. If you’re working on a sufficiently large project, it might make sense to you and your team to add <code>vendor</code> to your <code>.gitignore</code>. You’ll just miss out on some amazing benefits of having all the code required to build your app stored in your source control, including:</p>
+<ol>
+<li>Reproducible builds. You never need to worry about missing source code.</li>
+<li><a href="https://www.boot.dev/courses/learn-ci-cd-github-docker">Simple CI/CD</a>. Your CI/CD pipelines don’t need access to remote repos, or permissions to remote <em>private</em> repos to build and test your code.</li>
+<li>Developer friendliness. There isn’t a laundry list of setup instructions you’ll commonly find with Node.js projects. No <code>npm install</code> required.</li>
+</ol>
+<h2 id="final-verdict">
+  <span> Final verdict</span> <a href="#final-verdict">🔗</a></h2>
+<p>Just like the flow chart at the beginning of the post outlines, if you don’t have an insane amount of dependencies, just commit those dependencies! Reap the benefits as long as you can. On the other hand, if you do have a metric shitload of external code, maybe you should work on cutting the fat. When dieting isn’t an option due to the size of your codebase, it might be time to remove <code>vendor</code> from your source control.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vue History Mode - Support Legacy Hash URLs | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/vue-history-mode-support-legacy-hash-urls/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Vue History Mode - Support Legacy Hash URLs</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>When we first launched the <a href="https://www.boot.dev/">boot.dev’s single-page-app</a>, we were using <a href="https://router.vuejs.org/">Vue Router’s</a> default hash routing. Hash routing looks ugly to the end-user, and when you want to be able to share parts of your app via direct link those hashes can get really annoying.</p>
+<p>We have since moved to the newer <a href="https://router.vuejs.org/guide/essentials/history-mode.html">HTML5 History Mode</a> which doesn’t have that obnoxious hash in the route. We had a bit of trouble coming up with a clean way to redirect those old hash routes to the new ones, however, so now that we’ve solved it we will share our findings.</p>
+<p>At the time of writing we have the following routes, you probably have something similar:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>import</span> <span>Vue</span> <span>from</span> <span>&#39;vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>VueRouter</span> <span>from</span> <span>&#39;vue-router&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Courses</span> <span>from</span> <span>&#39;../views/Courses.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>CourseProduct</span> <span>from</span> <span>&#39;../views/CourseProduct.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Profile</span> <span>from</span> <span>&#39;../views/Profile.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Exercise</span> <span>from</span> <span>&#39;../views/Exercise.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Store</span> <span>from</span> <span>&#39;../views/Store.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Certificates</span> <span>from</span> <span>&#39;../views/Certificates.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Dashboard</span> <span>from</span> <span>&#39;../views/Dashboard.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Certificate</span> <span>from</span> <span>&#39;../views/Certificate.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Login</span> <span>from</span> <span>&#39;../views/Login.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Playground</span> <span>from</span> <span>&#39;../views/Playground.vue&#39;</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span><span>Vue</span><span>.</span><span>use</span><span>(</span><span>VueRouter</span><span>);</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>routes</span> <span>=</span> <span>[</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>path</span><span>:</span> <span>&#39;/&#39;</span><span>,</span>
+</span></span><span><span>    <span>name</span><span>:</span> <span>&#39;Login&#39;</span><span>,</span>
+</span></span><span><span>    <span>component</span><span>:</span> <span>Login</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>path</span><span>:</span> <span>&#39;/dashboard&#39;</span><span>,</span>
+</span></span><span><span>    <span>name</span><span>:</span> <span>&#39;Dashboard&#39;</span><span>,</span>
+</span></span><span><span>    <span>component</span><span>:</span> <span>Dashboard</span><span>,</span>
+</span></span><span><span>    <span>children</span><span>:</span> <span>[</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;courses&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Courses&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Courses</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;course_product/:courseUUID&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;CourseProduct&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>CourseProduct</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;exercise/:courseUUID/:moduleUUID?&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Exercise&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Exercise</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;store&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Store&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Store</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;profile&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Profile&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Profile</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;certificates&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Certificates&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Certificates</span>
+</span></span><span><span>      <span>}</span>
+</span></span><span><span>    <span>]</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>path</span><span>:</span> <span>&#39;/certificate/:userUUID/:courseUUID&#39;</span><span>,</span>
+</span></span><span><span>    <span>name</span><span>:</span> <span>&#39;Certificate&#39;</span><span>,</span>
+</span></span><span><span>    <span>component</span><span>:</span> <span>Certificate</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>path</span><span>:</span> <span>&#39;/playground/:lang&#39;</span><span>,</span>
+</span></span><span><span>    <span>name</span><span>:</span> <span>&#39;Playground&#39;</span><span>,</span>
+</span></span><span><span>    <span>component</span><span>:</span> <span>Playground</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>router</span> <span>=</span> <span>new</span> <span>VueRouter</span><span>({</span>
+</span></span><span><span>  <span>mode</span><span>:</span> <span>&#39;history&#39;</span><span>,</span>
+</span></span><span><span>  <span>routes</span>
+</span></span><span><span><span>});</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>default</span> <span>router</span><span>;</span>
+</span></span></code></pre></div><p>Our goal is to redirect all of our old hash based (#) routes to the new non-hash versions. For example:</p>
+<p><a href="https://www.boot.dev/playground/go">boot.dev/#/playground/go</a> –&gt; <a href="https://www.boot.dev/playground/go">boot.dev/playground/go</a></p>
+<p>All we do is add the following to our router:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>// Redirect if path begins with a hash (ignore hashes later in path)
+</span></span></span><span><span><span></span><span>router</span><span>.</span><span>beforeEach</span><span>((</span><span>to</span><span>,</span> <span>from</span><span>,</span> <span>next</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>// Redirect if fullPath begins with a hash (ignore hashes later in path)
+</span></span></span><span><span><span></span>  <span>if</span> <span>(</span><span>to</span><span>.</span><span>fullPath</span><span>.</span><span>substr</span><span>(</span><span>0</span><span>,</span> <span>2</span><span>)</span> <span>===</span> <span>&#39;/#&#39;</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>const</span> <span>path</span> <span>=</span> <span>to</span><span>.</span><span>fullPath</span><span>.</span><span>substr</span><span>(</span><span>2</span><span>);</span>
+</span></span><span><span>    <span>next</span><span>(</span><span>path</span><span>);</span>
+</span></span><span><span>    <span>return</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>next</span><span>();</span>
+</span></span><span><span><span>});</span>
+</span></span></code></pre></div><p>The full code:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>import</span> <span>Vue</span> <span>from</span> <span>&#39;vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>VueRouter</span> <span>from</span> <span>&#39;vue-router&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Courses</span> <span>from</span> <span>&#39;../views/Courses.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>CourseProduct</span> <span>from</span> <span>&#39;../views/CourseProduct.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Profile</span> <span>from</span> <span>&#39;../views/Profile.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Exercise</span> <span>from</span> <span>&#39;../views/Exercise.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Store</span> <span>from</span> <span>&#39;../views/Store.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Certificates</span> <span>from</span> <span>&#39;../views/Certificates.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Dashboard</span> <span>from</span> <span>&#39;../views/Dashboard.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Certificate</span> <span>from</span> <span>&#39;../views/Certificate.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Login</span> <span>from</span> <span>&#39;../views/Login.vue&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>Playground</span> <span>from</span> <span>&#39;../views/Playground.vue&#39;</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span><span>Vue</span><span>.</span><span>use</span><span>(</span><span>VueRouter</span><span>);</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>routes</span> <span>=</span> <span>[</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>path</span><span>:</span> <span>&#39;/&#39;</span><span>,</span>
+</span></span><span><span>    <span>name</span><span>:</span> <span>&#39;Login&#39;</span><span>,</span>
+</span></span><span><span>    <span>component</span><span>:</span> <span>Login</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>path</span><span>:</span> <span>&#39;/dashboard&#39;</span><span>,</span>
+</span></span><span><span>    <span>name</span><span>:</span> <span>&#39;Dashboard&#39;</span><span>,</span>
+</span></span><span><span>    <span>component</span><span>:</span> <span>Dashboard</span><span>,</span>
+</span></span><span><span>    <span>children</span><span>:</span> <span>[</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;courses&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Courses&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Courses</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;course_product/:courseUUID&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;CourseProduct&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>CourseProduct</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;exercise/:courseUUID/:moduleUUID?&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Exercise&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Exercise</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;store&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Store&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Store</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;profile&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Profile&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Profile</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>path</span><span>:</span> <span>&#39;certificates&#39;</span><span>,</span>
+</span></span><span><span>        <span>name</span><span>:</span> <span>&#39;Certificates&#39;</span><span>,</span>
+</span></span><span><span>        <span>component</span><span>:</span> <span>Certificates</span>
+</span></span><span><span>      <span>}</span>
+</span></span><span><span>    <span>]</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>path</span><span>:</span> <span>&#39;/certificate/:userUUID/:courseUUID&#39;</span><span>,</span>
+</span></span><span><span>    <span>name</span><span>:</span> <span>&#39;Certificate&#39;</span><span>,</span>
+</span></span><span><span>    <span>component</span><span>:</span> <span>Certificate</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>path</span><span>:</span> <span>&#39;/playground/:lang&#39;</span><span>,</span>
+</span></span><span><span>    <span>name</span><span>:</span> <span>&#39;Playground&#39;</span><span>,</span>
+</span></span><span><span>    <span>component</span><span>:</span> <span>Playground</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>router</span> <span>=</span> <span>new</span> <span>VueRouter</span><span>({</span>
+</span></span><span><span>  <span>mode</span><span>:</span> <span>&#39;history&#39;</span><span>,</span>
+</span></span><span><span>  <span>routes</span>
+</span></span><span><span><span>});</span>
+</span></span><span><span>
+</span></span><span><span><span>// Redirect if path begins with a hash (ignore hashes later in path)
+</span></span></span><span><span><span></span><span>router</span><span>.</span><span>beforeEach</span><span>((</span><span>to</span><span>,</span> <span>from</span><span>,</span> <span>next</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>// Redirect if fullPath begins with a hash (ignore hashes later in path)
+</span></span></span><span><span><span></span>  <span>if</span> <span>(</span><span>to</span><span>.</span><span>fullPath</span><span>.</span><span>substr</span><span>(</span><span>0</span><span>,</span> <span>2</span><span>)</span> <span>===</span> <span>&#39;/#&#39;</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>const</span> <span>path</span> <span>=</span> <span>to</span><span>.</span><span>fullPath</span><span>.</span><span>substr</span><span>(</span><span>2</span><span>);</span>
+</span></span><span><span>    <span>next</span><span>(</span><span>path</span><span>);</span>
+</span></span><span><span>    <span>return</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>next</span><span>();</span>
+</span></span><span><span><span>});</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>default</span> <span>router</span><span>;</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

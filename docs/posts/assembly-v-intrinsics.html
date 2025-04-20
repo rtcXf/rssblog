@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Assembly v. intrinsics | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://danluu.com/assembly-intrinsics/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Assembly v. intrinsics</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div> <p>Every once in a while, I hear how intrinsics have improved enough that it&#39;s safe to use them for high performance code. That would be nice. The promise of intrinsics is that you can write optimized code by calling out to functions (intrinsics) that correspond to particular assembly instructions. Since intrinsics act like normal functions, they can be cross platform. And since your compiler has access to more computational power than your brain, as well as a detailed model of every CPU, the compiler should be able to do a better job of micro-optimizations. Despite decade old claims that intrinsics can make your life easier, it never seems to work out.</p> <p>The last time I tried intrinsics was around 2007; for more on why they were hopeless then (<a href="http://virtualdub.org/blog/pivot/entry.php?id=162">see this exploration by the author of VirtualDub</a>). I gave them another shot recently, and while they&#39;ve improved, they&#39;re still not worth the effort. The problem is that intrinsics are so unreliable that you have to manually check the result on every platform and every compiler you expect your code to be run on, and then tweak the intrinsics until you get a reasonable result. That&#39;s more work than just writing the assembly by hand. If you don&#39;t check the results by hand, it&#39;s easy to get bad results.</p>  <p>For example, as of this writing, the first two Google hits for <code>popcnt benchmark</code> (and 2 out of the top 3 bing hits) claim that Intel&#39;s hardware <code>popcnt</code> instruction is slower than a software implementation that counts the number of bits set in a buffer, via a table lookup using the <a href="https://en.wikipedia.org/wiki/SSSE3">SSSE3</a> <code>pshufb</code> instruction. This turns out to be untrue, but it must not be obvious, or this claim wouldn&#39;t be so persistent. Let&#39;s see why someone might have come to the conclusion that the <code>popcnt</code> instruction is slow if they coded up a solution using intrinsics.</p> <p>One of the top search hits has sample code and benchmarks for both native <code>popcnt</code> as well as the software version using <code>pshufb</code>. <a href="http://www.strchr.com/media/crc32_popcnt.zip">Their code</a> requires MSVC, which I don&#39;t have access to, but their first <code>popcnt</code> implementation just calls the <code>popcnt</code> intrinsic in a loop, which is fairly easy to reproduce in a form that gcc and clang will accept. Timing it is also pretty simple, since we&#39;re just timing a function (that happens to count the number of bits set in some fixed sized buffer).</p> <pre><code>uint32_t builtin_popcnt(const uint64_t* buf, int len) {
+  int cnt = 0;
+  for (int i = 0; i &lt; len; ++i) {
+    cnt += __builtin_popcountll(buf[i]);
+  }
+  return cnt;
+}
+</code></pre> <p>This is slightly different from the code I linked to above, since they use the dword (32-bit) version of <code>popcnt</code>, and we&#39;re using the qword (64-bit) version. Since our version gets twice as much done per loop iteration, I&#39;d expect our version to be faster than their version.</p> <p>Running <code>clang -O3 -mpopcnt -funroll-loops</code> produces a binary that we can examine. On macs, we can use <code>otool -tv</code> to get the disassembly. On linux, there&#39;s <code>objdump -d</code>.</p> <pre><code>_builtin_popcnt:
+; address                        instruction
+0000000100000b30        pushq   %rbp
+0000000100000b31        movq    %rsp, %rbp
+0000000100000b34        movq    %rdi, -0x8(%rbp)
+0000000100000b38        movl    %esi, -0xc(%rbp)
+0000000100000b3b        movl    $0x0, -0x10(%rbp)
+0000000100000b42        movl    $0x0, -0x14(%rbp)
+0000000100000b49        movl    -0x14(%rbp), %eax
+0000000100000b4c        cmpl    -0xc(%rbp), %eax
+0000000100000b4f        jge     0x100000bd4
+0000000100000b55        movslq  -0x14(%rbp), %rax
+0000000100000b59        movq    -0x8(%rbp), %rcx
+0000000100000b5d        movq    (%rcx,%rax,8), %rax
+0000000100000b61        movq    %rax, %rcx
+0000000100000b64        shrq    %rcx
+0000000100000b67        movabsq $0x5555555555555555, %rdx
+0000000100000b71        andq    %rdx, %rcx
+0000000100000b74        subq    %rcx, %rax
+0000000100000b77        movabsq $0x3333333333333333, %rcx
+0000000100000b81        movq    %rax, %rdx
+0000000100000b84        andq    %rcx, %rdx
+0000000100000b87        shrq    $0x2, %rax
+0000000100000b8b        andq    %rcx, %rax
+0000000100000b8e        addq    %rax, %rdx
+0000000100000b91        movq    %rdx, %rax
+0000000100000b94        shrq    $0x4, %rax
+0000000100000b98        addq    %rax, %rdx
+0000000100000b9b        movabsq $0xf0f0f0f0f0f0f0f, %rax
+0000000100000ba5        andq    %rax, %rdx
+0000000100000ba8        movabsq $0x101010101010101, %rax
+0000000100000bb2        imulq   %rax, %rdx
+0000000100000bb6        shrq    $0x38, %rdx
+0000000100000bba        movl    %edx, %esi
+0000000100000bbc        movl    -0x10(%rbp), %edi
+0000000100000bbf        addl    %esi, %edi
+0000000100000bc1        movl    %edi, -0x10(%rbp)
+0000000100000bc4        movl    -0x14(%rbp), %eax
+0000000100000bc7        addl    $0x1, %eax
+0000000100000bcc        movl    %eax, -0x14(%rbp)
+0000000100000bcf        jmpq    0x100000b49
+0000000100000bd4        movl    -0x10(%rbp), %eax
+0000000100000bd7        popq    %rbp
+0000000100000bd8        ret
+</code></pre> <p>Well, that&#39;s interesting. Clang seems to be calculating things manually rather than using <code>popcnt</code>. It seems to be using <a href="http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel">the approach described here</a>, which is something like</p> <pre><code>x = x - ((x &gt;&gt; 0x1) &amp; 0x5555555555555555);
+x = (x &amp; 0x3333333333333333) + ((x &gt;&gt; 0x2) &amp; 0x3333333333333333);
+x = (x + (x &gt;&gt; 0x4)) &amp; 0xF0F0F0F0F0F0F0F;
+ans = (x * 0x101010101010101) &gt;&gt; 0x38;
+</code></pre> <p>That&#39;s not bad for a simple implementation that doesn&#39;t rely on any kind of specialized hardware, but that&#39;s going to take a lot longer than a single <code>popcnt</code> instruction.</p> <p>I&#39;ve got a pretty old version of clang (3.0), so let me try this again after upgrading to 3.4, in case they added hardware <code>popcnt</code> support “recently”.</p> <pre><code>0000000100001340        pushq   %rbp         ; save frame pointer
+0000000100001341        movq    %rsp, %rbp   ; new frame pointer
+0000000100001344        xorl    %ecx, %ecx   ; cnt = 0
+0000000100001346        testl   %esi, %esi
+0000000100001348        jle     0x100001363
+000000010000134a        nopw    (%rax,%rax)
+0000000100001350        popcntq (%rdi), %rax ; “eax” = popcnt[rdi]
+0000000100001355        addl    %ecx, %eax   ; eax += cnt
+0000000100001357        addq    $0x8, %rdi   ; increment address by 64-bits (8 bytes)
+000000010000135b        decl    %esi         ; decrement loop counter; sets flags
+000000010000135d        movl    %eax, %ecx   ;  cnt = eax; does not set flags
+000000010000135f        jne     0x100001350  ; examine flags. if esi != 0, goto popcnt
+0000000100001361        jmp     0x100001365  ; goto “restore frame pointer”
+0000000100001363        movl    %ecx, %eax
+0000000100001365        popq    %rbp         ; restore frame pointer
+0000000100001366        ret
+
+</code></pre> <p>That&#39;s better! We get a hardware <code>popcnt</code>! Let&#39;s compare this to the SSSE3 <code>pshufb</code> implementation <a href="http://www.strchr.com/crc32_popcnt">presented here</a> as the fastest way to do a popcnt. We&#39;ll use a table like the one in the link to show speed, except that we&#39;re going to show a rate, instead of the raw cycle count, so that the relative speed between different sizes is clear. The rate is GB/s, i.e., how many gigs of buffer we can process per second. We give the function data in chunks (varying from 1kb to 16Mb); each column is the rate for a different chunk-size. If we look at how fast each algorithm is for various buffer sizes, we get the following.</p> <table> <thead> <tr> <th>Algorithm</th> <th>1k</th> <th>4k</th> <th>16k</th> <th>65k</th> <th>256k</th> <th>1M</th> <th>4M</th> <th>16M</th> </tr> </thead> <tbody> <tr> <td>Intrinsic</td> <td>6.9</td> <td>7.3</td> <td>7.4</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> </tr> <tr> <td>PSHUFB</td> <td>11.5</td> <td>13.0</td> <td>13.3</td> <td>13.4</td> <td>13.1</td> <td>13.4</td> <td>13.0</td> <td>12.6</td> </tr> </tbody> </table> <p>That&#39;s not so great. Relative to the the benchmark linked above, we&#39;re doing better because we&#39;re using 64-bit <code>popcnt</code> instead of 32-bit <code>popcnt</code>, but the PSHUFB version is still almost twice as fast.</p> <p>One odd thing is the way <code>cnt</code> gets accumulated. <code>cnt</code> is stored in <code>ecx</code>. But, instead of adding the result of the <code>popcnt</code> to <code>ecx</code>, clang has decided to add <code>ecx</code> to the result of the <code>popcnt</code>. To fix that, clang then has to move that sum into <code>ecx</code> at the end of each loop iteration.</p> <p>The other noticeable problem is that we only get one <code>popcnt</code> per iteration of the loop, which means the loop isn&#39;t getting unrolled, and we&#39;re paying the entire cost of the loop overhead for each <code>popcnt</code>. Unrolling the loop can also let the CPU extract more instruction level parallelism from the code, although that&#39;s a bit beyond the scope of this blog post.</p> <p>Using clang, that happens even with <code>-O3 -funroll-loops</code>. Using gcc, we get a properly unrolled loop, but gcc has other problems, as we&#39;ll see later. For now, let&#39;s try unrolling the loop ourselves by calling <code>__builtin_popcountll</code> multiple times during each iteration of the loop. For simplicity, let&#39;s try doing four <code>popcnt</code> operations on each iteration. I don&#39;t claim that&#39;s optimal, but it should be an improvement.</p> <pre><code>uint32_t builtin_popcnt_unrolled(const uint64_t* buf, int len) {
+  assert(len % 4 == 0);
+  int cnt = 0;
+  for (int i = 0; i &lt; len; i+=4) {
+    cnt += __builtin_popcountll(buf[i]);
+    cnt += __builtin_popcountll(buf[i+1]);
+    cnt += __builtin_popcountll(buf[i+2]);
+    cnt += __builtin_popcountll(buf[i+3]);
+  }
+  return cnt;
+}
+</code></pre> <p>The core of our loop now has</p> <pre><code>0000000100001390        popcntq (%rdi,%rcx,8), %rdx
+0000000100001396        addl    %eax, %edx
+0000000100001398        popcntq 0x8(%rdi,%rcx,8), %rax
+000000010000139f        addl    %edx, %eax
+00000001000013a1        popcntq 0x10(%rdi,%rcx,8), %rdx
+00000001000013a8        addl    %eax, %edx
+00000001000013aa        popcntq 0x18(%rdi,%rcx,8), %rax
+00000001000013b1        addl    %edx, %eax
+</code></pre> <p>with pretty much the same code surrounding the loop body. We&#39;re doing four <code>popcnt</code> operations every time through the loop, which results in the following performance:</p> <table> <thead> <tr> <th>Algorithm</th> <th>1k</th> <th>4k</th> <th>16k</th> <th>65k</th> <th>256k</th> <th>1M</th> <th>4M</th> <th>16M</th> </tr> </thead> <tbody> <tr> <td>Intrinsic</td> <td>6.9</td> <td>7.3</td> <td>7.4</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> </tr> <tr> <td>PSHUFB</td> <td>11.5</td> <td>13.0</td> <td>13.3</td> <td>13.4</td> <td>13.1</td> <td>13.4</td> <td>13.0</td> <td>12.6</td> </tr> <tr> <td>Unrolled</td> <td>12.5</td> <td>14.4</td> <td>15.0</td> <td>15.1</td> <td>15.2</td> <td>15.2</td> <td>15.2</td> <td>15.2</td> </tr> </tbody> </table> <p>Between using 64-bit <code>popcnt</code> and unrolling the loop, we&#39;ve already beaten the allegedly faster <code>pshufb</code> code! But it&#39;s close enough that we might get different results with another compiler or some other chip. Let&#39;s see if we can do better.</p> <p>So, what&#39;s the deal with this <a href="http://stackoverflow.com/questions/25078285/replacing-a-32-bit-loop-count-variable-with-64-bit-introduces-crazy-performance">popcnt false dependency bug</a> that&#39;s been getting a lot of publicity lately? Turns out, <code>popcnt</code> has a false dependency on its destination register, which means that even though the result of <code>popcnt</code> doesn&#39;t depend on its destination register, the CPU thinks that it does and will wait until the destination register is ready before starting the <code>popcnt</code> instruction.</p> <p>x86 typically has two operand operations, e.g., <code>addl %eax, %edx</code> adds <code>eax</code> and <code>edx</code>, and then places the result in <code>edx</code>, so it&#39;s common for an operation to have a dependency on its output register. In this case, there shouldn&#39;t be a dependency, since the result doesn&#39;t depend on the contents of the output register, but that&#39;s an easy bug to introduce, and a hard one to catch.</p> <p>In this particular case, <code>popcnt</code> has a 3 cycle latency, but it&#39;s pipelined such that a <code>popcnt</code> operation can execute each cycle. If we ignore other overhead, that means that a single <code>popcnt</code> will take 3 cycles, 2 will take 4 cycles, 3 will take 5 cycles, and n will take n+2 cycles, as long as the operations are independent. But, if the CPU incorrectly thinks there&#39;s a dependency between them, we effectively lose the ability to pipeline the instructions, and that n+2 turns into 3n.</p> <p>We can work around this by buying a CPU from AMD or VIA, or by putting the <code>popcnt</code> results in different registers. Let&#39;s making an array of destinations, which will let us put the result from each <code>popcnt</code> into a different place.</p> <pre><code>uint32_t builtin_popcnt_unrolled_errata(const uint64_t* buf, int len) {
+  assert(len % 4 == 0);
+  int cnt[4];
+  for (int i = 0; i &lt; 4; ++i) {
+    cnt[i] = 0;
+  }
+
+  for (int i = 0; i &lt; len; i+=4) {
+    cnt[0] += __builtin_popcountll(buf[i]);
+    cnt[1] += __builtin_popcountll(buf[i+1]);
+    cnt[2] += __builtin_popcountll(buf[i+2]);
+    cnt[3] += __builtin_popcountll(buf[i+3]);
+  }
+  return cnt[0] + cnt[1] + cnt[2] + cnt[3];
+}
+</code></pre> <p>And now we get</p> <pre><code>0000000100001420        popcntq (%rdi,%r9,8), %r8
+0000000100001426        addl    %ebx, %r8d
+0000000100001429        popcntq 0x8(%rdi,%r9,8), %rax
+0000000100001430        addl    %r14d, %eax
+0000000100001433        popcntq 0x10(%rdi,%r9,8), %rdx
+000000010000143a        addl    %r11d, %edx
+000000010000143d        popcntq 0x18(%rdi,%r9,8), %rcx
+</code></pre> <p>That&#39;s better -- we can see that the first popcnt outputs into <code>r8</code>, the second into <code>rax</code>, the third into <code>rdx</code>, and the fourth into <code>rcx</code>. However, this does the same odd accumulation as the original, where instead of adding the result of the <code>popcnt</code> to <code>cnt[i]</code>, it does the opposite, which necessitates moving the results back to <code>cnt[i]</code> afterwards.</p> <pre><code>000000010000133e        movl    %ecx, %r10d
+0000000100001341        movl    %edx, %r11d
+0000000100001344        movl    %eax, %r14d
+0000000100001347        movl    %r8d, %ebx
+</code></pre> <p>Well, at least in clang (3.4). Gcc (4.8.2) is too smart to fall for this separate destination thing and “optimizes” the code back to something like our original version.</p> <table> <thead> <tr> <th>Algorithm</th> <th>1k</th> <th>4k</th> <th>16k</th> <th>65k</th> <th>256k</th> <th>1M</th> <th>4M</th> <th>16M</th> </tr> </thead> <tbody> <tr> <td>Intrinsic</td> <td>6.9</td> <td>7.3</td> <td>7.4</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> </tr> <tr> <td>PSHUFB</td> <td>11.5</td> <td>13.0</td> <td>13.3</td> <td>13.4</td> <td>13.1</td> <td>13.4</td> <td>13.0</td> <td>12.6</td> </tr> <tr> <td>Unrolled</td> <td>12.5</td> <td>14.4</td> <td>15.0</td> <td>15.1</td> <td>15.2</td> <td>15.2</td> <td>15.2</td> <td>15.2</td> </tr> <tr> <td>Unrolled 2</td> <td>14.3</td> <td>16.3</td> <td>17.0</td> <td>17.2</td> <td>17.2</td> <td>17.0</td> <td>16.8</td> <td>16.7</td> </tr> </tbody> </table> <p>To get a version that works with both gcc and clang, and doesn&#39;t have these extra <code>mov</code>s, we&#39;ll have to write the assembly by hand:</p> <pre><code>uint32_t builtin_popcnt_unrolled_errata_manual(const uint64_t* buf, int len) {
+  assert(len % 4 == 0);
+  uint64_t cnt[4];
+  for (int i = 0; i &lt; 4; ++i) {
+    cnt[i] = 0;
+  }
+
+  for (int i = 0; i &lt; len; i+=4) {
+    __asm__(
+        &#34;popcnt %4, %4  \n\
+        &#34;add %4, %0     \n\t&#34;
+        &#34;popcnt %5, %5  \n\t&#34;
+        &#34;add %5, %1     \n\t&#34;
+        &#34;popcnt %6, %6  \n\t&#34;
+        &#34;add %6, %2     \n\t&#34;
+        &#34;popcnt %7, %7  \n\t&#34;
+        &#34;add %7, %3     \n\t&#34; // +r means input/output, r means intput
+        : &#34;+r&#34; (cnt[0]), &#34;+r&#34; (cnt[1]), &#34;+r&#34; (cnt[2]), &#34;+r&#34; (cnt[3])
+        : &#34;r&#34;  (buf[i]), &#34;r&#34;  (buf[i+1]), &#34;r&#34;  (buf[i+2]), &#34;r&#34;  (buf[i+3]));
+  }
+  return cnt[0] + cnt[1] + cnt[2] + cnt[3];
+}
+
+</code></pre> <p>This directly translates the assembly into the loop:</p> <pre><code>00000001000013c3        popcntq %r10, %r10
+00000001000013c8        addq    %r10, %rcx
+00000001000013cb        popcntq %r11, %r11
+00000001000013d0        addq    %r11, %r9
+00000001000013d3        popcntq %r14, %r14
+00000001000013d8        addq    %r14, %r8
+00000001000013db        popcntq %rbx, %rbx
+</code></pre> <p>Great! The <code>add</code>s are now going the right direction, because we specified exactly what they should do.</p> <table> <thead> <tr> <th>Algorithm</th> <th>1k</th> <th>4k</th> <th>16k</th> <th>65k</th> <th>256k</th> <th>1M</th> <th>4M</th> <th>16M</th> </tr> </thead> <tbody> <tr> <td>Intrinsic</td> <td>6.9</td> <td>7.3</td> <td>7.4</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> <td>7.5</td> </tr> <tr> <td>PSHUFB</td> <td>11.5</td> <td>13.0</td> <td>13.3</td> <td>13.4</td> <td>13.1</td> <td>13.4</td> <td>13.0</td> <td>12.6</td> </tr> <tr> <td>Unrolled</td> <td>12.5</td> <td>14.4</td> <td>15.0</td> <td>15.1</td> <td>15.2</td> <td>15.2</td> <td>15.2</td> <td>15.2</td> </tr> <tr> <td>Unrolled 2</td> <td>14.3</td> <td>16.3</td> <td>17.0</td> <td>17.2</td> <td>17.2</td> <td>17.0</td> <td>16.8</td> <td>16.7</td> </tr> <tr> <td>Assembly</td> <td>17.5</td> <td>23.7</td> <td>25.3</td> <td>25.3</td> <td>26.3</td> <td>26.3</td> <td>25.3</td> <td>24.3</td> </tr> </tbody> </table> <p>Finally! A version that blows away the <code>PSHUFB</code> implementation. How do we know this should be the final version? We can see from <a href="http://www.agner.org/optimize/instruction_tables.pdf">Agner&#39;s instruction tables</a> that we can execute, at most, one <code>popcnt</code> per cycle. I happen to have run this on a 3.4Ghz Sandy Bridge, so we&#39;ve got an upper bound of <code>8 bytes / cycle * 3.4 G cycles / sec = 27.2 GB/s</code>. That&#39;s pretty close to the <code>26.3 GB/s</code> we&#39;re actually getting, which is a sign that we can&#39;t make this much faster.</p> <p>In this case, the hand coded assembly version is about 3x faster than the original intrinsic loop (not counting the version from a version of clang that didn&#39;t emit a <code>popcnt</code>). It happens that, for the compiler we used, the unrolled loop using the <code>popcnt</code> intrinsic is a bit faster than the <code>pshufb</code> version, but that wasn&#39;t true of one of the two unrolled versions when I tried this with <code>gcc</code>.</p> <p>It&#39;s easy to see why someone might have benchmarked the same code and decided that <code>popcnt</code> isn&#39;t very fast. It&#39;s also easy to see why using intrinsics for performance critical code can be a huge time sink.</p> <p><small>Thanks to <a href="https://github.com/graue/">Scott</a> for some comments on the organization of this post, and to <a href="http://blog.leahhanson.us/">Leah</a> for extensive comments on just about everything</small></p> <p><strong>If you liked this, you&#39;ll probably enjoy <a href="https://danluu.com/new-cpu-features/">this post about how CPUs have changed since the 80s</a>.</strong></p>  </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

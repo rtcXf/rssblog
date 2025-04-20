@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Slow Is Smooth, Smooth Is Fast - 25% of Our Time Refactoring | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/spend-time-refactoring/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Slow Is Smooth, Smooth Is Fast - 25% of Our Time Refactoring</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>My team has been spending less of our “free” time working on bugs and features from the backlog, and more time refactoring our code and tests. As a result, and perhaps somewhat counterintuitively, we’ve noticed a significant increase in our throughput of features and bug fixes.</p>
+<p>As it turns out, it’s easy to find bugs and add features to a well-written codebase that the entire team is familiar with. Go figure.</p>
+<p>I’ve been paying attention to our throughput and efficiency as we’ve made a conscious effort to spend around 25% of our time refactoring, revisiting, and restyling existing code and tests. Let’s go over some of the benefits we’ve seen since making the change.</p>
+<h2 id="context-and-caveats">
+  <span> Context and Caveats</span> <a href="#context-and-caveats">🔗</a></h2>
+<p>I’ve found that in articles like this it’s important to give as much context to the situation as possible, as certain development methodologies may work better or worse in teams with different sizes, tech stacks, or development processes. Here are some notable things about our situation:</p>
+<ul>
+<li>4 engineers on my team, ~16 in the company</li>
+<li>Tech stack - Go, Postgres, ElasticSearch and RabbitMQ</li>
+<li>Microservices architecture on Kubernetes</li>
+<li>Kanban-style development process - <a href="https://wagslane.dev/posts/leave-scrum-to-rugby/">no scrum</a></li>
+<li>Our team is responsible for ~15 repositories</li>
+<li>Each repo represents a small service in a data pipeline process that handles the sorting and NLP of social media posts</li>
+</ul>
+<p><img src="https://blog.boot.dev/img/800/go_kubernetes-1024x592.png" alt="Go Kubernetes"/></p>
+<h2 id="code-familiarity">
+  <span> Code Familiarity</span> <a href="#code-familiarity">🔗</a></h2>
+<p>With only four engineers on my team and ~15 repositories we’re responsible for, it was hard for all four of us to be intimately familiar with all the code. When we needed a new microservice, one team member typically wrote the first iteration, and one other team member did a quick code review. The engineer who did the first iteration would then be primarily responsible for bug fixes and new features relating to that project.</p>
+<p>By focusing more of our time on reviewing and refactoring existing code, it gave us a chance to hop into projects that we never would have had a reason to become familiar with before. Not only does getting more eyes on a project mean the overall code quality will likely go up, but it also means we aren’t hosed if the original maintainer moves on to a new company.</p>
+<h2 id="slow-to-fix-bugs">
+  <span> Slow to Fix Bugs</span> <a href="#slow-to-fix-bugs">🔗</a></h2>
+<p>When you get deep into spaghetti code, it can be really hard to find bugs. In a messy codebase, sometimes fixing a bug can <em>add</em> to the “uncleanliness” of the code. You may have to exacerbate or extend an already bad architectural pattern to get a bug fix in.</p>
+<p>Ideally, you would do the refactoring <em>first</em> and <em>then</em> fix the bug (assuming the bug still exists after a good refactoring). Unfortunately, oftentimes there isn’t enough time to refactor a project before fixing a critical bug. For this reason, we should <strong>always be refactoring</strong> so that bug fixes can happen quickly without harming code quality.</p>
+<h2 id="slow-to-add-features">
+  <span> Slow to Add Features</span> <a href="#slow-to-add-features">🔗</a></h2>
+<p>I don’t want to beat a dead horse, the reasoning here is largely the same as with bug fixes. Adding features to a messy codebase just makes it messier. It’s like frosting a cake that’s already been dropped on the ground. I guess the cake would taste better if you still felt inclined to eat it, but you’ve made the inevitable clean-up harder.</p>
+<p><img src="https://blog.boot.dev/img/800/happy_birthday_to_ground.gif" alt="Happy Birthday to the Ground"/></p>
+<h2 id="try-it-yourself">
+  <span> Try It Yourself</span> <a href="#try-it-yourself">🔗</a></h2>
+<p>Since adding a consistent refactoring process to our team’s routine, we’ve been able to put <em>more</em> features through to production while spending <em>less</em> time working on them. Let me know what you think and if you have a different experience.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HMAC and MACs - The Inner Workings of JWTs | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/hmac-and-macs-in-jwts/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>HMAC and MACs - The Inner Workings of JWTs</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>HMACs and MACs are authentication codes and are often the backbone of JWT authentication systems. A Message Authentication Code (MAC) is a string of bits that depends on a secret key and is sent with a message to prove the message wasn’t tampered with. HMACs are a more strict version of MACs that offer additional security benefits.</p>
+<h2 id="mac---message-authentication-codehttpsenwikipediaorgwikimessage_authentication_code">
+  <span> MAC - <a href="https://en.wikipedia.org/wiki/Message_authentication_code">Message Authentication Code</a></span> <a href="#mac---message-authentication-codehttpsenwikipediaorgwikimessage_authentication_code">🔗</a></h2>
+<p>MACs are exactly what they sound like; small codes that allow receivers of messages to know who the sender was (authentication). A MAC code is calculated by using a message and a secret key as inputs. Anyone who has a copy of that secret key can then verify that that code and message were created by someone with the same key.</p>
+<p><img src="https://blog.boot.dev/img/800/Screen-Shot-2019-12-12-at-7.49.24-AM.png" alt="MAC diagram"/></p>
+<p>One way this is accomplished is by using a <a href="https://blog.boot.dev/cryptography/very-basic-intro-to-hash-functions-sha-256-md-5-etc/">hash function,</a> for instance, <a href="https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/">SHA-256</a>. Simply put, a hash function takes an input and then returns an output, where:</p>
+<ul>
+<li>The output is very unlikely to be the same for different inputs</li>
+<li>The output is always the same for the same inputs</li>
+<li>The output is not predictable - changing the input even slightly results in a seemingly random and large change to the output</li>
+</ul>
+<p>Given this, a naive example of MAC generation by the sender could be:</p>
+<pre tabindex="0"><code>message = &#39;my message here&#39;
+macCode = sha256(&#39;thisIsASecretKey1234&#39; + message)
+// send macCode and message
+</code></pre><p>Then the verification by the receiver would be:</p>
+<pre tabindex="0"><code>// receive macCode and message
+if (macCode == sha256(&#39;thisIsASecretKey1234&#39; + message)){
+  // verified!
+}
+</code></pre><p>Note that MACs don’t <em>necessarily</em> need to use a hash function, but a hash <em>can</em> be used as the “signing” mechanism.</p>
+<h2 id="hmac---hash-based-message-authentication-codehttpsenwikipediaorgwikihmac">
+  <span> HMAC - <a href="https://en.wikipedia.org/wiki/HMAC">Hash-Based Message Authentication Code</a></span> <a href="#hmac---hash-based-message-authentication-codehttpsenwikipediaorgwikihmac">🔗</a></h2>
+<p>An HMAC is a kind of MAC. All HMACs are MACs but not all MACs are HMACs. The main difference is that an HMAC uses two rounds of hashing instead of one (or none). Each round of hashing uses a section of the secret key. As a naive example:</p>
+<pre tabindex="0"><code>sha256(&#39;thisIsASe&#39; + sha256(&#39;cretKey1234&#39; + &#39;my message here&#39;))
+</code></pre><p>Which is a simplified version of the function given in <a href="https://tools.ietf.org/html/rfc2104">RFC-2104</a>.</p>
+<p>Why use HMAC? Why do we need to hash twice?</p>
+<p>With many hash functions, it’s possible to change the message (without knowing the key) and obtain another valid MAC. We call this a <a href="https://en.wikipedia.org/wiki/Length_extension_attack">length extension attack</a>. No known extension attacks are known against the current HMAC specification.</p>
+<h2 id="hmacs-with-jwts">
+  <span> HMACs with JWTs</span> <a href="#hmacs-with-jwts">🔗</a></h2>
+<p>If you’ve ever implemented <a href="https://en.wikipedia.org/wiki/JSON_Web_Token">JWTs</a> for authentication schemes within a web app, then you know that JWTs are wonderful for keeping track of who is who. A JWT (when using HMAC as the signing scheme) is basically just an HMAC message where the message data is a JSON object.</p>
+<p>The interesting thing about the JWT system is that the sender and the receiver of the JWT are typically the same entity, that is, the webserver. Look at the following example:</p>
+<ol>
+<li>User gives the server an username and password</li>
+<li>Server verifies the username and password are correct</li>
+<li>Server generates a JWT using HMAC:</li>
+</ol>
+<pre tabindex="0"><code>hmacCode = sha256(&#39;thisIsASe&#39; + sha256(&#39;cretKey1234&#39; + &#39;{&#34;userID&#34;:&#34;11be9160-2243-4449-934b-e8245fe2feb0&#34;}&#39;))
+</code></pre><ol start="4">
+<li>The server responds with the following (decoded) JWT:</li>
+</ol>
+<pre tabindex="0"><code>header.{&#34;userID&#34;:&#34;e7a6e5b4-dbaa-4503-bd25-8ebfc3a54448&#34;}.hmacCode
+</code></pre><ol start="5">
+<li>User decides to update his/her profile picture by sending the following request:</li>
+</ol>
+<pre tabindex="0"><code>PUT /users/profile_picture
+Authentication: Bearer {&#34;userID&#34;:&#34;e7a6e5b4-dbaa-4503-bd25-8ebfc3a54448&#34;}.hmacCode
+
+{&#34;new_picture_url&#34;: &#34;http://linktopicture.com/mypic&#34;}
+</code></pre><ol>
+<li>The server parses the JWT. The JWT says the user is the user with ID <code>e7a6e5b4-dbaa-4503-bd25-8ebfc3a54448</code>.</li>
+<li>The server verifies that the user really is Lane by validating the HMAC code. Only someone with access to the secret key <code>thisIsASecretKey1234</code> could have made the HMAC code that corresponds to the <code>e7a6e5b4-dbaa-4503-bd25-8ebfc3a54448</code> JWT.</li>
+<li>If verification is successful, then the server updates Lane’s profile picture.</li>
+</ol>
+<p><img src="https://blog.boot.dev/img/800/hi42b4G.png.webp" alt="JWT lifecycle"/></p>
+<p>If you feel that I missed anything important, or have any questions, feel free to contact me!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Why is Exclusive Or (XOR) Important in Cryptography? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/why-xor-in-cryptography/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Why is Exclusive Or (XOR) Important in Cryptography?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>If you are getting into <a href="https://blog.boot.dev/cryptography/what-is-cryptography/">cryptography</a>, or just trying to understand the fundamentals, you may have noticed that the <code>exclusive or</code> (XOR) operation is used quite often, especially in ciphers. XOR is a simple bitwise operation that allows cryptographers to create strong encryption systems, and consequently is a fundamental building block of practically all modern ciphers. Let’s dive into the details and see what makes XOR so important.</p>
+<h2 id="what-is-xor">
+  <span> What is XOR?</span> <a href="#what-is-xor">🔗</a></h2>
+<p>XOR, or “exclusive or” operates on binary data. It returns true if both of its inputs are opposites (one false and one true), otherwise, it returns false. You may see the operator written this way: ⊕.</p>
+<p><img src="https://blog.boot.dev/img/800/Screenshot-from-2019-08-04-12-01-49.png" alt="XOR example"/></p>
+<p>For example, in Go, the code would be something like:</p>
+<pre tabindex="0"><code>func exclusiveOr(a bool, b bool) bool {
+	return a != b
+}
+</code></pre><h2 id="xor-cipher---the-perfect-cipher">
+  <span> XOR Cipher - The Perfect Cipher</span> <a href="#xor-cipher---the-perfect-cipher">🔗</a></h2>
+<p>It is interesting to note that if:</p>
+<ol>
+<li>The key is the same size as the message</li>
+<li>The key is kept secret and generated truly randomly</li>
+</ol>
+<p>Then the XOR cipher is certainly <strong>impossible</strong> to crack. This is known as a <a href="https://en.wikipedia.org/wiki/One-time_pad">one-time pad</a>. However, a simple XOR shouldn’t be used in production due to the key length needing to be too long to be practical.</p>
+<h2 id="cipher-example">
+  <span> Cipher Example</span> <a href="#cipher-example">🔗</a></h2>
+<p>For instance, let’s simply encrypt the word “hi”</p>
+<ol>
+<li>First, convert “hi” to binary, here is a <a href="https://www.rapidtables.com/convert/number/ascii-to-binary.html">free tool</a>)</li>
+</ol>
+<p><code>01101000 01101001</code></p>
+<ol start="2">
+<li>Next, create a random secret key that has the same length:</li>
+</ol>
+<p><code>01010010 01000101</code></p>
+<ol start="3">
+<li>Then, create an encrypted message by XOR’ing the message and the key:</li>
+</ol>
+<pre tabindex="0"><code>01101000 01101001 (&#34;hi&#34;)
+XOR
+01010010 01000101 (secret key)
+=
+00111010 00101100 (encrypted message)
+</code></pre><ol start="4">
+<li>Finally, decrypt the message by XOR’ing the key with the encrypted message again:</li>
+</ol>
+<pre tabindex="0"><code>00111010 00101100 (encrypted message)
+XOR
+01010010 01000101 (secret key)
+=
+01101000 01101001 (&#34;hi&#34;)
+</code></pre><h2 id="why-does-it-work">
+  <span> Why does it work?</span> <a href="#why-does-it-work">🔗</a></h2>
+<p>XOR works as a cipher because it is its own inverse.</p>
+<blockquote>
+<p>𝑎 = (𝑎 <strong>⊕</strong> 𝑏) <strong>⊕</strong> 𝑏</p>
+</blockquote>
+<p>And, as we demonstrated in our example:</p>
+<blockquote>
+<p><em>encrypted</em> = <em>message</em> <strong>⊕</strong> <em>key</em></p>
+</blockquote>
+<h2 id="is-xor-used-in-production-ciphers">
+  <span> Is XOR used in production ciphers?</span> <a href="#is-xor-used-in-production-ciphers">🔗</a></h2>
+<p>The simple XOR cipher isn’t used in production because it is impractical to use keys that are the same length as the message body. However, the XOR is still extremely useful. In fact, it is used in almost all symmetric encryption algorithms. XOR is the primary operation in the <a href="https://blog.boot.dev/cryptography/aes-256-cipher/">“add round key” step of AES-256</a>. It is also used in the <a href="http://page.math.tu-berlin.de/~kant/teaching/hess/krypto-ws2006/des.htm">DES cipher.</a></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

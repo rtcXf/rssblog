@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The State of Learning to Code - 2024 Report | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/education/state-of-learning-to-code-2024/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>The State of Learning to Code - 2024 Report</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I’ve been building a learning curriculum for backend developers for the last 3 years, but I’ve mostly been relying on qualitative feedback and my own intuitions.</p>
+<p><em>Well now I have my own quantitative data</em>, and as the founder/grand magus of <a href="https://www.boot.dev">Boot.dev</a>, I’m gonna use it. I figured I’d also share it with you, if you’re interested.</p>
+<h2 id="what-is-this-report">
+  <span> What is this report?</span> <a href="#what-is-this-report">🔗</a></h2>
+<p>This is primarily an info dump of our Boot.dev learners’ stats (aggregated and anonymized of course) with some of my own commentary. Obviously, <strong>I’ll only include data that makes me look correct and smart</strong>.</p>
+<h2 id="high-level-numbers">
+  <span> High-level numbers</span> <a href="#high-level-numbers">🔗</a></h2>
+<p>I’m not trying to flaunt our growth numbers (but if you want to acquire Boot.dev for north of 10 Billion hmu) but to understand the data that follows, it’s important to know a bit about our scale. In some cases we have enough data for statistical significance, in others we might not.</p>
+<h3 id="user-data">
+  <span> User data</span> <a href="#user-data">🔗</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total Registered Users</td>
+<td>336,271</td>
+<td>Everyone who has made an account, free or paid</td>
+</tr>
+<tr>
+<td>Total Individual Members</td>
+<td>18,255</td>
+<td>Folks who are paying (or were gifted) a membership</td>
+</tr>
+<tr>
+<td>Total Team Members</td>
+<td>193</td>
+<td>Folks who are part of a team membership</td>
+</tr>
+</tbody>
+</table>
+<h3 id="course-data">
+  <span> Course data</span> <a href="#course-data">🔗</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total Lessons</td>
+<td>2090</td>
+<td>All active lessons. A lesson is a single pass/fail assignment that usually takes ~2-10 minutes, with outliers of 1+ hours</td>
+</tr>
+<tr>
+<td>Total Chapters</td>
+<td>217</td>
+<td>Chapters are collections of lessons grouped by concept. They usually have 6-16 lessons.</td>
+</tr>
+<tr>
+<td>Total Courses</td>
+<td>21</td>
+<td>Courses are collections of lessons broken into chapters. Courses are building blocks of tracks. Courses primarily teach new concepts.</td>
+</tr>
+<tr>
+<td>Total Projects</td>
+<td>9</td>
+<td>Projects are also collections of lessons and are building blocks of tracks. Projects have much larger lessons with less guidance. Projects primarily practice known concepts.</td>
+</tr>
+<tr>
+<td>Total Tracks</td>
+<td>1</td>
+<td>A track is an ordered list of courses and projects. We only have one currently: a backend developer track. Working on new ones.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="usage-data">
+  <span> Usage data</span> <a href="#usage-data">🔗</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lesson Completions</td>
+<td>10,725,530</td>
+<td>Total number of lessons that have been completed by all users.</td>
+</tr>
+<tr>
+<td>Course/Project Completions</td>
+<td>64,286</td>
+<td>Total number of courses and projects that have been completed by all users.</td>
+</tr>
+</tbody>
+</table>
+<p>Here’s a chart of lesson completions by month (blue bars) and active members (orange line):</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/juMFNBi.png" alt="lesson completions"/></p>
+<h2 id="the-hardest-concepts-when-learning-to-code">
+  <span> The hardest concepts when learning to code</span> <a href="#the-hardest-concepts-when-learning-to-code">🔗</a></h2>
+<p>Let’s start at the beginning. <strong>Where do people give up</strong>?</p>
+<p>Here’s the drop-off funnel of chapters 4-14 of the very first course: “<a href="https://www.boot.dev/courses/learn-code-python">Learn to code with Python</a>”.</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/rRTiims.png" alt="python chapter drop off"/></p>
+<p>The first bar represents the number of users who did at least one lesson in chapter 4. The next bar represents the number of users who went on to do at least one lesson in chapter 5, and so on.</p>
+<p><em>I excluded the first 3 chapters because the interactivity paywall is at the end of chapter 3, which skews the results</em>.</p>
+<p>By percentage, chapters 7, 8 and 9 have the biggest drop off rates, 11.5%, 10.5%, and 15% respectively. These chapters cover <strong>comparison operators</strong>, <strong>loops</strong>, and <strong>lists</strong>.</p>
+<h2 id="how-does-go-compare-to-python">
+  <span> How does Go compare to Python?</span> <a href="#how-does-go-compare-to-python">🔗</a></h2>
+<p>It’s important to understand that our Python course is an “intro to coding” course. It starts from zero. Our <a href="https://www.boot.dev/courses/learn-golang">Go course is “Go for developers”</a> and assumes that you already understand coding concepts, and want to learn the Go-specific syntax and idioms. Most new learners on Boot.dev start in one of two places:</p>
+<ol>
+<li>Brand new coders in Python</li>
+<li>Experienced coders who just want to learn back-end development in Go</li>
+</ol>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/Y8A6Drd.png" alt="go chapter drop off"/></p>
+<p>The largest drop offs are in chapters 4, 5, and 8 with 24%, 14% and 22% respectively. These chapters cover <strong>structs</strong>, <strong>interfaces</strong>, and <strong>slices</strong>.</p>
+<h2 id="giving-up-vs-struggling">
+  <span> Giving up vs struggling</span> <a href="#giving-up-vs-struggling">🔗</a></h2>
+<p>Now to be fair, giving up isn’t a pure measure of difficulty. It’s a combination of difficulty and motivation and probably a few other factors. So let’s look specifically at the <em>hardest</em> chapters in each course.</p>
+<p>It’s interesting to distinguish between “hard” in the absolute sense and “hard” relative to how much you struggle <em>when you arrive</em> at a concept. For example, learning about functions is easier than learning about recursion in the absolute sense, but is it easier in the <em>relative</em> sense? You won’t encounter recursion in Boot.dev until you’ve had 6 additional courses of programming practice. <strong>We mostly care about relative difficulty</strong>. We see it as our job to introduce the right concepts at the right time, with the right amount of practice.</p>
+<p>We calculate a “difficulty” score for each lesson based on a few metrics:</p>
+<ul>
+<li>Number of attempts before passing. Weight <code>.4</code></li>
+<li>Number of solution views before passing. Weight <code>.4</code></li>
+<li>Number of chats with AI before passing. Weight <code>.2</code></li>
+</ul>
+<p><em>We’d like to add “time to complete” as a factor, but its surprisingly tricky to measure accurately… we plan to add it in the future.</em></p>
+<p>We then use a <a href="https://en.wikipedia.org/wiki/Normal_distribution">normal distribution</a>/<a href="https://en.wikipedia.org/wiki/Standard_deviation">standard deviation</a> to normalize the scores. Finally, we map it all onto a scale of 1-10 so its easy to understand what the numbers mean as a user.</p>
+<p><em>This means difficulty scores are relative to the other lessons in the course.</em> It would be impossible to have all <code>10</code>s, or all <code>1</code>s.</p>
+<p>Here are the chapters of the Go course, sorted by average lesson difficulty, hardest to easiest:</p>
+<table>
+<thead>
+<tr>
+<th>Avg Difficulty Score</th>
+<th>Chapter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>6.667</td>
+<td>Loops</td>
+</tr>
+<tr>
+<td>6.000</td>
+<td>Channels</td>
+</tr>
+<tr>
+<td>4.769</td>
+<td>Maps</td>
+</tr>
+<tr>
+<td>4.636</td>
+<td>Slices</td>
+</tr>
+<tr>
+<td>4.476</td>
+<td>Functions</td>
+</tr>
+<tr>
+<td>4.250</td>
+<td>Generics</td>
+</tr>
+<tr>
+<td>4.250</td>
+<td>Enums</td>
+</tr>
+<tr>
+<td>4.200</td>
+<td>Conditionals</td>
+</tr>
+<tr>
+<td>4.091</td>
+<td>Structs</td>
+</tr>
+<tr>
+<td>4.091</td>
+<td>Pointers</td>
+</tr>
+<tr>
+<td>4.080</td>
+<td>Variables</td>
+</tr>
+<tr>
+<td>4.000</td>
+<td>Interfaces</td>
+</tr>
+<tr>
+<td>4.000</td>
+<td>Errors</td>
+</tr>
+<tr>
+<td>3.750</td>
+<td>Mutexes</td>
+</tr>
+<tr>
+<td>3.556</td>
+<td>Packages and Modules</td>
+</tr>
+<tr>
+<td>3.500</td>
+<td>Quiz</td>
+</tr>
+</tbody>
+</table>
+<p>Of course, we run into a <em>new</em> problem… a chapter with more hard lessons will <em>appear easier</em> if it <em>also</em> has a lot of easy lessons. If anything, more lessons (of any kind) should indicate the chapter is hard<em>er</em> if only by a little. <strong>It certainly doesn’t mean it’s easier</strong>.</p>
+<p>Let’s try sorting by the chapters with the <em>most lessons over a difficulty score of <code>6</code></em>:</p>
+<table>
+<thead>
+<tr>
+<th>Num Difficult Lessons</th>
+<th>Chapter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4</td>
+<td>Channels</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Maps</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Loops</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Slices</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Functions</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Generics</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Conditionals</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Variables</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Errors</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Structs</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Mutexes</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Enums</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Packages and Modules</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Interfaces</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Pointers</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Quiz</td>
+</tr>
+</tbody>
+</table>
+<p>As expected (by me) channels (and by extension <strong>concurrency</strong>) bumped up a spot - students anecdotally seem to ask for more help with this chapter in our Discord than any other.</p>
+<p>I picked 7-10 as an arbitrary cutoff for “hard” lessons because it gets weird when you <em>sum</em> the difficulties because 3 lessons of difficulty 3 is significantly easier than a single 9. That said, I think we can improve <em>one last thing</em>. Let’s sum the difficulties, but <strong>only if they’re over 6</strong>. That way we give a bit more weight to the harder lessons:</p>
+<table>
+<thead>
+<tr>
+<th>Sum of Difficult Scores</th>
+<th>Chapter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>33</td>
+<td>Channels</td>
+</tr>
+<tr>
+<td>23</td>
+<td>Loops</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Maps</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Slices</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Functions</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Generics</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Conditionals</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Variables</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Errors</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Structs</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Mutexes</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Enums</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Packages and Modules</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Interfaces</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Pointers</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Quiz</td>
+</tr>
+</tbody>
+</table>
+<p>This feels <em>really close</em> to what our students report - so let’s roll with it. Maybe in the future we’ll add some sort of exponential scaling so that we don’t need a cutoff, but I’d need to sit down and test it, and we would probably need more data to make that worthwhile.</p>
+<p><strong>Now let’s use this calculation for every chapter on the platform</strong>. Here’s the data formatted as a Markdown table:</p>
+<table>
+<thead>
+<tr>
+<th>Score</th>
+<th>Course</th>
+<th>Chapter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>76</td>
+<td>Learn Python</td>
+<td>Loops</td>
+</tr>
+<tr>
+<td>56</td>
+<td>Learn Data Structures</td>
+<td>Binary Trees</td>
+</tr>
+<tr>
+<td>46</td>
+<td>Learn Kubernetes</td>
+<td>Storage</td>
+</tr>
+<tr>
+<td>46</td>
+<td>Learn HTTP Servers</td>
+<td>JSON</td>
+</tr>
+<tr>
+<td>44</td>
+<td>Learn Data Structures</td>
+<td>Tries</td>
+</tr>
+<tr>
+<td>42</td>
+<td>Learn Functional Programming</td>
+<td>Recursion</td>
+</tr>
+<tr>
+<td>39</td>
+<td>Learn Algorithms</td>
+<td>P vs NP</td>
+</tr>
+<tr>
+<td>37</td>
+<td>Learn SQL</td>
+<td>Joins</td>
+</tr>
+<tr>
+<td>34</td>
+<td>Learn Data Structures</td>
+<td>Linked Lists</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Learn Advanced Algorithms</td>
+<td>Linear Programming</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Learn Go</td>
+<td>Channels</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Learn Algorithms</td>
+<td>Exponential Time</td>
+</tr>
+<tr>
+<td>32</td>
+<td>Learn Memory Management</td>
+<td>Mark and Sweep GC</td>
+</tr>
+<tr>
+<td>31</td>
+<td>Learn Functional Programming</td>
+<td>First Class Functions</td>
+</tr>
+<tr>
+<td>31</td>
+<td>Learn Advanced Algorithms</td>
+<td>Dijkstra’s</td>
+</tr>
+<tr>
+<td>31</td>
+<td>Learn Functional Programming</td>
+<td>Decorators</td>
+</tr>
+<tr>
+<td>30</td>
+<td>Learn Python</td>
+<td>Functions</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Learn Object Oriented Programming</td>
+<td>Polymorphism</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Personal Project 2</td>
+<td>Placeholder</td>
+</tr>
+<tr>
+<td>28</td>
+<td>Learn Data Structures</td>
+<td>Red Black Trees</td>
+</tr>
+<tr>
+<td>28</td>
+<td>Learn HTTP Servers</td>
+<td>Authentication</td>
+</tr>
+<tr>
+<td>27</td>
+<td>Learn Cryptography</td>
+<td>DES</td>
+</tr>
+<tr>
+<td>26</td>
+<td>Learn Functional Programming</td>
+<td>Sum Types</td>
+</tr>
+<tr>
+<td>26</td>
+<td>Learn Functional Programming</td>
+<td>Pure Functions</td>
+</tr>
+<tr>
+<td>26</td>
+<td>Build a Static Site Generator</td>
+<td>Website</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Learn HTTP Servers</td>
+<td>Servers</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Build a Blog Aggregator</td>
+<td>Following</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Learn Functional Programming</td>
+<td>Currying</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Learn SQL</td>
+<td>Aggregations</td>
+</tr>
+<tr>
+<td>23</td>
+<td>Learn Memory Management</td>
+<td>Advanced Pointers</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Learn Python</td>
+<td>Variables</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Learn Go</td>
+<td>Maps</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Learn Object Oriented Programming</td>
+<td>Inheritance</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Build a Static Site Generator</td>
+<td>Inline</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Learn Kubernetes</td>
+<td>Nodes</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Learn Go</td>
+<td>Slices</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Learn Data Structures</td>
+<td>Hashmaps</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Learn Git</td>
+<td>Config</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Learn Memory Management</td>
+<td>Pointers</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Learn Functional Programming</td>
+<td>Closures</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Learn Pub/Sub Architecture</td>
+<td>Subscribers &amp; Routing</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Learn Algorithms</td>
+<td>Sorting Algorithms</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Learn SQL</td>
+<td>Introduction</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Learn Data Structures</td>
+<td>BFS and DFS</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Learn Advanced Algorithms</td>
+<td>Edit Distance</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Learn Pub/Sub Architecture</td>
+<td>Delivery</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Learn Memory Management</td>
+<td>Objects</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Learn CI/CD</td>
+<td>Database</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Learn Functional Programming</td>
+<td>What is Functional Programming?</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Learn Cryptography</td>
+<td>RSA</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Learn Pub/Sub Architecture</td>
+<td>Serialization</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Learn Object Oriented Programming</td>
+<td>Classes</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Learn JavaScript</td>
+<td>Arrays</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Build a Blog Aggregator</td>
+<td>RSS</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Learn HTTP Clients</td>
+<td>DNS</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Learn Object Oriented Programming</td>
+<td>Abstraction</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Learn Memory Management</td>
+<td>Stack Data Structure</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Learn Advanced Algorithms</td>
+<td>Heaps</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Learn CI/CD</td>
+<td>Build</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Learn Cryptography</td>
+<td>Hash Functions</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Learn Python</td>
+<td>Dictionaries</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Learn SQL</td>
+<td>Basic Queries</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Learn Python</td>
+<td>Errors</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Learn Python</td>
+<td>Lists</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Learn Pub/Sub Architecture</td>
+<td>Pub/Sub Architecture</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Learn Advanced Algorithms</td>
+<td>A* Search</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Learn Pub/Sub Architecture</td>
+<td>Publishers &amp; Queues</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Learn Cryptography</td>
+<td>Digital Signatures</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Learn HTTP Servers</td>
+<td>Routing</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Learn Pub/Sub Architecture</td>
+<td>Scalability</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Learn Cryptography</td>
+<td>AES</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Learn Pub/Sub Architecture</td>
+<td>Message Brokers</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Learn SQL</td>
+<td>Performance</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Learn Data Structures</td>
+<td>Stacks</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Learn HTTP Servers</td>
+<td>Webhooks</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Learn SQL</td>
+<td>Constraints</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Learn Cryptography</td>
+<td>Block Ciphers</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Learn Memory Management</td>
+<td>Refcounting GC</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Build a Static Site Generator</td>
+<td>Blocks</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Learn CI/CD</td>
+<td>Formatting</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Learn Cryptography</td>
+<td>Encoding</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Learn Memory Management</td>
+<td>Stack and Heap</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Object Oriented Programming</td>
+<td>Encapsulation</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Go</td>
+<td>Generics</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Go</td>
+<td>Conditionals</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Cryptography</td>
+<td>KDFs</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Cryptography</td>
+<td>Caesar Cipher</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn HTTP Servers</td>
+<td>Authorization</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Functional Programming</td>
+<td>Function Transformations</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn HTTP Clients</td>
+<td>Paths</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Memory Management</td>
+<td>Unions</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn SQL</td>
+<td>Subqueries</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Cryptography</td>
+<td>Asymmetric Encryption</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Cryptography</td>
+<td>Stream Ciphers</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn CI/CD</td>
+<td>Tests</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Cryptography</td>
+<td>Brute Force</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn HTTP Clients</td>
+<td>Async</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn HTTP Clients</td>
+<td>URIs</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn HTTP Clients</td>
+<td>Methods</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>Relocation</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn HTTP Clients</td>
+<td>Headers</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Squash</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Stash</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Repositories</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Algorithms</td>
+<td>Math</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Shells and Terminals</td>
+<td>Terminals and Shells</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build a Static Site Generator</td>
+<td>Static Sites</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Cryptography</td>
+<td>Symmetric Encryption</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Reflog</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Docker</td>
+<td>Publish</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn CI/CD</td>
+<td>Linting</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn HTTP Servers</td>
+<td>Documentation</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Shells and Terminals</td>
+<td>Permissions</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Go</td>
+<td>Packages and Modules</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Internals</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Advanced Algorithms</td>
+<td>Bellman Ford</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Reset</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Docker</td>
+<td>Dockerfiles</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Tags</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Data Structures</td>
+<td>Graphs</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn CI/CD</td>
+<td>Continuous Integration</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>Applying</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn CI/CD</td>
+<td>Security</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Python</td>
+<td>Scope</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn SQL</td>
+<td>Normalization</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Rebase</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Data Structures</td>
+<td>Queues</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>Resume</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Rebase Conflicts</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build a Blog Aggregator</td>
+<td>Aggregate</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Merge</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn CI/CD</td>
+<td>Deploy</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Algorithms</td>
+<td>Polynomial Time</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>Strategy</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn SQL</td>
+<td>Structuring</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>LinkedIn Profile</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Advanced Algorithms</td>
+<td>Dynamic Programming</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Kubernetes</td>
+<td>Namespaces</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Docker</td>
+<td>Command Line</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Memory Management</td>
+<td>Enums</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>Networking</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Branching</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Memory Management</td>
+<td>C Basics</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Revert</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Worktrees</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Go</td>
+<td>Mutexes</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Shells and Terminals</td>
+<td>Packages</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Shells and Terminals</td>
+<td>Programs</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Python</td>
+<td>Comparisons</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>Interviewing</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Docker</td>
+<td>Networks</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Python</td>
+<td>Testing and Debugging</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>GitHub</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build Asteroids</td>
+<td>Asteroids</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Python</td>
+<td>Sets</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn SQL</td>
+<td>Tables</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Gitignore</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Python</td>
+<td>Computing</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Python</td>
+<td>Quiz</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Shells and Terminals</td>
+<td>Filesystems</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn SQL</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build Asteroids</td>
+<td>Player</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Kubernetes</td>
+<td>Scaling</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Cherry Pick</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Kubernetes</td>
+<td>ConfigMaps</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Memory Management</td>
+<td>Structs</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Fork</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn HTTP Clients</td>
+<td>HTTPS</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>GitHub Profile</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Bisect</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build Asteroids</td>
+<td>Pygame</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Kubernetes</td>
+<td>Pods</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Setup</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Cryptography</td>
+<td>XOR</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+<td>Remote</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+<td>Projects</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn HTTP Servers</td>
+<td>Architecture</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Go</td>
+<td>Interfaces</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn HTTP Clients</td>
+<td>Why HTTP?</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Kubernetes</td>
+<td>Ingress</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn JavaScript</td>
+<td>Runtimes</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Kubernetes</td>
+<td>Services</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+<td>Merge Conflicts</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Kubernetes</td>
+<td>Install</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn HTTP Clients</td>
+<td>cURL</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Kubernetes</td>
+<td>Deployments</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Python</td>
+<td>Challenges</td>
+</tr>
+</tbody>
+</table>
+<h3 id="to-simplify-lets-aggregate-all-this-data-by-course">
+  <span> To simplify, let’s aggregate all this data by course:</span> <a href="#to-simplify-lets-aggregate-all-this-data-by-course">🔗</a></h3>
+<table>
+<thead>
+<tr>
+<th>Score</th>
+<th>Course</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>222</td>
+<td>Learn Functional Programming</td>
+</tr>
+<tr>
+<td>209</td>
+<td>Learn Data Structures</td>
+</tr>
+<tr>
+<td>141</td>
+<td>Learn HTTP Servers</td>
+</tr>
+<tr>
+<td>136</td>
+<td>Learn Go</td>
+</tr>
+<tr>
+<td>129</td>
+<td>Learn Cryptography</td>
+</tr>
+<tr>
+<td>128</td>
+<td>Learn Memory Management</td>
+</tr>
+<tr>
+<td>110</td>
+<td>Learn Advanced Algorithms</td>
+</tr>
+<tr>
+<td>110</td>
+<td>Learn Python</td>
+</tr>
+<tr>
+<td>108</td>
+<td>Learn Algorithms</td>
+</tr>
+<tr>
+<td>99</td>
+<td>Learn Pub/Sub Architecture</td>
+</tr>
+<tr>
+<td>99</td>
+<td>Learn SQL</td>
+</tr>
+<tr>
+<td>90</td>
+<td>Learn Object Oriented Programming</td>
+</tr>
+<tr>
+<td>78</td>
+<td>Build a Static Site Generator</td>
+</tr>
+<tr>
+<td>73</td>
+<td>Learn HTTP Clients</td>
+</tr>
+<tr>
+<td>70</td>
+<td>Build a Blog Aggregator</td>
+</tr>
+<tr>
+<td>37</td>
+<td>Learn CI/CD</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Build a Web Crawler</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Learn JavaScript</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Learn Kubernetes</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Personal Project 1</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build a Pokedex</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build a Bookbot</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Docker</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Personal Project 2</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build a Maze Solver</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn How to Find a Programming Job</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Shells and Terminals</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Capstone Project</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git 2</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Learn Git</td>
+</tr>
+<tr>
+<td>0</td>
+<td>Build Asteroids</td>
+</tr>
+</tbody>
+</table>
+<p>Now one might look at this, and think <a href="https://www.boot.dev/teachers/the-primeagen">ThePrimeagen</a> writes courses for n00bs, whilst <a href="https://www.boot.dev/teachers/tj-devries">TJ</a> writes courses for the elite…</p>
+<p>… but to be fair to Prime, his course’s data is skewed for two reasons:</p>
+<ul>
+<li>The Git courses don’t yet have solutions to view (its tricky to implement solutions in a way that’s easy for us to maintain and also easy for the student to grok, but we think we have a solution coming soon)</li>
+<li>The courses that are completed on your local machine (like Git) are harder to “screw up” on submission, because there aren’t any hidden test cases currently</li>
+</ul>
+<p>Again, adding a “time to complete” metric should really help some of these courses have more accurate scores.</p>
+<p><strong>All that said, the current calculations seems to work really well for the courses that are comprised mostly of self-encapsulated coding lessons</strong>.</p>
+<h2 id="ai-tutors">
+  <span> AI Tutors</span> <a href="#ai-tutors">🔗</a></h2>
+<p><em>It’s important to understand that viewing a solution before completing a lesson costs a “seer stone” (10 gems) or 75% of the lesson’s XP. Chatting with AI costs a “baked salmon” (2 gems) or 50% of the lesson’s XP</em>.</p>
+<p>The total number of messages sent to our AI mentor, Boots, was about 50% higher than the total number of times users viewed solutions.</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/WpupzA0.png" alt="total boots vs solutions"/></p>
+<p>What’s interesting to me, is that if we aggregate by “count per use average”, we see that the boots chats are almost 3-4x more common than viewing solutions:</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/GZ0XzYY.png" alt="unique users boots vs solutions"/></p>
+<p>I <em>think</em> this is because people who do use the AI mentor, use it more - but fewer people use it overall (I’m guessing Posthog excludes the <code>0</code>’s from the average calculation’s denominator).</p>
+<p>Now here’s my favorite part:</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/b7BKKEa.png" alt="boots solutions totals before/after"/></p>
+<p>Boots is disproportionately more popular <em>before</em> a student has completed a lesson, while viewing solutions are more popular <em>after</em> the lesson is complete.</p>
+<p>This finding aligns with our hunch: students prefer to be guided using the Socratic method (which is what our AI is prompted to do) than to “cheat”. However, once a lesson is complete, students like to see how the instructor solved the problem - more than they like to ask follow-up questions.</p>
+<h3 id="breaking-it-down-by-language">
+  <span> Breaking it down by language</span> <a href="#breaking-it-down-by-language">🔗</a></h3>
+<p><em>It’s important to remember that our Python course is “Python for beginners” and our Go course is “Go for developers”</em>. And because we start students with Python, it has about 4.5x more total lesson submissions than Go.</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>% Boots Used</th>
+<th>% Solutions Used</th>
+<th>Total Daily Lessons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Learn Python Course</td>
+<td>9.05%</td>
+<td>8.99%</td>
+<td>~22,000</td>
+</tr>
+<tr>
+<td>Learn Go Course</td>
+<td>7.14%</td>
+<td>9.45%</td>
+<td>~4,500</td>
+</tr>
+<tr>
+<td>Learn FP (Hardest Python Course)</td>
+<td>32.52%</td>
+<td>21.04%</td>
+<td>~1,700</td>
+</tr>
+<tr>
+<td>Learn HTTP Servers (Hardest Go Course)</td>
+<td>35.6%</td>
+<td>13.59%</td>
+<td>~350</td>
+</tr>
+</tbody>
+</table>
+<p>It seems to me that as the problems get larger and more complex (HTTP servers lessons span multiple files, FP problems tend to be larger and more complex functions) it seems like people lean more and more on the AI mentor over direct solutions.</p>
+<h3 id="breaking-it-down-by-model">
+  <span> Breaking it down by model</span> <a href="#breaking-it-down-by-model">🔗</a></h3>
+<p>For the last 60 days we’ve been powering Boots 50% with OpenAI’s GPT-4o and 50% with Anthropic’s Sonnet 3.5. Once you start a conversation with a model, you stick with that model for the duration of the conversation, but each new conversation is randomly assigned to a model.</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Like Count</th>
+<th>Dislike Count</th>
+<th>Total Messages</th>
+<th>Like Ratio</th>
+<th>Dislike Ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>claude-3-5-sonnet-20240620</td>
+<td>932</td>
+<td>162</td>
+<td>430023</td>
+<td>0.0022</td>
+<td>0.0004</td>
+</tr>
+<tr>
+<td>gpt-4o-2024-08-06</td>
+<td>846</td>
+<td>267</td>
+<td>360359</td>
+<td>0.0023</td>
+<td>0.0007</td>
+</tr>
+</tbody>
+</table>
+<p>One thing that’s <em>really interesting</em> is that about 20 days into the experiment, GPT-4o had a decisive (iirc 50% better performance), but it has become closer over time. Honestly I think we just need a lot more data; we probably need to update our UI to make the thumbs-up/thumbs-down buttons more prominent so we get more feedback per conversation.</p>
+<p>We haven’t done this yet, but we plan to also start versioning our system prompts and using the same thumbs up/down system to continually improve the quality of the prompts and context we provide to the models.</p>
+<h2 id="ai-content-help">
+  <span> AI content help</span> <a href="#ai-content-help">🔗</a></h2>
+<p>Generating content with AI is, by and large, <strong>a terrible idea</strong>. I’ve experimented with it a lot because it’s one of our single biggest time costs - and anything we can do to produce more and better content faster and cheaper is a win.</p>
+<p>I’m convinced that as the world becomes flooded with more and more AI slop, the value of highly curated and high-quality content with a *<em>chef’s kiss</em>* human flourish will become <em>more</em> valuable, not less. But that doesn’t mean we haven’t found <em>some</em> use cases for AI in our content management.</p>
+<h3 id="use-case-1-diagnosing-student-errors">
+  <span> Use case 1: Diagnosing student errors</span> <a href="#use-case-1-diagnosing-student-errors">🔗</a></h3>
+<p>We get <em>a lot</em> of reports on lessons. And we take them <em>very seriously</em>. As of Oct 17, we’ve closed 10,964 tickets, and currently have only 73 open. The median time a ticket stays open is 1 day. And that’s not even counting all the <em>reports</em> we get, because reports on the <em>same</em> lesson get aggregated into the same ticket - until its closed and a new ticket is started. 1-3 reports per ticket is common.</p>
+<p>Anyhow, the point is that we’ve been building internal systems to make this process more manageable, because although we get a <em>ton</em> of reports, only a fraction of those reports are actionable. We’ve broken reports down into 5 categories:</p>
+<ul>
+<li><code>diagnose-studenterror</code>: The student is confused about the lesson, but the lesson is correct</li>
+<li><code>diagnose-enhancement</code>: The student has a good idea for an improvement</li>
+<li><code>diagnose-bug</code>: The student has found a valid bug</li>
+<li><code>diagnose-badchange</code>: The student is identifying a bug that’s not real, or suggesting a change that would make the lesson worse</li>
+<li><code>diagnose-question</code>: The student is asking a question, not reporting an issue</li>
+</ul>
+<p>Of these, only <code>diagnose-enhancement</code> and <code>diagnose-bug</code> are actionable. Everything else can be safely closed without modifying content - although it would be nice to respond to the student and let them know if they’re confused or mistaken.</p>
+<p>Well, up until about a month ago, this diagnosing and responding was done manually. In fact, we only responded to students &lt;5% of the time that we would have liked to, because it was so time consuming.</p>
+<p>However, now we use GPT-4o diagnose, and based on the diagnosis, provide a simple response to the student. The diagnosis is helpful for us, because we can more quickly close the ticket or start on a content change with confidence. The response is helpful for the student because they instantly understand that:</p>
+<ol>
+<li>This isn’t the place to ask a question</li>
+<li>They are likely confused - the lesson is in fact correct, and they should more carefully inspect their code, chat with Boots, or view the solution.</li>
+</ol>
+<p>We’ve only been running this for a couple weeks (long enough to diagnose 229 tickets), but so far here’s how it breaks down by the numbers:</p>
+<table>
+<thead>
+<tr>
+<th>Diagnosis</th>
+<th>Count</th>
+<th>% of total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>diagnose-studenterror</code></td>
+<td>63</td>
+<td>~27%</td>
+</tr>
+<tr>
+<td><code>diagnose-enhancement</code></td>
+<td>86</td>
+<td>~38%</td>
+</tr>
+<tr>
+<td><code>diagnose-badchange</code></td>
+<td>8</td>
+<td>~4%</td>
+</tr>
+<tr>
+<td><code>diagnose-bug</code></td>
+<td>35</td>
+<td>~15%</td>
+</tr>
+<tr>
+<td><code>diagnose-question</code></td>
+<td>37</td>
+<td>~16%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="use-case-2-intentionally-making-content-worse">
+  <span> Use case 2: Intentionally making content worse</span> <a href="#use-case-2-intentionally-making-content-worse">🔗</a></h3>
+<p>Alright that’s a bit tongue in cheek, but… only a bit. I’ve tried many times to get AI to generate new lessons. I’ve given it our repository of lessons via fine-tuning, I’ve tried to shove examples of great human-written lessons in a context window, etc. But what I’ve gotten back is mostly slop (at least by our standards). Sure, it’s usually correct, and it reads like correct English, but it’s just <strong>so boring</strong>. If you try to get the AI to use more creative language, it only does so superficially and cringily.</p>
+<p>So I’ve mostly given up on that for now - waiting for GPT 5 I guess.</p>
+<p>Anyhow, what it <em>is</em> good at is reducing and reformatting. I’ll spoil a new feature that we’re working on here, called “spellbooks”. Your spellbook is a UI feature easily accessible via a keyboard command, that fuzzy searches through the “pages” you’ve unlocked. You unlock a spellbook page as you complete lessons. A spellbook page is just a condensed lesson: A short no-nonsense description of the concept, a few code examples, and links to documentation. The intention is:</p>
+<ol>
+<li>You won’t need to take notes</li>
+<li>You won’t need to bookmark lessons</li>
+<li>You won’t need cheatsheets</li>
+<li>You won’t need to navigate back to earlier lessons for examples and documentation</li>
+</ol>
+<p>For example, you might be halfway through the Go course but have forgotten the syntax for a <code>struct</code>. So you hit <code>cmd+k</code> (or whatever keymap we choose) and type “struct” and you get a spellbook entry that looks something like this:</p>
+<pre tabindex="0"><code>A struct in Go is a collection of fields. They&#39;re a convenient way to group different types of values together in a single place:
+
+```go
+type Person struct {
+    Name string
+    Age  int
+}
+```
+
+- [Go reference](https://go.dev/ref/spec#Struct_types)
+- [Go tour](https://go.dev/tour/moretypes/2)
+</code></pre><p>What’s this have to do with AI? Well, as it turns out, AI is really good at taking a larger, more well-written lesson and condensing it down to a spellbook entry. We’ve written a script that recursively generates spellbook pages for each lesson in a directory. It still requires human verification and touch ups of course, but it’s a <em>lot</em> faster than writing them from scratch.</p>
+<h2 id="resetting-lessons">
+  <span> Resetting lessons</span> <a href="#resetting-lessons">🔗</a></h2>
+<p>Students like to review stuff. Spellbooks will be nice for recall, but not so much for practice. In the future we have plans for a better “practice” experience, but the quick and dirty thing was to allow users to reset lessons. When they reset, progress bars and navigation are reset, but re-completing the same lessons does <em>not</em> reward XP or chests.</p>
+<p>Since adding lesson resets (July 24th, 2024) until now, we’ve had 3,561,569 successful lesson submissions and 418,289 resets. <strong>That’s 11.7% of all successful lesson submissions</strong>.</p>
+<p>I was actually blown away by this number - I thought it would be in the 2-3% range, but apparently people like to redo lessons more than I thought.</p>
+<h2 id="people-like-to-rtfm">
+  <span> People like to RTFM</span> <a href="#people-like-to-rtfm">🔗</a></h2>
+<p>We have a “listen to the lesson” button that reads you the lessons in a soothing British AI voice:</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/DJAwHkv.png" alt="audio listen screenshot"/></p>
+<p>I was surprised that people only seem to use it about 1.4% of the time. People like to read more than I expected.</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/Om023Gs.png" alt="Successful lesson submissions vs Audio listens"/></p>
+<h2 id="vim-mode">
+  <span> Vim mode</span> <a href="#vim-mode">🔗</a></h2>
+<p>Our in-browser editor has a vim-mode, and since adding the configuration to our backend database (it used to live in local storage) we’ve had <code>684</code> people enable it. That’s <code>684</code> people in one week, and we have roughly 10,000 weekly active users.</p>
+<p>So around <code>6.8%</code> of active learners are using vim mode, honestly more than I expected!</p>
+<h2 id="thanks-for-making-it-this-far">
+  <span> Thanks for making it this far</span> <a href="#thanks-for-making-it-this-far">🔗</a></h2>
+<p>I hope this was interesting to you in one way or another! It was really helpful for me just to sit down and gather all this data, even just for our own product and content development. I figured while I was at it, I might as well <del>turn it into a marketing stunt</del> share it with the world altruistically.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

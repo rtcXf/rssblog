@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Build a Blog Aggregator in Go [Deprecated] | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/tutorials/build-blog-aggregator-golang-deprecated/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Build a Blog Aggregator in Go [Deprecated]</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+          
+          <h2>Table of Contents</h2>
+          
+           <p>We’re going to build an <a href="https://en.wikipedia.org/wiki/RSS">RSS</a> feed aggregator in Go! It’s a web server that allows clients to:</p>
+<ul>
+<li>Add RSS feeds to be collected</li>
+<li>Follow and unfollow RSS feeds that other users have added</li>
+<li>Fetch all of the latest posts from the RSS feeds they follow</li>
+</ul>
+<p>RSS feeds are a way for websites to publish updates to their content. You can use this project to keep up with your favorite blogs, news sites, podcasts, and more!</p>
+<p><strong>Caveat</strong>: There is a more updated version of this course that’s more interactive over on <a href="https://www.boot.dev/courses/build-blog-aggregator">Boot.dev here</a>. If you’re looking for a more interactive experience, I recommend checking it out!</p>
+<p><strong>Pre-requisites</strong>:</p>
+<p>This project assumes that you’ve already taken our “Learn Web Servers” course. If you haven’t, go take it! It will give you a solid foundation for this project.</p>
+<p><strong>Learning goals</strong>:</p>
+<ul>
+<li>Learn how to integrate a Go server with PostgreSQL</li>
+<li>Learn about the basics of database migrations</li>
+<li>Learn about long-running service workers</li>
+</ul>
+<p><strong>Setup</strong>:</p>
+<p>Before we dive into the project, let’s make sure you have everything you’ll need on your machine.</p>
+<ol>
+<li>An editor. I use <a href="https://code.visualstudio.com/">VS code</a>, you can use whatever you like.</li>
+<li>A command line. I work on Mac OS/Linux, so instructions will be in Bash. I recommend <a href="https://docs.microsoft.com/en-us/windows/wsl/install">WSL 2</a> if you’re on Windows so you can still use Linux commands.</li>
+<li>The latest <a href="https://golang.org/doc/install">Go toolchain</a>.</li>
+<li>If you’re in VS Code, I recommend the official <a href="https://marketplace.visualstudio.com/items?itemName=golang.Go">Go extension</a>.</li>
+<li>An HTTP client. I use <a href="https://www.thunderclient.com/">Thunder Client</a>, but you can use whatever you like.</li>
+</ol>
+<p>If you’re ready, move on to the next step!</p>
+<p><strong>Optional video walkthrough</strong>:</p>
+<p><em>Try to build this project on your own!</em> Use this video if you get stuck, or to compare your architecture and coding patterns to mine.</p>
+
+<p>
+  <iframe src="https://www.youtube.com/embed/dpXhDzgUSe4" allowfullscreen="" title="YouTube Video"></iframe>
+</p>
+
+
+
+<h2 id="boilerplate">
+  <span> Boilerplate</span> <a href="#boilerplate">🔗</a></h2>
+<p>Before we get to the app-specific stuff, let’s scaffold a simple CRUD server, hopefully, you’re already familiar with how to do this from the “Learn Web Servers” course! That said, I’ll provide a quick refresher.</p>
+<p><em>It might be a good idea to use your “Learn Web Servers” code as a reference while building this project!</em></p>
+<h3 id="assignment">
+  <span> Assignment</span> <a href="#assignment">🔗</a></h3>
+<ol>
+<li> Create a new project. You should know how to do this by now! My process is:
+<ul>
+<li> Create a repo on <a href="https://github.com">GitHub</a> (initialized with a README).</li>
+<li> Clone it onto your machine.</li>
+<li> Create a new Go module with <code>go mod init</code>.</li>
+<li> Create a <code>main.go</code> file in the root of your project, and add a <code>func main()</code> to it.</li>
+</ul>
+</li>
+<li> Install the <a href="https://github.com/joho/godotenv">godotenv</a> package using <code>go get github.com/joho/godotenv</code>.</li>
+<li> Create a <a href="https://www.freecodecamp.org/news/gitignore-what-is-it-and-how-to-add-to-repo/">gitignore</a>’d <code>.env</code> file in the root of your project and add the following:</li>
+</ol>
+<p>The <code>.env</code> file is a convenient way to store environment (configuration) variables.</p>
+<ul>
+<li> Use <a href="https://pkg.go.dev/github.com/joho/godotenv#Load">godotenv.Load()</a> to load the variables from the file into your environment at the top of <code>main()</code>.</li>
+<li> Use <a href="https://pkg.go.dev/os#Getenv">os.Getenv()</a> to get the value of <code>PORT</code>.</li>
+</ul>
+<ol start="4">
+<li>
+<p> Create a router and server</p>
+<ul>
+<li> Create a <a href="https://pkg.go.dev/net/http#ServeMux">ServeMux</a> using <a href="https://pkg.go.dev/net/http#NewServeMux">http.NewServeMux</a></li>
+<li> Create a new <a href="https://pkg.go.dev/net/http#Server">http.Server</a> and add the port and your multiplexer to it.</li>
+<li> Start the server</li>
+</ul>
+</li>
+<li>
+<p> Create some JSON helper functions:</p>
+<ul>
+<li> <code>respondWithJSON(w http.ResponseWriter, code int, payload interface{})</code></li>
+<li> <code>respondWithError(w http.ResponseWriter, code int, msg string)</code> (which calls <code>respondWithJSON</code> with error-specific values)</li>
+</ul>
+</li>
+</ol>
+<p>You used these in the “Learn Web Servers” course, so you should be able to figure out how to implement them again. They’re simply helper functions that write an HTTP response with:</p>
+<ul>
+<li>A status code</li>
+<li>An <code>application/json</code> content type</li>
+<li>A JSON body</li>
+</ul>
+<ol start="6">
+<li> Add a readiness handler. It should handle <code>GET /v1/healthz</code> requests. It should return a 200 status code and a JSON body:</li>
+</ol>
+<p><em>The purpose of this endpoint is for you to test your <code>respondWithJSON</code> function.</em></p>
+<ol start="7">
+<li> Add an error handler.</li>
+</ol>
+<p>Add a handler for <code>GET /v1/err</code> requests. It should return a 500 status code and a JSON body:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;error&#34;</span><span>:</span> <span>&#34;Internal Server Error&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><em>The purpose of this endpoint is for you to test your <code>respondWithError</code> function.</em></p>
+<ol start="8">
+<li> Run and test your server.</li>
+</ol>
+<p>Once it’s running, use an HTTP client to test your endpoints.</p>
+<h2 id="postgresql">
+  <span> PostgreSQL</span> <a href="#postgresql">🔗</a></h2>
+<p>PostgreSQL is a production-ready, open-source database. It’s a great choice database for many web applications, and as a back-end engineer, it might be the single most important database to be familiar with.</p>
+<h3 id="how-does-postgresql-work">
+  <span> How does PostgreSQL work?</span> <a href="#how-does-postgresql-work">🔗</a></h3>
+<p>Postgres, like most other database technologies, is itself a server. It listens for requests on a port (Postgres’ default is <code>:5432</code>), and responds to those requests. To interact with Postgres, first you will install the server and start it. Then, you can connect to it using a client like <a href="https://www.postgresql.org/docs/current/app-psql.html#:~:text=psql%20is%20a%20terminal%2Dbased,or%20from%20command%20line%20arguments.">psql</a> or <a href="https://www.pgadmin.org/">PGAdmin</a>.</p>
+<ol>
+<li> Install Postgres.</li>
+</ol>
+<p><strong>Mac OS with <a href="https://brew.sh/">brew</a></strong></p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>brew install postgresql@15
+</span></span></code></pre></div><p><strong>Linux / WSL (Debian). Here are the <a href="https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-database#install-postgresql">docs from Microsoft</a>, but simply:</strong></p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>sudo apt update
+</span></span><span><span>sudo apt install postgresql postgresql-contrib
+</span></span></code></pre></div><ol start="2">
+<li> Ensure the installation worked. The <code>psql</code> command-line utility is the default client for Postgres. Use it to make sure you’re on version 14+ of Postgres:</li>
+</ol>
+<ol start="3">
+<li> (Linux only) Update postgres password:</li>
+</ol>
+<p>Enter a password, and be sure you won’t forget it. You can just use something easy like <code>postgres</code>.</p>
+<ol start="4">
+<li> Start the Postgres server in the background</li>
+</ol>
+<ul>
+<li>Mac: <code>brew services start postgresql</code></li>
+<li>Linux: <code>sudo service postgresql start</code></li>
+</ul>
+<ol start="5">
+<li> Connect to the server. I recommend simply using the <code>psql</code> client. It’s the “default” client for Postgres, and it’s a great way to interact with the database. While it’s not as user-friendly as a GUI like <a href="https://www.pgadmin.org/">PGAdmin</a>, it’s a great tool to be able to do at least basic operations with.</li>
+</ol>
+<p>Enter the <code>psql</code> shell:</p>
+<ul>
+<li>Mac: <code>psql postgres</code></li>
+<li>Linux: <code>sudo -u postgres psql</code></li>
+</ul>
+<p>You should see a new prompt that looks like this:</p>
+<ol start="6">
+<li> Create a new database. I called mine <code>blogator</code>:</li>
+</ol>
+<div><pre tabindex="0"><code data-lang="sql"><span><span><span>CREATE</span><span> </span><span>DATABASE</span><span> </span><span>blogator</span><span>;</span><span>
+</span></span></span></code></pre></div><ol start="7">
+<li> Connect to the new database:</li>
+</ol>
+<p>You should see a new prompt that looks like this:</p>
+<ol start="8">
+<li> Set the user password (Linux only)</li>
+</ol>
+<div><pre tabindex="0"><code data-lang="sql"><span><span><span>ALTER</span><span> </span><span>USER</span><span> </span><span>postgres</span><span> </span><span>PASSWORD</span><span> </span><span>&#39;postgres&#39;</span><span>;</span><span>
+</span></span></span></code></pre></div><p>For simplicity, I used <code>postgres</code> as the password. Before, we altered the <em>system</em> user’s password, now we’re altering the <em>database</em> user’s password.</p>
+<ol start="9">
+<li> Query the database</li>
+</ol>
+<p>From here you can run SQL queries against the <code>blogator</code> database. For example, to see the version of Postgres you’re running, you can run:</p>
+<p>If everything is working, you can move on. <em>You can type <code>exit</code> to leave the <code>psql</code> shell.</em></p>
+<h2 id="create-users">
+  <span> Create Users</span> <a href="#create-users">🔗</a></h2>
+<p>In this step, we’ll be adding an endpoint to create new users on the server. We’ll be using a couple of tools to help us out:</p>
+<ul>
+<li><a href="https://pkg.go.dev/database/sql">database/sql</a>: This is part of Go’s standard library. It provides a way to connect to a SQL database, execute queries, and scan the results into Go types.</li>
+<li><a href="https://sqlc.dev/">sqlc</a>: SQLC is an <em>amazing</em> Go program that generates Go code from SQL queries. It’s not exactly an <a href="https://www.freecodecamp.org/news/what-is-an-orm-the-meaning-of-object-relational-mapping-database-tools/">ORM</a>, but rather a tool that makes working with raw SQL almost as easy as using an ORM.</li>
+<li><a href="https://github.com/pressly/goose">Goose</a>: Goose is a database migration tool written in Go. It runs migrations from the same SQL files that SQLC uses, making the pair of tools a perfect fit.</li>
+</ul>
+<ol>
+<li> Install SQLC</li>
+</ol>
+<p>SQLC is just a command line tool, it’s not a package that we need to import. I recommend <a href="https://docs.sqlc.dev/en/latest/overview/install.html">installing</a> it using <code>go install</code>. Installing Go CLI tools with <code>go install</code> is easy and ensures compatibility with your Go environment.</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+</span></span></code></pre></div><p>Then run <code>sqlc version</code> to make sure it’s installed correctly.</p>
+<ol start="2">
+<li> Install Goose</li>
+</ol>
+<p>Like SQLC, Goose is just a command line tool. I also recommend <a href="https://github.com/pressly/goose#install">installing</a> it using <code>go install</code>:</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>go install github.com/pressly/goose/v3/cmd/goose@latest
+</span></span></code></pre></div><p>Run <code>goose -version</code> to make sure it’s installed correctly.</p>
+<ol start="3">
+<li> Create the <code>users</code> migration</li>
+</ol>
+<p>I recommend creating an <code>sql</code> directory in the root of your project, and in there creating a <code>schema</code> directory.</p>
+<p>A “migration” is a SQL file that describes a change to your database schema. For now, we need our first migration to create a <code>users</code> table. The simplest format for these files is:</p>
+<pre tabindex="0"><code>number_name.sql
+</code></pre><p>For example, I created a file in <code>sql/schema</code> called <code>001_users.sql</code> with the following contents:</p>
+<div><pre tabindex="0"><code data-lang="sql"><span><span><span>-- +goose Up
+</span></span></span><span><span><span></span><span>CREATE</span><span> </span><span>TABLE</span><span> </span><span>...</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>-- +goose Down
+</span></span></span><span><span><span></span><span>DROP</span><span> </span><span>TABLE</span><span> </span><span>users</span><span>;</span><span>
+</span></span></span></code></pre></div><p>Write out the <code>CREATE TABLE</code> statement in full, I left it blank for you to fill in. A <code>user</code> should have 4 fields:</p>
+<ul>
+<li>id: a <code>UUID</code> that will serve as the primary key</li>
+<li>created_at: a <code>TIMESTAMP</code> that can not be null</li>
+<li>updated_at: a <code>TIMESTAMP</code> that can not be null</li>
+<li>name: a string that can not be null</li>
+</ul>
+<p>The <code>-- +goose Up</code> and <code>-- +goose Down</code> comments are required. They tell Goose how to run the migration. An “up” migration moves your database from its old state to a new state. A “down” migration moves your database from its new state back to its old state.</p>
+<p>By running all of the “up” migrations on a blank database, you should end up with a database in a ready-to-use state. “Down” migrations are only used when you need to roll back a migration, or if you need to reset a local testing database to a known state.</p>
+<ol start="4">
+<li> Get your connection string</li>
+</ol>
+<p>A connection string is just a URL with all of the information needed to connect to a database. The format is:</p>
+<pre tabindex="0"><code>protocol://username:password@host:port/database
+</code></pre><p>Here are examples:</p>
+<ul>
+<li>Mac OS (no password, your username): <code>postgres://wagslane:@localhost:5432/blogator</code></li>
+<li>Linux (password from last lesson, postgres user): <code>postgres://postgres:postgres@localhost:5432/blogator</code></li>
+</ul>
+<p>Test your connection string by running <code>psql</code>, for example:</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>psql <span>&#34;postgres://wagslane:@localhost:5432/blogator&#34;</span>
+</span></span></code></pre></div><p>It should connect you to the <code>blogator</code> database directly. If it’s working, great. <code>exit</code> out of <code>psql</code> and save the connection string.</p>
+<ol start="5">
+<li> Run the migration.</li>
+</ol>
+<p><code>cd</code> into the <code>sql/schema</code> directory and run:</p>
+<p>Where <code>CONN</code> is the connection string for your database.</p>
+<p>Run your migration! Make sure it works by using <code>psql</code> to find your newly created <code>users</code> table:</p>
+<ol start="6">
+<li> Add your connection string to your <code>.env</code> file. When using it with <code>goose</code>, you’ll use it in the format we just used. However, here in the <code>.env</code> file it needs an additional <code>sslmode=disable</code> query string:</li>
+</ol>
+<pre tabindex="0"><code>protocol://username:password@host:port/database?sslmode=disable
+</code></pre><p>Your application code needs to know to not try to use SSL locally.</p>
+<ol start="7">
+<li> Configure <a href="https://docs.sqlc.dev/en/latest/tutorials/getting-started-postgresql.html">SQLC</a>. You’ll always run the <code>sqlc</code> command from the root of your project. Create a file called <code>sqlc.yaml</code> in the root of your project. Here is mine:</li>
+</ol>
+<div><pre tabindex="0"><code data-lang="yaml"><span><span><span>version</span><span>:</span><span> </span><span>&#34;2&#34;</span><span>
+</span></span></span><span><span><span></span><span>sql</span><span>:</span><span>
+</span></span></span><span><span><span>  </span>- <span>schema</span><span>:</span><span> </span><span>&#34;sql/schema&#34;</span><span>
+</span></span></span><span><span><span>    </span><span>queries</span><span>:</span><span> </span><span>&#34;sql/queries&#34;</span><span>
+</span></span></span><span><span><span>    </span><span>engine</span><span>:</span><span> </span><span>&#34;postgresql&#34;</span><span>
+</span></span></span><span><span><span>    </span><span>gen</span><span>:</span><span>
+</span></span></span><span><span><span>      </span><span>go</span><span>:</span><span>
+</span></span></span><span><span><span>        </span><span>out</span><span>:</span><span> </span><span>&#34;internal/database&#34;</span><span>
+</span></span></span></code></pre></div><p>We’re telling SQLC to look in the <code>sql/schema</code> directory for our schema structure (which is the same set of files that Goose uses, but <code>sqlc</code> automatically ignores “down” migrations), and in the <code>sql/queries</code> directory for queries. We’re also telling it to generate Go code in the <code>internal/database</code> directory.</p>
+<ol start="8">
+<li> Write a query to create a user. Inside the <code>sql/queries</code> directory, create a file called <code>users.sql</code>. Here is mine:</li>
+</ol>
+<div><pre tabindex="0"><code data-lang="sql"><span><span><span>-- name: CreateUser :one
+</span></span></span><span><span><span></span><span>INSERT</span><span> </span><span>INTO</span><span> </span><span>users</span><span> </span><span>(</span><span>id</span><span>,</span><span> </span><span>created_at</span><span>,</span><span> </span><span>updated_at</span><span>,</span><span> </span><span>name</span><span>)</span><span>
+</span></span></span><span><span><span></span><span>VALUES</span><span> </span><span>(</span><span>$</span><span>1</span><span>,</span><span> </span><span>$</span><span>2</span><span>,</span><span> </span><span>$</span><span>3</span><span>,</span><span> </span><span>$</span><span>4</span><span>)</span><span>
+</span></span></span><span><span><span></span><span>RETURNING</span><span> </span><span>*</span><span>;</span><span>
+</span></span></span></code></pre></div><p><code>$1</code>, <code>$2</code>, <code>$3</code>, and <code>$4</code> are parameters that we’ll be able to pass into the query in our Go code. The <code>:one</code> at the end of the query name tells SQLC that we expect to get back a single row (the created user).</p>
+<p>Keep the <a href="https://docs.sqlc.dev/en/latest/tutorials/getting-started-postgresql.html">SQLC docs</a> handy, you’ll probably need to refer to them again later.</p>
+<ol start="9">
+<li> Generate the Go code. Run <code>sqlc generate</code> from the root of your project. It should create a new package of go code in <code>internal/database</code>.</li>
+<li> Import a PostgreSQL driver</li>
+</ol>
+<p>We need to add and import a <a href="https://github.com/lib/pq">Postgres driver</a> to use it in our code. Install it in your module:</p>
+<p>Add this import to the top of your <code>main.go</code> file:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>import</span> <span>_</span> <span>&#34;github.com/lib/pq&#34;</span>
+</span></span></code></pre></div><p><em>This is one of my least favorite things working with SQL in Go currently. You have to import the driver, but you don’t use it directly anywhere in your code. The underscore tells Go that you’re importing it for its side effects, not because you need to use it.</em></p>
+<ol start="11">
+<li> Open a connection to the database, and store it in a config struct</li>
+</ol>
+<p>If you recall from the web servers project, it’s common to use a “config” struct to store shared data that HTTP handlers need access to. We’ll do the same thing here. Mine looks like this:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>apiConfig</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>DB</span> <span>*</span><span>database</span><span>.</span><span>Queries</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>At the top of <code>main()</code> load in your database URL from your <code>.env</code> file, and then <a href="https://pkg.go.dev/database/sql#Open">.Open()</a> a connection to your database:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>db</span><span>,</span> <span>err</span> <span>:=</span> <span>sql</span><span>.</span><span>Open</span><span>(</span><span>&#34;postgres&#34;</span><span>,</span> <span>dbURL</span><span>)</span>
+</span></span></code></pre></div><p>Use your generated <code>database</code> package to create a new <code>*database.Queries</code>, and store it in your config struct:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>dbQueries</span> <span>:=</span> <span>database</span><span>.</span><span>New</span><span>(</span><span>db</span><span>)</span>
+</span></span></code></pre></div><ol start="12">
+<li> Create an HTTP handler to create a user</li>
+</ol>
+<p>Endpoint: <code>POST /v1/users</code></p>
+<p>Example body:</p>
+<p>Example response:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>&#34;3f8805e3-634c-49dd-a347-ab36479f3f83&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;created_at&#34;</span><span>:</span> <span>&#34;2021-09-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;updated_at&#34;</span><span>:</span> <span>&#34;2021-09-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;name&#34;</span><span>:</span> <span>&#34;Lane&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Use Google’s <a href="https://pkg.go.dev/github.com/google/uuid">UUID</a> package to generate a new <a href="https://blog.boot.dev/clean-code/what-are-uuids-and-should-you-use-them/">UUID</a> for the user’s ID. Both <code>created_at</code> and <code>updated_at</code> should be set to the current time. If we ever need to update a user, we’ll update the <code>updated_at</code> field.</p>
+<p>I’m a fan of a convention where <em>every table</em> in my database has:</p>
+<ul>
+<li>An <code>id</code> field that is a UUID (if you’re curious why, <a href="https://blog.boot.dev/clean-code/what-are-uuids-and-should-you-use-them/">read this</a>)</li>
+<li>A <code>created_at</code> field that indicates when the row was created</li>
+<li>An <code>updated_at</code> field that indicates when the row was last updated</li>
+</ul>
+<ol start="13">
+<li> Test your handler with an HTTP client!</li>
+</ol>
+<p>C’mon, you know what to do.</p>
+<h2 id="api-key">
+  <span> API Key</span> <a href="#api-key">🔗</a></h2>
+<ol>
+<li> Add an “api key” column to the users table</li>
+</ol>
+<p>Use a new migration file in the <code>sql/schema</code> directory to add a new column to the <code>users</code> table. I named my file <code>002_users_apikey.sql</code>.</p>
+<p>The “up” migration adds the column, and the “down” migration removes it.</p>
+<p>Use a <code>VARCHAR(64)</code> that must be unique and not null. Using a string of a specific length does two things:</p>
+<ul>
+<li> It ensures we don’t accidentally store a key that’s too long (type safety)</li>
+<li> It’s more performant than using a variable length <code>TEXT</code> column</li>
+</ul>
+<p>Because we’re enforcing the <code>NOT NULL</code> constraint, and we already have some users in the database, we need to set a default value for the column. A blank default would be a bit silly: that’s no better than null! Instead, we’ll generate valid API keys (256-bit hex values) using SQL. Here’s the function I used:</p>
+<div><pre tabindex="0"><code data-lang="sql"><span><span><span>encode</span><span>(</span><span>sha256</span><span>(</span><span>random</span><span>()::</span><span>text</span><span>::</span><span>bytea</span><span>),</span><span> </span><span>&#39;hex&#39;</span><span>)</span><span>
+</span></span></span></code></pre></div><p>When you’re done, use <code>goose postgres CONN up</code> to perform the migration.</p>
+<ol start="2">
+<li> Create an API key for new users. Update your “create user” SQL query to use the same SQL function to generate API keys for new users.</li>
+<li> Add a new SQL query to get a user by their API key. This query can live in the same file as the “create user” query, or you can make a new one - it’s up to you.</li>
+<li> Generate new Go code. Run <code>sqlc generate</code> to generate new Go code for your queries.</li>
+<li> New endpoint: Add a new endpoint that allows users to get their own user information. You’ll need to parse the header and use your new query to get the user data.</li>
+</ol>
+<p>Endpoint: <code>GET /v1/users</code></p>
+<p>Request headers: <code>Authorization: ApiKey &lt;key&gt;</code></p>
+<p>Example response body:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>&#34;3f8805e3-634c-49dd-a347-ab36479f3f83&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;created_at&#34;</span><span>:</span> <span>&#34;2021-09-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;updated_at&#34;</span><span>:</span> <span>&#34;2021-09-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;name&#34;</span><span>:</span> <span>&#34;Lane&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;api_key&#34;</span><span>:</span> <span>&#34;cca9688383ceaa25bd605575ac9700da94422aa397ef87e765c8df4438bc9942&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><em>Test your endpoints with an HTTP client before moving on!</em></p>
+<p>Don’t forget that each time you update your queries or schema you’ll need to regenerate your Go code with <code>sqlc generate</code>. If you update the schema you’ll also need to migrate your database up (and maybe down).</p>
+<h2 id="create-a-feed">
+  <span> Create a Feed</span> <a href="#create-a-feed">🔗</a></h2>
+<p>An RSS feed is just a URL that points to some XML. Users will be able to add feeds to our database so that our server (in a future step) can go download all of the posts in the feed (like blog posts or podcast episodes).</p>
+<ol>
+<li> Create a feeds table</li>
+</ol>
+<p>Like any table in our DB, we’ll need the standard <code>id</code>, <code>created_at</code>, and <code>updated_at</code> fields. We’ll also need a few more:</p>
+<ul>
+<li><code>name</code>: The name of the feed (like “The Changelog, or “The Boot.dev Blog”)</li>
+<li><code>url</code>: The URL of the feed</li>
+<li><code>user_id</code>: The ID of the user who added this feed</li>
+</ul>
+<p>I’d recommend making the <code>url</code> field unique so that in the future we aren’t downloading duplicate posts. I’d also recommend using <a href="https://stackoverflow.com/a/14141354">ON DELETE CASCADE</a> on the <code>user_id</code> foreign key so that if a user is deleted, all of their feeds are automatically deleted as well.</p>
+<p>Write the appropriate migrations and run them.</p>
+<ol start="2">
+<li>
+<p> Add a new query to create a feed, then use <code>sqlc generate</code> to generate the Go code.</p>
+</li>
+<li>
+<p> Create some authentication middleware. Most of the endpoints going forward will require a user to be logged in. Let’s DRY up our code by creating some middleware that will check for a valid API key.</p>
+</li>
+</ol>
+<p>Now, I’m not a fan of how some frameworks handle stateful middleware using <a href="https://pkg.go.dev/context">context</a> (middleware that passes data down to the next handler). I prefer to create custom handlers that accept extra values. You can add middleware however you like, but here are some examples from my code.</p>
+<h4 id="a-custom-type-for-handlers-that-require-authentication">
+  <span> A custom type for handlers that require authentication</span> <a href="#a-custom-type-for-handlers-that-require-authentication">🔗</a></h4>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>authedHandler</span> <span>func</span><span>(</span><span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>,</span> <span>database</span><span>.</span><span>User</span><span>)</span>
+</span></span></code></pre></div><h4 id="middleware-that-authenticates-a-request-gets-the-user-and-calls-the-next-authed-handler">
+  <span> Middleware that authenticates a request, gets the user and calls the next authed handler</span> <a href="#middleware-that-authenticates-a-request-gets-the-user-and-calls-the-next-authed-handler">🔗</a></h4>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>(</span><span>cfg</span> <span>*</span><span>apiConfig</span><span>)</span> <span>middlewareAuth</span><span>(</span><span>handler</span> <span>authedHandler</span><span>)</span> <span>http</span><span>.</span><span>HandlerFunc</span> <span>{</span>
+</span></span><span><span>    <span>///
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h4 id="using-the-middleware">
+  <span> Using the middleware</span> <a href="#using-the-middleware">🔗</a></h4>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>v1Router</span><span>.</span><span>Get</span><span>(</span><span>&#34;/users&#34;</span><span>,</span> <span>apiCfg</span><span>.</span><span>middlewareAuth</span><span>(</span><span>apiCfg</span><span>.</span><span>handlerUsersGet</span><span>))</span>
+</span></span></code></pre></div><ol start="4">
+<li> Create a handler to create a feed</li>
+</ol>
+<p>Create a handler that creates a feed. This handler <em>and</em> the “get user” handler should use the authentication middleware.</p>
+<p>Endpoint: <code>POST /v1/feeds</code></p>
+<p>Example request body:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;name&#34;</span><span>:</span> <span>&#34;The Boot.dev Blog&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;url&#34;</span><span>:</span> <span>&#34;https://blog.boot.dev/index.xml&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Example response body:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>&#34;4a82b372-b0e2-45e3-956a-b9b83358f86b&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;created_at&#34;</span><span>:</span> <span>&#34;2021-05-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;updated_at&#34;</span><span>:</span> <span>&#34;2021-05-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;name&#34;</span><span>:</span> <span>&#34;The Boot.dev Blog&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;url&#34;</span><span>:</span> <span>&#34;https://blog.boot.dev/index.xml&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;user_id&#34;</span><span>:</span> <span>&#34;d6962597-f316-4306-a929-fe8c8651671e&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><ol start="5">
+<li> Test your handler using an HTTP client, then use your database client to make sure the data was saved correctly.</li>
+</ol>
+<h2 id="get-all-feeds">
+  <span> Get all feeds</span> <a href="#get-all-feeds">🔗</a></h2>
+<p>Create a new endpoint to retrieve <em>all</em> of the feeds in the database. This endpoint should <em>not</em> require authentication.</p>
+<p>You should be familiar with all of the steps to make this happen by now, use your other endpoints as a reference.</p>
+<h2 id="feed-follows">
+  <span> Feed Follows</span> <a href="#feed-follows">🔗</a></h2>
+<p>Aside from just adding new feeds to the database, users can specify <em>which</em> feeds they want to follow. This will be important later when we want to show users a list of posts from the feeds they follow.</p>
+<p>Add support for the following endpoints, and update the “create feed” endpoint as specified below.</p>
+<h3 id="what-is-a-feed-follow">
+  <span> What is a “feed follow”?</span> <a href="#what-is-a-feed-follow">🔗</a></h3>
+<p>A feed follow is just a link between a user and a feed. It’s a <a href="https://en.wikipedia.org/wiki/Many-to-many_(data_model)">many-to-many</a> relationship, so a user can follow many feeds, and a feed can be followed by many users.</p>
+<p>Creating a feed follow indicates that a user is now following a feed. Deleting it is the same as “unfollowing” a feed.</p>
+<p>It’s important to understand that the <code>ID</code> of a feed follow is not the same as the <code>ID</code> of the feed itself. Each user/feed pair will have a unique feed follow id.</p>
+<ol>
+<li> Create a feed follow</li>
+</ol>
+<p>Endpoint: <code>POST /v1/feed_follows</code></p>
+<p><em>Requires authentication</em></p>
+<p>Example request body:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;feed_id&#34;</span><span>:</span> <span>&#34;4a82b372-b0e2-45e3-956a-b9b83358f86b&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Example response body:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>&#34;c834c69e-ee26-4c63-a677-a977432f9cfa&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;feed_id&#34;</span><span>:</span> <span>&#34;4a82b372-b0e2-45e3-956a-b9b83358f86b&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;user_id&#34;</span><span>:</span> <span>&#34;0e4fecc6-1354-47b8-8336-2077b307b20e&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;created_at&#34;</span><span>:</span> <span>&#34;2017-01-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;updated_at&#34;</span><span>:</span> <span>&#34;2017-01-01T00:00:00Z&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><ol start="2">
+<li> Delete a feed follow</li>
+</ol>
+<p>Endpoint: <code>DELETE /v1/feed_follows/{feedFollowID}</code></p>
+<ol start="3">
+<li> Get all feed follows for a user</li>
+</ol>
+<p>Endpoint: <code>GET /v1/feed_follows</code></p>
+<p><em>Requires authentication</em></p>
+<p>Example response:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>[</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>&#34;id&#34;</span><span>:</span> <span>&#34;c834c69e-ee26-4c63-a677-a977432f9cfa&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;feed_id&#34;</span><span>:</span> <span>&#34;4a82b372-b0e2-45e3-956a-b9b83358f86b&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;user_id&#34;</span><span>:</span> <span>&#34;0e4fecc6-1354-47b8-8336-2077b307b20e&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;created_at&#34;</span><span>:</span> <span>&#34;2017-01-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;updated_at&#34;</span><span>:</span> <span>&#34;2017-01-01T00:00:00Z&#34;</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>&#34;id&#34;</span><span>:</span> <span>&#34;ad752167-f509-4ff3-8425-7781090b5c8f&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;feed_id&#34;</span><span>:</span> <span>&#34;f71b842d-9fd1-4bc0-9913-dd96ba33bb15&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;user_id&#34;</span><span>:</span> <span>&#34;0e4fecc6-1354-47b8-8336-2077b307b20e&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;created_at&#34;</span><span>:</span> <span>&#34;2017-01-01T00:00:00Z&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;updated_at&#34;</span><span>:</span> <span>&#34;2017-01-01T00:00:00Z&#34;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>]</span>
+</span></span></code></pre></div><ol start="4">
+<li> Automatically create a feed follow when creating a feed</li>
+</ol>
+<p>When a user creates a new feed, they should automatically be following that feed. They can of course choose to unfollow it later, but it should be there by default.</p>
+<p>The response of this endpoint should now contain both entities:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;feed&#34;</span><span>:</span> <span>{</span> <span>the</span> <span>feed</span> <span>object</span> <span>},</span>
+</span></span><span><span>  <span>&#34;feed_follow&#34;</span><span>:</span> <span>{</span> <span>the</span> <span>feed</span> <span>follow</span> <span>object</span> <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><ol start="5">
+<li> Test. As always, test all of your endpoints and make sure they work. Additionally, make sure that they return the proper error codes when they receive invalid inputs.</li>
+</ol>
+<h2 id="scraper">
+  <span> Scraper</span> <a href="#scraper">🔗</a></h2>
+<p>This is going to be a fairly large step. I recommend breaking it down into smaller pieces and functions, and testing each piece as you go.</p>
+<p>Here are some different strategies I use depending on the situation:</p>
+<ul>
+<li>Write a unit test for a function that has simple inputs and outputs</li>
+<li>Edit <code>main.go</code> to call a function so I can quickly test it by running the whole program. Remove the call after testing and plug it into its proper place</li>
+<li>Put the code in a package, then write a separate <code>main</code> package (just a little <code>main()</code> script) that I can use to independently test the code in the package</li>
+</ul>
+<p><em>Commit your code each time you get a new piece working.</em></p>
+<ol>
+<li> Add a <code>last_fetched_at</code> column to the <code>feeds</code> table.</li>
+</ol>
+<p>We need to keep track of when we last fetched the posts from a feed. This should be a nullable timestamp.</p>
+<p>The <code>sql.NullTime</code> type is useful for nullable timestamps on the database side, but it’s not great for marshaling into JSON. It results in a weird nested object. I’d recommend converting it to a <code>*time.Time</code> before returning it across the HTTP response.</p>
+<p>I map all of my database structs to a different struct that has the intended JSON structure. This is a good way to keep your database and HTTP APIs separate.</p>
+<p>For example: <code>func databaseFeedToFeed(feed database.Feed) Feed</code></p>
+<ol start="2">
+<li> Add <code>GetNextFeedsToFetch()</code> query to the database.</li>
+</ol>
+<p>It should return the next <code>n</code> feeds that need to be fetched, ordered by <code>last_fetched_at</code>, but with <code>NULL</code> values first. We obviously want to fetch the feeds that have never been fetched before or the ones that were fetched the longest time ago.</p>
+<ol start="3">
+<li> Add a <code>MarkFeedFetched()</code> query to the database.</li>
+</ol>
+<p>It should update a feed and set its <code>last_fetched_at</code> to the current time. Don’t forget to also update the <code>updated_at</code> field because we’ve updated the record.</p>
+<ol start="4">
+<li> Write a function that can fetch data from a feed.</li>
+</ol>
+<p>This function should accept the URL of a live RSS feed, and return the parsed data in a Go struct.</p>
+<p>You can test with these ones:</p>
+<ul>
+<li><code>https://blog.boot.dev/index.xml</code></li>
+<li><code>https://wagslane.dev/index.xml</code></li>
+</ul>
+<p>And any other blogs you enjoy that have RSS feeds.</p>
+<p><em>Please be careful not to <a href="https://www.cloudflare.com/learning/ddos/what-is-a-ddos-attack/">DDOS</a> any of the sites you’re fetching from. Don’t send too many requests!</em></p>
+<p>You can parse the returned XML with the <a href="https://pkg.go.dev/encoding/xml">encoding/xml</a> package, it works <em>very</em> similarly to <code>encoding/json</code>. Define the structure of an RSS feed as a Go struct, then unmarshal the XML into that struct.</p>
+<ol start="5">
+<li> Write a worker that fetches feeds continuously.</li>
+</ol>
+<p>This function should, on an interval (say every 60 seconds or so):</p>
+<ul>
+<li>Get the next <code>n</code> feeds to fetch from the database (you can configure <code>n</code>, I used <code>10</code>)</li>
+<li>Fetch and process all the feeds <em>at the same time</em> (you can use <a href="https://pkg.go.dev/sync#WaitGroup">sync.WaitGroup</a> for this)</li>
+</ul>
+<p>For now, “process” the feed by simply printing out the titles of each post</p>
+<p>I recommend adding a lot of logging messages to this worker so that as it runs you can see what it’s doing!</p>
+<ol start="6">
+<li> Call your worker from <code>main.go</code>. Be sure to start the worker in its own goroutine, so that it runs in the background and processes feeds even as it simultaneously handles new HTTP requests.</li>
+</ol>
+<h2 id="posts">
+  <span> Posts</span> <a href="#posts">🔗</a></h2>
+<ol>
+<li> Add a <code>posts</code> table to the database.</li>
+</ol>
+<p>A post is a single entry from a feed. It should have:</p>
+<ul>
+<li><code>id</code> - a unique identifier for the post</li>
+<li><code>created_at</code> - the time the record was created</li>
+<li><code>updated_at</code> - the time the record was last updated</li>
+<li><code>title</code> - the title of the post</li>
+<li><code>url</code> - the URL of the post <em>this should be unique</em></li>
+<li><code>description</code> - the description of the post</li>
+<li><code>published_at</code> - the time the post was published</li>
+<li><code>feed_id</code> - the ID of the feed that the post came from</li>
+</ul>
+<p>Some of these fields can probably be null, others you might want to be more strict about - it’s up to you.</p>
+<ol start="2">
+<li>
+<p> Add a “create post” SQL query to the database. This should insert a new post into the database.</p>
+</li>
+<li>
+<p> Add a “get posts by user” SQL query to the database. Order the results so that the most recent posts are first. Make the number of posts returned configurable.</p>
+</li>
+<li>
+<p> Update your scraper to save posts. Instead of just printing out the titles of the posts, save them to the database! If you encounter an error where the post with that URL already exists, just ignore it. That will happen a lot. If it’s a different error, you should probably log it. Make sure that you’re parsing the “published at” time properly from the feeds. Sometimes they might be in a different format than you expect, so you might need to handle that.</p>
+</li>
+<li>
+<p> Add a “get posts by user” HTTP endpoint.</p>
+</li>
+</ol>
+<p>Endpoint: <code>GET /v1/posts</code></p>
+<p><em>This is an authenticated endpoint</em></p>
+<p>This endpoint should return a list of posts for the authenticated user. It should accept a <code>limit</code> query parameter that limits the number of posts returned. The default if the parameter is not provided can be whatever you think is reasonable.</p>
+<ol start="6">
+<li> Start scraping some feeds! Test your scraper to make sure it’s working! Go find some of your favorite websites and add their RSS feeds to your database. Then start your scraper and watch it go to work.</li>
+</ol>
+<h2 id="submit-your-git-repo">
+  <span> Submit your Git repo</span> <a href="#submit-your-git-repo">🔗</a></h2>
+<p>Your link should look something like <code>https://github.com/github-username/repo-name</code>.</p>
+<h3 id="ideas-for-extending-the-project">
+  <span> Ideas for extending the project</span> <a href="#ideas-for-extending-the-project">🔗</a></h3>
+<p>You don’t <em>have</em> to extend this project, but here are just a few ideas if you’re interested:</p>
+<ul>
+<li>Support <a href="https://nordicapis.com/everything-you-need-to-know-about-api-pagination/">pagination</a> of the endpoints that can return many items</li>
+<li>Support different options for sorting and filtering posts using query parameters</li>
+<li>Classify different types of feeds and posts (e.g. blog, podcast, video, etc.)</li>
+<li>Add a CLI client that uses the API to fetch and display posts, maybe it even allows you to read them in your terminal</li>
+<li>Scrape lists of feeds themselves from a third-party site that aggregates feed URLs</li>
+<li>Add support for other types of feeds (e.g. Atom, JSON, etc.)</li>
+<li>Add integration tests that use the API to create, read, update, and delete feeds and posts</li>
+<li>Add bookmarking or “liking” to posts</li>
+<li>Create a simple web UI that uses your backend API</li>
+</ul>
+<h2 id="solution">
+  <span> Solution</span> <a href="#solution">🔗</a></h2>
+<p>If you get lost at any point, I’ve uploaded my solution repo to <a href="https://github.com/bootdotdev/blog-agg-solution-snapshot-v0">GitHub here</a>.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Don&#39;t Go To Casting Hell - Use Default Native Types in Go | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/default-native-types-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Don&#39;t Go To Casting Hell - Use Default Native Types in Go</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Go is strongly typed, and with that, we get many options for simple variable types like integers and floats. The problem arises when we have a <em>uint16</em>, and the function we are trying to pass it into takes an <code>int</code>. We find code riddled with <code>int(myUint16)</code> that can become slow and annoying to read. In other words, when Go developers stray from the “default” type for any given type family, the code can get messy quickly.</p>
+<h2 id="gos-basic-types">
+  <span> Go’s Basic Types</span> <a href="#gos-basic-types">🔗</a></h2>
+<pre tabindex="0"><code>bool
+
+string
+
+int  int8  int16  int32  int64
+uint uint8 uint16 uint32 uint64 uintptr
+
+byte // alias for uint8
+
+rune // alias for int32
+     // represents a Unicode code point
+
+float32 float64
+
+complex64 complex128
+</code></pre><p>There are 5 different types that can represent an integer, 5 types for an unsigned integer, 2 for a float, and 2 for a complex number. While it’s hard to defend the notion that the compiler itself has default types, the standard library certainly plays favorites.</p>
+<p>For example, the <a href="https://golang.org/pkg/math/cmplx/">cmplx</a> package which does math with complex numbers accepts and returns exclusively <em>complex128</em>.</p>
+<p>With floats, the vast majority of the <a href="https://golang.org/pkg/math/">math</a> package has function signatures using <em>float64</em>. In the same package ints are usually just the <em>int</em> type, and unsigned integers are typically <em>uint32</em>.</p>
+<p>These are what I’ve come to refer to as the “default native types”:</p>
+<pre tabindex="0"><code>bool
+
+string
+
+int
+
+uint32
+
+byte
+
+rune
+
+float64
+
+complex128
+</code></pre><h2 id="why-do-we-care-about-defaults">
+  <span> Why Do We Care About Defaults?</span> <a href="#why-do-we-care-about-defaults">🔗</a></h2>
+<p>There is a good reason that the majority of code uses these values. In all of the above cases, the choice of specific sub-types are based on range and precision. <code>int8</code> can store values between <code>-128</code> and <code>127</code>, while <code>int64</code> ranges from <code>-9,223,372,036,854,775,808</code> to <code>9,223,372,036,854,775,807</code>. At the same time, <code>int8</code> uses a single byte while <code>int64</code> uses 8x that.</p>
+<p>The defaults above were chosen in the standard library (and by the vast majority of Gophers) because they are the common-sense, works-most-of-the-time, big-enough-range values. Exposing a <a href="https://golang.org/pkg/math/#Round">rounding function</a> for <em>float32</em> simply won’t be as useful as <em>float64</em>. It can’t be used by as many values.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>Round</span><span>(</span><span>x</span> <span>float64</span><span>)</span> <span>float64</span>
+</span></span></code></pre></div><p>If you have a float32 that you want to round, you first need to cast it:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>math</span><span>.</span><span>Round</span><span>(</span><span>float64</span><span>(</span><span>myFloat32</span><span>))</span>
+</span></span></code></pre></div><p>This is not only slow but clunky to read. Type conversions take time. Memory must be allocated. My advice is to use the default type (<em>float64</em> in the case of floats) in your applications unless you have a compelling reason not to.</p>
+<h2 id="when-not-to-use-default-types">
+  <span> When Not To Use Default Types</span> <a href="#when-not-to-use-default-types">🔗</a></h2>
+<p>Performance and Memory.</p>
+<p>That’s about it. The only reason to deviate from the defaults is to squeeze out every last bit of performance when you are writing an application that is resource-constrained. (Or, in the special case of uint64, you need an absurd range of unsigned integers).</p>
+<p>For example, I probably wouldn’t swap out a single <em>uint32</em> for <em>uint8</em>, even if I was certain I would only need 8 bytes. However, If I have a slice of uints that can potentially hold thousands of values, I may see a significant memory savings by doing a few type conversions and using <em>uint8</em>.</p>
+<p>A few good examples of this are the packages I maintain, <a href="https://github.com/lane-c-wagner/go-tinydate">go-tinydate</a>, and <a href="https://github.com/lane-c-wagner/go-tinytime">go-tinytime</a>. Usually, I encourage users NOT to use them, and to just use the <a href="https://blog.boot.dev/golang/golang-date-time/">default time.Time</a>. However, in my backend career, there have been applications that went from using 16GB of RAM down to less than 4GB by making the swap to TinyDate or TinyTime.</p>
+<h2 id="use-defaults">
+  <span> Use Defaults</span> <a href="#use-defaults">🔗</a></h2>
+<p>Make your life and the lives of your coworkers easy. Use the defaults unless you have a very compelling reason not to.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

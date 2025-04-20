@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Naming Variables the Right Way | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/naming-variables/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Naming Variables the Right Way</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I’ve noticed that bugs introduced into an existing code base are often due to poor variable naming more than one might suspect. For example, a developer uses a <code>rateLimit</code> variable expecting it to be denominated in <em>seconds</em> while it represents <em>minutes</em>, resulting in a 6x slower schedule. Another developer expects <code>dbConnection</code> to be an open database connection, but instead, it’s just the connection URI.</p>
+<p>Using descriptive, concise, and conventional variable names often set apart a senior from a junior developer. Here are some of my rules of thumb for high-quality variable nomenclature.</p>
+<h3 id="1-following-existing-naming-conventions-of-the-language-or-framework-youre-using">
+  <span> 1. Following existing naming conventions of the language or framework you’re using</span> <a href="#1-following-existing-naming-conventions-of-the-language-or-framework-youre-using">🔗</a></h3>
+<p>Different languages and frameworks (and the communities that use them) typically have a standard way of styling variable and function names. For example, in Python and Ruby, it’s preferred to style variables and fields using snake case.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span># python snake-case styling</span>
+</span></span><span><span><span>my_num</span> <span>=</span> <span>15</span>
+</span></span></code></pre></div><p>In Java, Go, or JavaScript it’s preferred to use mixed-case, also known as “camel case” styling.</p>
+<div><pre tabindex="0"><code data-lang="java"><span><span><span>// Java camel case styling</span><span>
+</span></span></span><span><span><span></span><span>int</span><span> </span><span>myNum</span><span> </span><span>=</span><span> </span><span>15</span><span>;</span><span>
+</span></span></span></code></pre></div><p>Don’t mix styles! The only thing worse than ignoring popular conventions is inconsistency. If you think your way is better <em>that’s okay</em>, just make sure to enforce it across your entire codebase. Don’t be afraid to use static analysis tools to enforce your linting rules! Eslint, <code>go fmt</code>, and <a href="https://github.com/psf/black">black</a> are all great options depending on your language of choice.</p>
+<p>Special mention: SQL is its own language, and databases have their own naming conventions. Just because you’re working in Java, doesn’t mean your table names should be camel case! Use the conventions of the technology.</p>
+<h3 id="2-single-letter-variables-have-a-place-and-that-place-is-rare">
+  <span> 2. Single-letter variables have a place, and that place is rare</span> <a href="#2-single-letter-variables-have-a-place-and-that-place-is-rare">🔗</a></h3>
+<p>Single-letter variables make sense in <a href="https://blog.boot.dev/golang/golang-for-loop/">loops</a>, and in scopes that are ~5 lines long. The obvious examples are <code>i</code>, <code>j</code>, and <code>k</code> for nested iterations, and <code>k</code> and <code>v</code> for keys and values in map or dictionary iterations. That said, again, err on the side of being <em>descriptive</em>. If you’re iterating over rows and columns in a matrix, it might be a lot easier to keep track of if you make the variables a bit longer.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>for</span> <span>i</span> <span>in</span> <span>range</span><span>(</span><span>len</span><span>(</span><span>matrix</span><span>)):</span>
+</span></span><span><span>  <span>for</span> <span>j</span> <span>in</span> <span>range</span><span>(</span><span>len</span><span>(</span><span>matrix</span><span>[</span><span>i</span><span>])):</span>
+</span></span><span><span>    <span># do stuff</span>
+</span></span></code></pre></div><p>The problem with the code above is that if I get way down into the body of that nested loop, I may forget if <code>i</code> represents the index of a <em>row</em> or the index of a <em>column</em>. To avoid confusion, the author of the loop could easily add some more context.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>for</span> <span>row_i</span> <span>in</span> <span>range</span><span>(</span><span>len</span><span>(</span><span>matrix</span><span>)):</span>
+</span></span><span><span>  <span>row</span> <span>=</span> <span>matrix</span><span>[</span><span>row_i</span><span>]</span>
+</span></span><span><span>  <span>for</span> <span>column_i</span> <span>in</span> <span>range</span><span>(</span><span>len</span><span>(</span><span>row</span><span>)):</span>
+</span></span><span><span>    <span># do stuff</span>
+</span></span></code></pre></div><h3 id="3-include-units-in-your-variable-names">
+  <span> 3. Include units in your variable names</span> <a href="#3-include-units-in-your-variable-names">🔗</a></h3>
+<p>I’ve happened across many bugs that were a result of units not being included in the name of the variable. For example, someone might be storing the maximum rate at which an application can make requests to the Twitter API. Let’s take a look at what this could potentially look like in Go.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>rateLimit</span> <span>:=</span> <span>os</span><span>.</span><span>Getenv</span><span>(</span><span>&#34;RATE_LIMIT&#34;</span><span>)</span>
+</span></span><span><span><span>rateLimitNum</span><span>,</span> <span>err</span> <span>:=</span> <span>strconv</span><span>.</span><span>Atoi</span><span>(</span><span>rateLimit</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>log</span><span>.</span><span>Fatal</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>ticker</span> <span>:=</span> <span>time</span><span>.</span><span>NewTicker</span><span>(</span><span>rateLimitNum</span> <span>*</span> <span>time</span><span>.</span><span>Millisecond</span><span>)</span>
+</span></span><span><span><span>for</span> <span>range</span> <span>ticker</span><span>.</span><span>C</span> <span>{</span>
+</span></span><span><span>    <span>// do stuff each time the rate limit elapses
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><p>The problem here lies in ambiguity. At any point, a developer is prone to making a mistake about the units in the <code>rateLimit</code>. Even in the environment, it’s just called <code>RATE_LIMIT</code>. In this example, it’s fairly easy to tell that the unit in question is milliseconds, but what if we need to pass around the variable through a few functions or files before it gets used?</p>
+<p>Here’s a much better solution.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>twitterRequestsPerSecondString</span> <span>:=</span> <span>os</span><span>.</span><span>Getenv</span><span>(</span><span>&#34;TWITTER_REQUESTS_PER_SECOND&#34;</span><span>)</span>
+</span></span><span><span><span>twitterRequestsPerSecond</span><span>,</span> <span>err</span> <span>:=</span> <span>strconv</span><span>.</span><span>Atoi</span><span>(</span><span>twitterRequestsPerSecondString</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>log</span><span>.</span><span>Fatal</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>ticker</span> <span>:=</span> <span>time</span><span>.</span><span>NewTicker</span><span>(</span><span>twitterRequestsPerSecond</span> <span>*</span> <span>time</span><span>.</span><span>Second</span><span>)</span>
+</span></span><span><span><span>for</span> <span>range</span> <span>ticker</span><span>.</span><span>C</span> <span>{</span>
+</span></span><span><span>    <span>// do stuff each time the rate limit elapses
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h3 id="4-include-types-in-your-variables-names-if-it-isnt-obvious">
+  <span> 4. Include types in your variables names if it isn’t obvious</span> <a href="#4-include-types-in-your-variables-names-if-it-isnt-obvious">🔗</a></h3>
+<p>In strongly-typed languages like Go and Java, this is less of a problem. Occasionally it makes sense if you need to cast a variable with the same value from one type to another, but mostly you can ignore this tip in typed languages. If you are casting, however, I would recommend having the more usable value be the one you strip the type from.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>twitterRequestsPerSecondString</span><span>:=</span> <span>os</span><span>.</span><span>Getenv</span><span>(</span><span>&#34;TWITTER_REQUESTS_PER_SECOND&#34;</span><span>)</span>
+</span></span><span><span><span>// twitterRequestsPerSecondString = &#34;42&#34; string
+</span></span></span><span><span><span></span>
+</span></span><span><span><span>twitterRequestsPerSecond</span><span>,</span> <span>_</span> <span>:=</span> <span>strconv</span><span>.</span><span>Atoi</span><span>(</span><span>twitterRequestsPerSecondString</span>
+</span></span><span><span><span>// twitterRequestsPerSecond = int 42
+</span></span></span></code></pre></div><p>If you’re in a dynamically-typed language like JavaScript or Python you need to be a lot more careful about the names you use to describe variables. Ideally, the name implies the type of variable it is.</p>
+<ul>
+<li>Boolean values should imply binary options. For example, prefer <code>isLarge = true</code> over <code>large = true</code>. Prefer <code>canRead = true</code> over <code>readPermissions = true</code>.</li>
+<li>Don’t hesitate to use <code>num</code>, <code>min</code>, <code>max</code>, <code>total</code> or <code>count</code> in variable names for clarity. For example, <code>num_cars =</code> 5<code>is better than</code>cars = 5`.</li>
+<li>With arrays, imply the type contained in the array. For example, <code>fruits</code> could be an array like <code>[&#34;apple&#34;, &#34;banana&#34;, &#34;plum&#34;]</code>, but it could just as easily be an array of <em>objects</em> that describe fruits and their metadata. If there are only strings, imply it: <code>fruitNames = [&#34;apple&#34;, &#34;banana&#34;, &#34;plum&#34;]</code>.</li>
+</ul>
+<h3 id="5-make-variables-names-as-long-as-necessary-but-no-longer">
+  <span> 5. Make variables names as long as necessary but no longer</span> <a href="#5-make-variables-names-as-long-as-necessary-but-no-longer">🔗</a></h3>
+<p>The most common mistake newer developers make in my opinion is erring on the side of shorter variable names. If anything, err on the side of making them longer and more descriptive. That said, if you make them insanely long it can have the opposite effect. Variables names that are too long result in lines of code that extend far off the screen, making the cognitive load of reading and digesting the code much heavier.</p>
+<p>Let’s take a look at some examples of how to name variables in Python.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>conn</span> <span>=</span> <span>psycopg2</span><span>.</span><span>connect</span><span>(</span><span>postgres_connection_string</span><span>)</span>
+</span></span></code></pre></div><p>You may look at this code and think that it’s obvious enough what’s going on. A connection to a Postgres database is opened and stored in the <code>conn</code> variable. This might make it look worse:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>conn</span> <span>=</span> <span>psycopg2</span><span>.</span><span>connect</span><span>(</span><span>postgres_connection_string</span><span>)</span>
+</span></span><span><span><span>conn2</span> <span>=</span> <span>rabbitmq</span><span>.</span><span>connect</span><span>(</span><span>rabbitmq_connection_string</span><span>)</span>
+</span></span></code></pre></div><p>Because we weren’t specific about the kind of connection that was opened, creating new connections gets tricky. A much better solution would be to use a longer and more descriptive name like <code>pg_connection</code>. You may have multiple Postgres servers in your stack, in which case you might want to include the name of the server. For example, if the server were named <code>Pluto</code>, it could be <code>pg_connection_pluto</code>.</p>
+<h3 id="6-include-the-meaning-of-complex-calculations-in-your-variable-names">
+  <span> 6. Include the meaning of complex calculations in your variable names</span> <a href="#6-include-the-meaning-of-complex-calculations-in-your-variable-names">🔗</a></h3>
+<p>If you need to do even rudimentary algebra in your code, be sure to document why you’re doing it and what each entity means. For example, say you need to get the <code>y</code> value of a point on a line. You could just do:</p>
+<p>If the next dev is familiar with this formula for modeling lines, you’ll be fine. That said, make it easier on them by using descriptive variables and <a href="https://blog.boot.dev/clean-code/code-comments/">adding a comment</a> to explain the math.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// slope-intercept formula
+</span></span></span><span><span><span>// y = mx + b
+</span></span></span><span><span><span></span><span>const</span> <span>targetY</span> <span>=</span> <span>slope</span> <span>*</span> <span>point</span><span>.</span><span>x</span> <span>+</span> <span>yIntercept</span>
+</span></span></code></pre></div><h3 id="7-use-the-properly-pluralized-form-of-the-variable">
+  <span> 7. Use the properly pluralized form of the variable</span> <a href="#7-use-the-properly-pluralized-form-of-the-variable">🔗</a></h3>
+<p>Don’t do this:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>name</span> <span>=</span> <span>[</span><span>&#34;lane&#34;</span><span>,</span> <span>&#34;cameron&#34;</span><span>,</span> <span>&#34;lyric&#34;</span><span>,</span> <span>&#34;breanna&#34;</span><span>]</span>
+</span></span><span><span><span>for</span> <span>n</span> <span>in</span> <span>name</span><span>:</span>
+</span></span><span><span>  <span>print</span><span>(</span><span>n</span><span>)</span>
+</span></span></code></pre></div><p>Pluralize it.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>names</span> <span>=</span> <span>[</span><span>&#34;lane&#34;</span><span>,</span> <span>&#34;cameron&#34;</span><span>,</span> <span>&#34;lyric&#34;</span><span>,</span> <span>&#34;breanna&#34;</span><span>]</span>
+</span></span><span><span><span>for</span> <span>name</span> <span>in</span> <span>names</span><span>:</span>
+</span></span><span><span>  <span>print</span><span>(</span><span>names</span><span>)</span>
+</span></span></code></pre></div><h3 id="8-dont-use-abbreviations-or-acronyms-without-sufficient-context">
+  <span> 8. Don’t use abbreviations or acronyms without sufficient context</span> <a href="#8-dont-use-abbreviations-or-acronyms-without-sufficient-context">🔗</a></h3>
+<p>Don’t shorten names unless you <em>really</em> need to. It only makes sense if the variable name is already super long. For example, <code>con</code> is a popular abbreviation for a network connection, but it could also mean a drawback (pro vs con), or the <a href="https://en.wikipedia.org/wiki/Cons">end of an array</a>. If you’re using it in a longer name with more context it’s probably okay to abbreviate, but if not, then just use the full word.</p>
+<ul>
+<li>Bad: <code>conn</code></li>
+<li>Better: <code>pluto_postgres_conn</code></li>
+<li>Bad: <code>idx</code></li>
+<li>Better: <code>index</code></li>
+</ul>
+<h3 id="9-no-magic-numbers-or-magic-values-use-a-variable">
+  <span> 9. No magic numbers or magic values, use a variable</span> <a href="#9-no-magic-numbers-or-magic-values-use-a-variable">🔗</a></h3>
+<p>Don’t omit variable names by throwing seemingly arbitrary numbers or strings into your code.</p>
+<p>Bad:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>sleepTime</span> <span>:=</span> <span>time</span><span>.</span><span>Second</span>
+</span></span><span><span><span>for</span> <span>{</span>
+</span></span><span><span>  <span>// do stuff
+</span></span></span><span><span><span></span>  <span>sleepTime</span> <span>*=</span> <span>2</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Better:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>sleepTime</span> <span>:=</span> <span>time</span><span>.</span><span>Second</span>
+</span></span><span><span><span>for</span> <span>{</span>
+</span></span><span><span>  <span>// do stuff
+</span></span></span><span><span><span></span>  <span>const</span> <span>backoffMultiplier</span> <span>=</span> <span>2</span>
+</span></span><span><span>  <span>sleepTime</span> <span>*=</span> <span>backoffMultiplier</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

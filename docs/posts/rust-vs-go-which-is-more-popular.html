@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rust vs Go - Which Is More Popular? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/rust-vs-go-popularity/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Rust vs Go - Which Is More Popular?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Go and Rust are two of the hottest compiled programming languages, but which is more popular, Go or Rust?. I develop in Go full-time and love it, and I’m learning more about Rust recently - it’s an exciting language. Let’s explore some differences between the two and look at which is growing faster in the popularity polls.</p>
+<h2 id="popularity-stats">
+  <span> Popularity Stats</span> <a href="#popularity-stats">🔗</a></h2>
+<p>According to the StackOverflow <a href="https://insights.stackoverflow.com/survey/2019#technology-_-programming-scripting-and-markup-languages">2019 surveys</a>, Go is ahead in the polls when it comes to programming and markup languages.</p>
+<p><img src="https://blog.boot.dev/img/800/Screen-Shot-2020-05-05-at-8.07.37-PM-815x1024.png" alt=""/></p>
+<p>However, compare that to the previous year:</p>
+<p><img src="https://blog.boot.dev/img/800/Screen-Shot-2020-05-05-at-8.15.06-PM-880x1024.png" alt=""/></p>
+<p>Rust <strong>wasn’t even on the chart</strong> just one year before.</p>
+<p>Go did grow by an impressive 1.6%, but it would seem Rust might be growing even faster as a percentage over time.</p>
+<p>Some more supporting evidence for the hypothesis that Rust is growing faster is another poll - <a href="https://insights.stackoverflow.com/survey/2019#technology-_-most-loved-dreaded-and-wanted-languages">the most loved languages survey</a>:</p>
+<p><img src="https://blog.boot.dev/img/800/Screen-Shot-2020-05-05-at-8.18.40-PM-747x1024.png" alt=""/></p>
+<p>Rust is a clear leader here, but Go isn’t far behind. There is a lot of hype around Rust right now, for good reason.</p>
+<p>Let’s take a look at the most dreaded languages:</p>
+<p><img src="https://blog.boot.dev/img/800/Screen-Shot-2020-05-05-at-8.19.08-PM-725x1024.png" alt=""/></p>
+<p>No one dreads Rust. I suspect that a contributing factor is that Rust isn’t used much yet. That said, the data indicates that Rust is currently more loved and less dreaded. Hard to argue with that.</p>
+<p>Go actually makes the most dreaded chart, but close to the bottom. I suspect most of the hate is salty Java devs that have been forced to move to Go and give up their precious objects. They had to give up generics as well up until now, but we’ll have <a href="https://blog.boot.dev/golang/how-to-use-golangs-generics/">generics in Go</a> in 1.18.</p>
+<h2 id="so-which-is-better">
+  <span> So Which Is Better?</span> <a href="#so-which-is-better">🔗</a></h2>
+<p>I don’t think one is strictly better than the other, and a lot comes down to preference. Let’s examine the claims made by the maintainers:</p>
+<p><img src="https://blog.boot.dev/img/800/Golang-1024x578.png" alt=""/></p>
+<blockquote>
+<p>Go is an open-source programming language that makes it easy to build simple, reliable, and efficient software.</p>
+<p><a href="https://golang.org/">golang.org</a></p>
+</blockquote>
+<p><img src="https://blog.boot.dev/img/800/rust-social.jpg" alt=""/></p>
+<blockquote>
+<p>A language empowering everyone to build reliable and efficient software.</p>
+<p><a href="https://www.rust-lang.org/">rust-lang.org</a></p>
+</blockquote>
+<p>Based on their official headlines it would seem they are in direct competition. The key difference is that Go also aims to be <strong>simple</strong>. Rust makes no such claim.</p>
+<p>Here are my current fast and loose opinions on the strengths and weaknesses of each:</p>
+<div>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>Go</td>
+<td>Rust</td>
+</tr>
+<tr>
+<td>Speed</td>
+<td>✅✅</td>
+<td>✅✅✅</td>
+</tr>
+<tr>
+<td>Memory Safe</td>
+<td>✅✅✅</td>
+<td>✅✅✅</td>
+</tr>
+<tr>
+<td>Simple</td>
+<td>✅✅✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Standard Library</td>
+<td>✅✅✅</td>
+<td>✅✅</td>
+</tr>
+<tr>
+<td>Memory Optimized</td>
+<td>✅✅</td>
+<td>✅✅✅</td>
+</tr>
+<tr>
+<td>Support/Community</td>
+<td>✅✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Concurrency (Simplicity)</td>
+<td>✅✅✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Lane’s Sloppy Rust vs Go Comparison</p>
+<p>I think <strong>Go will likely be the go-to for performant backend systems</strong>. Go’s rich standard library and easy concurrency makes standing up HTTP servers or other networked services simple and easy. Go is also faster, safer, and less memory intensive than most of the legacy competition. For example, Go is less memory intensive than Java and C#, faster than Python and Ruby, and safer than C++.</p>
+<p>Rust seems like it may steal some of the spotlights from Go in <strong>deeper backend processes</strong> that need to get every ounce of efficiency that they can from the hardware. In microservices and polyglot architectures, it makes sense to mix and match technologies behind the scenes a bit.</p>
+<p>Even more important than web programming for Rust, I see it being used for more <strong>systems-level applications</strong>. Rust could easily steal some business from C and C++ for uses in embedded devices, command-line utilities, and so forth.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Is Golang Best For Backend or Frontend Development? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/golang-frontend-or-backend/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Is Golang Best For Backend or Frontend Development?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Put simply, <strong>Golang is best for the backend side of a web application or website</strong>. There are many reasons that this is the case, so let’s dive in, but before we do, let’s cover some quick definitions.</p>
+<p>Golang, also called Go, was developed by Google in 2009. Those developers wanted a sexy, agile, effective language that would be simpler to read and work with than C and C++, which is what they were relying on at the time (to their dismay).</p>
+<p>Thus, Golang was born. Go is a statically-typed language with syntax loosely derived from C, but with additional useful features like garbage collection, type safety, and concurrency.</p>
+<p>OK, now let’s look at what the “backend” and “frontend” are. Handily I already wrote an article on <a href="https://blog.boot.dev/backend/frontend-vs-backend-meaning/">backend vs frontend</a>, so I’ll just quote myself:</p>
+<blockquote>
+<p>What is the “front-end”?</p>
+<p>The frontend of the software is what the user sees. If you look at a website, even something as simple as a login page, everything you see on the page is considered the frontend. Frontend code dictates the style and layout of the page.</p>
+</blockquote>
+<blockquote>
+<p>What is the “back-end”?</p>
+<p>The backend of software exists behind the scenes. Once you’ve entered your username and password, the application needs to verify whether the information is correct. Your profile and password are saved on the server, and the backend is responsible for validating your login and letting the front-end know that it was successful.</p>
+</blockquote>
+<h2 id="why-is-go-best-for-back-end-programming">
+  <span> Why is Go best for back-end programming?</span> <a href="#why-is-go-best-for-back-end-programming">🔗</a></h2>
+<p>If you know anything about programming, you may already be starting to get an inkling about why Go is best for the backend. In case not, I’ll spell it out here:</p>
+<ul>
+<li><strong>Go has built-in concurrency called “goroutines”</strong>. This means it can multitask, which is important for implementing high-performance servers and networked applications.</li>
+<li><strong>Networking</strong>. Go has a robust standard library that offers support for plenty of common backend networking tasks, like HTTP handling and TLS (Transport Layer Security) encryption.</li>
+<li><strong>Go goes fast</strong>. Go is famous for its rapid compilation times and efficient runtime performance, which is great for backend applications that need to handle a high volume of requests.</li>
+</ul>
+<p>Go is used heavily by Google to support their back-end infrastructure. It’s good for back-end development because that’s what it was <em>designed</em> for.</p>
+<h2 id="can-go-be-used-on-the-front-end">
+  <span> Can Go be used on the front-end?</span> <a href="#can-go-be-used-on-the-front-end">🔗</a></h2>
+<p>I mean, if you really want to, you can use Go as a frontend language, the same way you <em>can</em> use a hammer to make a screw go in.</p>
+<p>One way to use Go on the front-end is by compiling it to WebAssembly (Wasm). WebAssembly is a binary format that is supported by modern web browsers, and it allows developers to run code in the browser that was written in languages other than JavaScript. When it comes to writing front-end code, at least on the web, there are only two options:</p>
+<ul>
+<li>JavaScript</li>
+<li>Web Assembly (WASM)</li>
+</ul>
+<p>Web Assembly is still new, but it does work. So, if you really want to write so front-end applications in Go, you can, but I’d argue you’re better off waiting on the tooling to mature a bit more.</p>
+<p>In short, let go (pun intended) of those dreams and use Go in a context where it shines: as a command-line interface tool, and as a backend language.</p>
+<blockquote>
+<p>[Using Go for the frontend] will have you swimming upstream against a relentless current, assuming you actually want to get something accomplished. Of course if you are just doing the work for learning and exploration sake, more power to you!</p>
+<p><a href="https://forum.golangbridge.org/t/using-golang-as-front-end-framework/27226/7">Mike Schinkel, Golangbridge forum</a></p>
+</blockquote>
+<h2 id="what-has-go-been-used-for">
+  <span> What has Go been used for?</span> <a href="#what-has-go-been-used-for">🔗</a></h2>
+<p>Go is <em>primarily</em> a backend language, and has been used to build components in:</p>
+<ul>
+<li><a href="https://www.boot.dev/courses/learn-docker">Docker</a>. The Docker daemon, a system that manages containers, is <a href="https://docs.docker.com/language/golang/#:~:text=Go%20is%20undeniably%20a%20major,Kubernetes%20are%20written%20in%20Go.">built with Go</a>.</li>
+<li><a href="https://www.boot.dev/courses/learn-kubernetes">Kubernetes</a>. The Kubernetes control plane, which is the backend component that manages a cluster of servers, is <a href="https://docs.docker.com/language/golang/#:~:text=Go%20is%20undeniably%20a%20major,Kubernetes%20are%20written%20in%20Go.">built with Go</a>.</li>
+<li>Terraform. The Terraform backend, which is the component that manages and applies infrastructure changes, is <a href="https://pkg.go.dev/github.com/markcaudill/terraform-http-backend">written in Go</a>.</li>
+<li>InfluxDB. The InfluxDB server, which is a backend component that stores and retrieves data, is <a href="https://blog.gopheracademy.com/birthday-bash-2014/why-influxdb-uses-go/">built with Go</a>.</li>
+</ul>
+<p>And of course, Go’s own progenitor Google has made use of Go to create or support:</p>
+<ul>
+<li>Google App Engine: Google App Engine is a cloud computing platform that allows developers to build and deploy web applications and mobile backends. The <a href="https://github.com/golang/appengine">App Engine runtime</a>, which is in charge of executing applications and handling requests, is built with Go.</li>
+<li>dl.google.com: dl.google.com is a web service that provides access to Google’s software downloads, including Chrome, Android Studio, and various other tools. The <a href="https://groups.google.com/g/golang-nuts/c/BNUNbKSypE0/m/E4qSfpx9qI8J?pli=1">dl.google.com backend</a>, which is responsible for serving download files and tracking download statistics, is served by Go.</li>
+<li>gVisor: gVisor is an open-source security sandbox that allows developers to run untrusted code in a secure environment. <a href="https://github.com/google/gvisor">gVisor is built with Go</a>.</li>
+<li>Google Cloud Functions: Google Cloud Functions is a serverless computing platform that allows developers to run code in response to events. <a href="https://cloud.google.com/functions/docs/concepts/go-runtime">The Cloud Functions runtime</a>, which is responsible for executing functions and handling requests, is built with Go.</li>
+</ul>
+<h2 id="which-go-frameworks-should-i-use">
+  <span> Which Go frameworks should I use?</span> <a href="#which-go-frameworks-should-i-use">🔗</a></h2>
+<p>I could talk about any number of popular Go frameworks here:</p>
+<ul>
+<li><a href="https://echo.labstack.com/">Echo</a> is a high-performance, minimalist web framework</li>
+<li><a href="https://gin-gonic.com/">Gin</a> claims to be the fastest full-featured web framework</li>
+<li><a href="https://gobuffalo.io/">Buffalo</a> even offers a frontend pipeline</li>
+</ul>
+<p>But honestly? The best answer might just be <em>none</em>. In most cases, you probably shouldn’t use a framework at all.</p>
+<p>Go markets itself as a simple, fast, powerful language. Go frameworks often just gild the lily. They promise shiny tools that offer out-of-the-box, batteries-included functionality. Interestingly enough, Go doesn’t need most of that functionality.</p>
+<p>Frameworks are <em>super</em> helpful in many contexts. However, if you’re just building simple CRUD apps in Go, you probably don’t need one. Go’s standard library is so inundated with web tooling that it’s already kind of like a web framework. Using a go web framework on top of that means you might be less effective and commit yourself to design decisions that you might not need to make yet.</p>
+<h2 id="but-i-thought-we-_always_-use-frameworks">
+  <span> But I thought we <em>always</em> use frameworks!?!</span> <a href="#but-i-thought-we-_always_-use-frameworks">🔗</a></h2>
+<p>Let’s look at Python as an illustrative counter-example. Python developers often rightfully reach for frameworks like Django and Flask because the language doesn’t provide rich networking capabilities on its own. Python leaves those implementation details to each framework’s implementations.</p>
+<p>Most Go web frameworks actively hide the http.Response and http.Request objects away in exchange for ease of use. This effectively means that when you use a framework with Go, you’re slapping a big shiny box on top of the guts of whatever you’re working on. It looks great, but when it stops working, you will have a harder time understanding why or how to fix it.</p>
+<p>In short, new Golang developers are often curious about frameworks for the same reason they like Go: frameworks promise to be no-frills, simple, and conventional. But Go already is all those things.</p>
+<p>I’ll end with a great quote from <a href="https://pancy.medium.com/you-should-try-go-first-or-at-least-go-through-what-i-wrote-before-bringing-up-rails-convention-592782ea0ee4">experienced Go programmer Pancy</a>:</p>
+<blockquote>
+<p>I have been programming in Go for more than a year and haven’t had any success adopting a framework that’s more intuitive than piecing packages myself.</p>
+</blockquote>
+<h2 id="should-you-use-go-for-the-backend-only">
+  <span> Should you use Go for the backend only?</span> <a href="#should-you-use-go-for-the-backend-only">🔗</a></h2>
+<p>Go is a great language for a lot of reasons: it’s fast, it’s simple, and as I kept harping on above, it’s an all-in-one option. It’s very easy to learn and it’s satisfying to build things in.</p>
+<p>That’s why I recommend <a href="https://www.boot.dev/courses/learn-golang">learning Go</a> no matter where you are on your coding journey. For the same reasons that make Go a great backend language, Go is a just good language to learn, full stop. Even if you plan to go fully frontend in your programming career, it never hurts to have the flexibility to be able to code in Go.</p>
+<p>If you want to get started learning Go, I recommend you take our course to <a href="https://www.boot.dev/courses/learn-golang">learn Go</a>.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

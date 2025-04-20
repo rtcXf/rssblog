@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What Is Dry Code, and Is It Always A Good Thing? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/dry-code/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>What Is Dry Code, and Is It Always A Good Thing?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>“Don’t repeat yourself”, or “DRY” for short, is a somewhat controversial principle of software development. It aims to make code cleaner, which is to say less buggy and easier to work with. DRY purports to accomplish this by reducing repetition in your codebase and replacing that duplicate code with abstractions like functions, classes, and methods.</p>
+<h2 id="first-why-should-we-care-about-cleaner-code">
+  <span> First, why should we care about cleaner code?</span> <a href="#first-why-should-we-care-about-cleaner-code">🔗</a></h2>
+<p>Clean code is like clean garbage - it doesn’t really exist. The only clean code is <a href="https://github.com/kelseyhightower/nocode">code that doesn’t exist at all</a>.</p>
+<p>I’m happy to admit that a perfectly clean (empty) codebase is useless. Without code, an application can’t provide value to users. With that in mind, our pursuit of “clean code” will necessarily consist of tradeoffs. We’ll trade usefulness for cleanliness, complexity for speed, ownership for ease of development, and abstractions for reusability.</p>
+<p>DRY code is often held aloft as an ideal in the quest for clean code. Let’s explore why I think DRY can be a good <a href="https://blog.boot.dev/computer-science/examples-of-heuristics-in-computer-science/">heuristic</a> for better code but is far from an “absolute good”. Let’s take a look at some examples in JavaScript.</p>
+<div><pre tabindex="0"><code data-lang="javascript"><span><span><span>export</span> <span>async</span> <span>function</span> <span>updateUserHandle</span><span>(</span><span>handle</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>!</span><span>isLoggedIn</span><span>())</span> <span>{</span>
+</span></span><span><span>    <span>// redirect to login screen
+</span></span></span><span><span><span></span>    <span>return</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>let</span> <span>token</span> <span>=</span> <span>localStorage</span><span>.</span><span>getItem</span><span>(</span><span>jwtKey</span><span>);</span>
+</span></span><span><span>  <span>let</span> <span>decodedToken</span> <span>=</span> <span>decodeJWT</span><span>(</span><span>token</span><span>);</span>
+</span></span><span><span>  <span>const</span> <span>hoursDelta</span> <span>=</span> <span>24</span><span>;</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>decodedToken</span><span>.</span><span>exp</span> <span>&lt;</span> <span>(</span><span>Date</span><span>.</span><span>now</span><span>()</span> <span>+</span> <span>hoursDelta</span> <span>*</span> <span>60</span> <span>*</span> <span>60</span><span>)</span> <span>/</span> <span>1000</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>refreshToken</span><span>();</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>return</span> <span>await</span> <span>fetch</span><span>(</span><span>`</span><span>${</span><span>domain</span><span>}</span><span>/v1/users/handle`</span><span>,</span> <span>{</span>
+</span></span><span><span>    <span>method</span><span>:</span> <span>&#34;PUT&#34;</span><span>,</span>
+</span></span><span><span>    <span>mode</span><span>:</span> <span>&#34;cors&#34;</span><span>,</span>
+</span></span><span><span>    <span>headers</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;Content-Type&#34;</span><span>:</span> <span>&#34;application/json&#34;</span><span>,</span>
+</span></span><span><span>      <span>Authorization</span><span>:</span> <span>`Bearer </span><span>${</span><span>token</span><span>}</span><span>`</span><span>,</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>    <span>body</span><span>:</span> <span>JSON</span><span>.</span><span>stringify</span><span>({</span>
+</span></span><span><span>      <span>handle</span><span>,</span>
+</span></span><span><span>    <span>}),</span>
+</span></span><span><span>  <span>});</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>async</span> <span>function</span> <span>updateUserInterests</span><span>(</span><span>interestUUIDs</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>!</span><span>isLoggedIn</span><span>())</span> <span>{</span>
+</span></span><span><span>    <span>// redirect to login screen
+</span></span></span><span><span><span></span>    <span>return</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>let</span> <span>token</span> <span>=</span> <span>localStorage</span><span>.</span><span>getItem</span><span>(</span><span>jwtKey</span><span>);</span>
+</span></span><span><span>  <span>let</span> <span>decodedToken</span> <span>=</span> <span>decodeJWT</span><span>(</span><span>token</span><span>);</span>
+</span></span><span><span>  <span>const</span> <span>hoursDelta</span> <span>=</span> <span>24</span><span>;</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>decodedToken</span><span>.</span><span>exp</span> <span>&lt;</span> <span>(</span><span>Date</span><span>.</span><span>now</span><span>()</span> <span>+</span> <span>hoursDelta</span> <span>*</span> <span>60</span> <span>*</span> <span>60</span><span>)</span> <span>/</span> <span>1000</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>refreshToken</span><span>();</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>return</span> <span>await</span> <span>fetch</span><span>(</span><span>`</span><span>${</span><span>domain</span><span>}</span><span>/v1/users/interests`</span><span>,</span> <span>{</span>
+</span></span><span><span>    <span>method</span><span>:</span> <span>&#34;PUT&#34;</span><span>,</span>
+</span></span><span><span>    <span>mode</span><span>:</span> <span>&#34;cors&#34;</span><span>,</span>
+</span></span><span><span>    <span>headers</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;Content-Type&#34;</span><span>:</span> <span>&#34;application/json&#34;</span><span>,</span>
+</span></span><span><span>      <span>Authorization</span><span>:</span> <span>`Bearer </span><span>${</span><span>token</span><span>}</span><span>`</span><span>,</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>    <span>body</span><span>:</span> <span>JSON</span><span>.</span><span>stringify</span><span>({</span>
+</span></span><span><span>      <span>interestUUIDs</span><span>,</span>
+</span></span><span><span>    <span>}),</span>
+</span></span><span><span>  <span>});</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>You may have noticed that the beginnings of those two API calls are nearly identical - the first few lines check to see if a user is properly authenticated and sends authentication data in the respective requests. This might not be a big problem with just 2 API calls, but what if we have 30? Or maybe 1000? Instead, we can DRY up this code by writing a simple <code>fetchWithAuth()</code> function that centralizes all the client’s authentication logic in a single place:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>async</span> <span>function</span> <span>fetchWithAuth</span><span>(</span><span>url</span><span>,</span> <span>params</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>!</span><span>isLoggedIn</span><span>())</span> <span>{</span>
+</span></span><span><span>    <span>// redirect to login screen
+</span></span></span><span><span><span></span>    <span>return</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>let</span> <span>token</span> <span>=</span> <span>localStorage</span><span>.</span><span>getItem</span><span>(</span><span>jwtKey</span><span>);</span>
+</span></span><span><span>  <span>let</span> <span>decodedToken</span> <span>=</span> <span>decodeJWT</span><span>(</span><span>token</span><span>);</span>
+</span></span><span><span>  <span>const</span> <span>hoursDelta</span> <span>=</span> <span>24</span><span>;</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>decodedToken</span><span>.</span><span>exp</span> <span>&lt;</span> <span>(</span><span>Date</span><span>.</span><span>now</span><span>()</span> <span>+</span> <span>hoursDelta</span> <span>*</span> <span>60</span> <span>*</span> <span>60</span><span>)</span> <span>/</span> <span>1000</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>refreshToken</span><span>();</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>!</span><span>params</span><span>.</span><span>headers</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>params</span><span>.</span><span>headers</span> <span>=</span> <span>{};</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>params</span><span>.</span><span>headers</span><span>.</span><span>Authorization</span> <span>=</span> <span>`Bearer </span><span>${</span><span>token</span><span>}</span><span>`</span><span>;</span>
+</span></span><span><span>  <span>return</span> <span>await</span> <span>fetch</span><span>(</span><span>url</span><span>,</span> <span>params</span><span>);</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>async</span> <span>function</span> <span>updateUserHandle</span><span>(</span><span>handle</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>return</span> <span>await</span> <span>fetchWithAuth</span><span>(</span><span>`</span><span>${</span><span>domain</span><span>}</span><span>/v1/users/handle`</span><span>,</span> <span>{</span>
+</span></span><span><span>    <span>method</span><span>:</span> <span>&#34;PUT&#34;</span><span>,</span>
+</span></span><span><span>    <span>mode</span><span>:</span> <span>&#34;cors&#34;</span><span>,</span>
+</span></span><span><span>    <span>headers</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;Content-Type&#34;</span><span>:</span> <span>&#34;application/json&#34;</span><span>,</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>    <span>body</span><span>:</span> <span>JSON</span><span>.</span><span>stringify</span><span>({</span>
+</span></span><span><span>      <span>handle</span><span>,</span>
+</span></span><span><span>    <span>}),</span>
+</span></span><span><span>  <span>});</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>async</span> <span>function</span> <span>updateUserInterests</span><span>(</span><span>interestUUIDs</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>return</span> <span>await</span> <span>fetchWithAuth</span><span>(</span><span>`</span><span>${</span><span>domain</span><span>}</span><span>/v1/users/interests`</span><span>,</span> <span>{</span>
+</span></span><span><span>    <span>method</span><span>:</span> <span>&#34;PUT&#34;</span><span>,</span>
+</span></span><span><span>    <span>mode</span><span>:</span> <span>&#34;cors&#34;</span><span>,</span>
+</span></span><span><span>    <span>headers</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;Content-Type&#34;</span><span>:</span> <span>&#34;application/json&#34;</span><span>,</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>    <span>body</span><span>:</span> <span>JSON</span><span>.</span><span>stringify</span><span>({</span>
+</span></span><span><span>      <span>interestUUIDs</span><span>,</span>
+</span></span><span><span>    <span>}),</span>
+</span></span><span><span>  <span>});</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="why-wouldnt-you-dry-out-your-code">
+  <span> Why wouldn’t you DRY out your code?</span> <a href="#why-wouldnt-you-dry-out-your-code">🔗</a></h2>
+<p>It seems like a good idea to reduce code duplication right? Well, yes, in general, it is. That said, let’s look at some of the drawbacks that come along with too much centralization.</p>
+<h3 id="1-too-many-abstractions">
+  <span> 1. Too many abstractions</span> <a href="#1-too-many-abstractions">🔗</a></h3>
+<p>Sometimes two pieces of code happen to be the same at a given point in time, but later on, they become distinct in some way. It’s really hard to guarantee that duplicate blocks of code will remain perfect copies of each other forever. A hypothetical example of this would be if the Facebook and Instagram APIs had the same way to create a social post. Just because they’re <em>coincidentally</em> the same, probably doesn’t mean that the logic should only be written once. One day, Instagram might introduce something dumb like “filters” or “stories” and all of a sudden the common abstraction needs crazy flags and parameters like:</p>
+<ul>
+<li><code>is_story</code></li>
+<li><code>is_instagram</code></li>
+<li><code>filter_enum</code></li>
+</ul>
+<p>… and those flags make the logic do different things depending upon whether it’s a Facebook or Instagram post.</p>
+<p>The solution is likely to remain disciplined about splitting out code that, while it may be similar <em>now</em>, is only <em>coincidentally</em> similar. We should try to only merge code that’s <em>fundamentally</em> the same. A great example would be a math function like <code>log2</code>. That function should work for every case where you need to calculate a logarithm - each calculation of a log is <em>fundamentally</em> the same.</p>
+<h3 id="2-external-dependency-creation">
+  <span> 2. External dependency creation</span> <a href="#2-external-dependency-creation">🔗</a></h3>
+<p>If two different projects share the same logic, it can often make sense to centralize it in a library package. While this is often a great idea, it can add overhead and can end up being more trouble than it’s worth. For example, even if the abstraction makes sense, you’re adding at least the following complexity to the project:</p>
+<ul>
+<li>Management of the dependencies versions and running updates regularly</li>
+<li>Requires multi-project updates to get a new change to a specific dependent</li>
+<li>Often involves more remote infrastructure like NPM or PyPy</li>
+<li>Gets harder to make “breaking” changes to the library’s core functions - requires a higher standard of code quality and architecture</li>
+</ul>
+<h3 id="3-localization-complexity">
+  <span> 3. Localization complexity</span> <a href="#3-localization-complexity">🔗</a></h3>
+<p>When debugging or reading code, it would be easiest if the flow of logic started at the top of a file and flowed in a linear path. For example:</p>
+<pre tabindex="0"><code>START PROGRAM
+INSTRUCTION 0
+INSTRUCTION 1
+INSTRUCTION 2
+INSTRUCTION 3
+END PROGRAM
+</code></pre><p>Unfortunately, in large programs, we need functions, classes, methods, type definitions, etc to organize and reuse our logic. We’re forced to give up a bit of simplicity and read and write code in a non-linear way. I believe our goal should be to keep everything as linear as possible and sacrifice linearity and simplicity for reusability and separation of concerns only as necessary. Each time we extract a chunk of code from a larger function into a smaller more encapsulated one, the code becomes just a little bit harder to follow.</p>
+<p>In short, we should <a href="https://wagslane.dev/posts/optimize-for-simplicit-first/">optimize for simplicity first.</a></p>
+<p>With a highly compartmentalized project, when we see a function called <code>getUser()</code>, if we want to <em>really</em> know what’s going on we have to peek into that function and remember the external calling context because we’re now looking at an entirely different file. The cognitive burden becomes greater and greater the more definitions we need to jump through to grok a single logical pathway.</p>
+<h2 id="takeaways---code-smells-and-heuristics">
+  <span> Takeaways - Code smells and heuristics</span> <a href="#takeaways---code-smells-and-heuristics">🔗</a></h2>
+<p>Since no code is perfect, we need to make use of some heuristics (rules of thumb), to try to work towards a cleaner codebase.</p>
+<h3 id="1-wet-code-or-the-rule-of-three">
+  <span> 1. WET code, or the rule of three</span> <a href="#1-wet-code-or-the-rule-of-three">🔗</a></h3>
+<p>In my opinion, WET is a better rule of thumb than DRY.</p>
+<p>WET stands for “write everything twice”, and forces you to think a bit harder about whether or not a piece of logic <em>deserves</em> an abstraction. The rule of three is an alternative that says you should wait until you’ve written something three times before breaking it out.</p>
+<h3 id="2-is-it-testable">
+  <span> 2. Is it testable?</span> <a href="#2-is-it-testable">🔗</a></h3>
+<p>Most functions should be predictable and testable. They should behave like math functions or <a href="https://blog.boot.dev/golang/pure-functions-in-golang/">pure functions</a> where possible - given a set of inputs the function will always produce the same outputs, and the state of the program isn’t mutated. If the code you’re thinking about condensing into a function can be a pure function, then it’s likely a better idea than if it would create an impure function.</p>
+<p>Pure functions are easy to write good unit tests for - if your abstraction is easily testable it’s more likely to be a good abstraction.</p>
+<h3 id="3-are-there-special-cases-or-arguments-only-used-by-a-fraction-of-callers">
+  <span> 3. Are there special cases or arguments only used by a fraction of callers?</span> <a href="#3-are-there-special-cases-or-arguments-only-used-by-a-fraction-of-callers">🔗</a></h3>
+<p>Take a look at the following example:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>getArea</span><span>(</span><span>height</span><span>,</span> <span>width</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>return</span> <span>height</span> <span>*</span> <span>width</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>This is a great function! It’s very simple, and obviously can be used to calculate the area of any shape. Here’s a bad example:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>getArea</span><span>(</span><span>height</span><span>,</span> <span>width</span><span>,</span> <span>isTriangle</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>isTriangle</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>(</span><span>height</span> <span>*</span> <span>width</span><span>)</span> <span>/</span> <span>2</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>return</span> <span>height</span> <span>*</span> <span>width</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Special cases are bad news - I’m trying to be too abstract. Instead, I should just create two separate functions:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>getTriangleArea</span><span>(</span><span>height</span><span>,</span> <span>width</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>return</span> <span>(</span><span>height</span> <span>*</span> <span>width</span><span>)</span> <span>/</span> <span>2</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>function</span> <span>getRectangleArea</span><span>(</span><span>height</span><span>,</span> <span>width</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>return</span> <span>height</span> <span>*</span> <span>width</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Have any more ideas for good rules of thumb? Let me know on <a href="https://twitter.com/wagslane">Twitter</a>.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

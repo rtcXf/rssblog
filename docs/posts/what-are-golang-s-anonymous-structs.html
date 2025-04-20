@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What Are Golang&#39;s Anonymous Structs? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/anonymous-structs-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>What Are Golang&#39;s Anonymous Structs?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>An anonymous struct is just like a normal struct, but it is defined <em>without a name</em> and therefore <em>cannot be referenced</em> elsewhere in the code.</p>
+<p>Structs in Go are similar to structs in other languages like C. They have typed collections of fields and are used to group data to make it more manageable for us as programmers.</p>
+<p>To create an anonymous struct, just instantiate the instance immediately using a second pair of brackets after declaring the type:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>newCar</span> <span>:=</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>make</span>    <span>string</span>
+</span></span><span><span>    <span>model</span>   <span>string</span>
+</span></span><span><span>    <span>mileage</span> <span>int</span>
+</span></span><span><span><span>}{</span>
+</span></span><span><span>    <span>make</span><span>:</span>    <span>&#34;Ford&#34;</span><span>,</span>
+</span></span><span><span>    <span>model</span><span>:</span>   <span>&#34;Taurus&#34;</span><span>,</span>
+</span></span><span><span>    <span>mileage</span><span>:</span> <span>200000</span><span>,</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Contrast this with creating a named struct type:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// declare the &#39;car&#39; struct type
+</span></span></span><span><span><span></span><span>type</span> <span>car</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>make</span>    <span>string</span>
+</span></span><span><span>    <span>model</span>   <span>string</span>
+</span></span><span><span>    <span>mileage</span> <span>int</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// create an instance of a car
+</span></span></span><span><span><span></span><span>newCar</span> <span>:=</span> <span>car</span><span>{</span>
+</span></span><span><span>    <span>make</span><span>:</span>    <span>&#34;Ford&#34;</span><span>,</span>
+</span></span><span><span>    <span>model</span><span>:</span>   <span>&#34;taurus&#34;</span><span>,</span>
+</span></span><span><span>    <span>mileage</span><span>:</span> <span>200000</span><span>,</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>If you’re interested in doing a deep dive into the Go programming language, check out my <a href="https://www.boot.dev/courses/learn-golang">“Learn Go” course on Boot.dev</a>.</p>
+<h2 id="when-should-i-use-an-anonymous-struct">
+  <span> When should I use an anonymous struct?</span> <a href="#when-should-i-use-an-anonymous-struct">🔗</a></h2>
+<p>I often use anonymous structs to <a href="https://blog.boot.dev/golang/json-golang/">marshal and unmarshal JSON data</a> in HTTP handlers. If a struct is only meant to be used once, then it makes sense to declare it in such a way that developers down the road won’t be tempted to accidentally use it again.</p>
+<p>Take a look at the code below. We can marshal the <a href="https://www.boot.dev/courses/learn-http-clients-golang">HTTP request</a> directly into an unnamed struct inline. All the fields are still accessible via the dot operator, but we don’t have to worry about another part of our project trying to use a type that wasn’t intended for it.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>createCarHandler</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>req</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>defer</span> <span>req</span><span>.</span><span>Body</span><span>.</span><span>Close</span><span>()</span>
+</span></span><span><span>    <span>decoder</span> <span>:=</span> <span>json</span><span>.</span><span>NewDecoder</span><span>(</span><span>req</span><span>.</span><span>Body</span><span>)</span>
+</span></span><span><span>    <span>newCar</span> <span>:=</span> <span>struct</span> <span>{</span>
+</span></span><span><span>        <span>Make</span>    <span>string</span> <span>`json:&#34;make&#34;`</span>
+</span></span><span><span>        <span>Model</span>   <span>string</span> <span>`json:&#34;model&#34;`</span>
+</span></span><span><span>        <span>Mileage</span> <span>int</span>    <span>`json:&#34;mileage&#34;`</span>
+</span></span><span><span>    <span>}{}</span>
+</span></span><span><span>    <span>err</span> <span>:=</span> <span>decoder</span><span>.</span><span>Decode</span><span>(</span><span>&amp;</span><span>newCar</span><span>)</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>log</span><span>.</span><span>Println</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span>        <span>return</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>makeCar</span><span>(</span><span>newCar</span><span>.</span><span>Make</span><span>,</span> <span>newCar</span><span>.</span><span>Model</span><span>,</span> <span>newCar</span><span>.</span><span>Mileage</span><span>)</span>
+</span></span><span><span>    <span>return</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h3 id="dont-use-mapstringinterface-for-json-data-if-you-can-avoid-it">
+  <span> Don’t use <code>map[string]interface{}</code> for JSON data if you can avoid it.</span> <a href="#dont-use-mapstringinterface-for-json-data-if-you-can-avoid-it">🔗</a></h3>
+<p>Instead of declaring a quick anonymous struct for JSON unmarshalling, I’ve often seen <code>map[string]interface{}</code> used. This is <em>terrible</em> in most scenarios for several reasons:</p>
+<ol>
+<li><strong>No type checking.</strong> If the client sends a key called “name” with a <code>bool</code> value, but your code is expecting a <code>string</code>, then unmarshalling into a map won’t catch the error</li>
+<li><strong>Maps are vague.</strong> After unmarshalling the data, we are forced to use runtime checks to make sure the data we care about exists. If those checks aren’t thorough, it can lead to a nil pointer dereference panic being thrown.</li>
+<li><strong><code>map[string]interface{}</code> is verbose</strong>. Digging into the map isn’t as simple as accessing a named field using a dot operator, for example, <code>newCar.model</code>. Instead, it is something like:</li>
+</ol>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>createCarHandler</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>req</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>myMap</span> <span>:=</span> <span>map</span><span>[</span><span>string</span><span>]</span><span>interface</span><span>{}{}</span>
+</span></span><span><span>    <span>decoder</span> <span>:=</span> <span>json</span><span>.</span><span>NewDecoder</span><span>(</span><span>req</span><span>.</span><span>Body</span><span>)</span>
+</span></span><span><span>    <span>err</span> <span>:=</span> <span>decoder</span><span>.</span><span>Decode</span><span>(</span><span>&amp;</span><span>myMap</span><span>)</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>log</span><span>.</span><span>Println</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span>        <span>return</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>model</span><span>,</span> <span>ok</span> <span>:=</span> <span>myMap</span><span>[</span><span>&#34;model&#34;</span><span>]</span>
+</span></span><span><span>    <span>if</span> <span>!</span><span>ok</span> <span>{</span>
+</span></span><span><span>        <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;field doesn&#39;t exist&#34;</span><span>)</span>
+</span></span><span><span>        <span>return</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>modelString</span><span>,</span> <span>ok</span> <span>:=</span> <span>model</span><span>.(</span><span>string</span><span>)</span>
+</span></span><span><span>    <span>if</span> <span>!</span><span>ok</span> <span>{</span>
+</span></span><span><span>        <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;model is not a string&#34;</span><span>)</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>// do something with model field
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><p>Anonymous structs can clean up your API handlers if used properly. The strong typing they offer while still being a “one-off” solution is a powerful tool.</p>
+<h2 id="bonus---use-a-slice-of-anonymous-structs-for-easy-test-data">
+  <span> Bonus - Use a slice of anonymous structs for easy test data</span> <a href="#bonus---use-a-slice-of-anonymous-structs-for-easy-test-data">🔗</a></h2>
+<p>Anonymous structs are great for writing <a href="https://dave.cheney.net/2019/05/07/prefer-table-driven-tests">table driven tests</a>.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>var</span> <span>cars</span> <span>=</span> <span>[]</span><span>struct</span> <span>{</span>
+</span></span><span><span>    <span>make</span> <span>string</span>
+</span></span><span><span>    <span>model</span> <span>string</span>
+</span></span><span><span>    <span>topSpeed</span>
+</span></span><span><span><span>}{</span>
+</span></span><span><span>    <span>{</span><span>&#34;toyota&#34;</span><span>,</span> <span>&#34;camry&#34;</span><span>,</span> <span>100</span><span>},</span>
+</span></span><span><span>    <span>{</span><span>&#34;tesla&#34;</span><span>,</span> <span>&#34;model 3&#34;</span><span>,</span> <span>250</span><span>},</span>
+</span></span><span><span>    <span>{</span><span>&#34;ford&#34;</span><span>,</span> <span>&#34;focus&#34;</span><span>,</span> <span>120</span><span>},</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="bonus-2---group-a-set-of-global-gasp-variables-in-a-struct">
+  <span> Bonus #2 - Group a set of global (gasp) variables in a struct</span> <a href="#bonus-2---group-a-set-of-global-gasp-variables-in-a-struct">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>var</span> <span>apiSettings</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>secret</span>      <span>string</span>
+</span></span><span><span>    <span>dbConn</span>   <span>string</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>apiSettings</span><span>.</span><span>secret</span> <span>=</span> <span>&#34;super-secr3t-p@$$&#34;</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

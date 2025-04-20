@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Converting an Array to a JSON Object in JavaScript | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/converting-an-array-to-json-object-in-javascript/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Converting an Array to a JSON Object in JavaScript</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>JSON, or “JavaScript Object Notation”, is a highly popular data exchange format that’s widely used in web development. In this post, we’ll explore several simple methods for converting a JavaScript array into JSON data. Plus, we’ll discuss the benefits of using JSON and how it can help improve your web development projects.</p>
+<p>If you’re interested in learning more about JSON and HTTP, check out my <a href="https://www.boot.dev/courses/learn-http-clients-golang">“Learn HTTP” course on Boot.dev</a> for an in-depth look at these powerful technologies.</p>
+<h2 id="js-array-to-json-using-jsonstringify">
+  <span> JS Array to JSON using JSON.stringify()</span> <a href="#js-array-to-json-using-jsonstringify">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>jsonString</span> <span>=</span> <span>JSON</span><span>.</span><span>stringify</span><span>([</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]);</span>
+</span></span></code></pre></div><p>The <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify">JSON.stringify()</a> method converts a JavaScript object, array, or value to a JSON string. If you so choose, you can then send that JSON string to a backend server using the Fetch API or another communication library.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>resp</span> <span>=</span> <span>await</span> <span>fetch</span><span>(</span><span>&#34;https://example.com&#34;</span><span>,</span> <span>{</span>
+</span></span><span><span>  <span>method</span><span>:</span> <span>&#34;POST&#34;</span><span>,</span>
+</span></span><span><span>  <span>mode</span><span>:</span> <span>&#34;cors&#34;</span><span>,</span>
+</span></span><span><span>  <span>headers</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;Content-Type&#34;</span><span>:</span> <span>&#34;application/json&#34;</span><span>,</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>body</span><span>:</span> <span>JSON</span><span>.</span><span>stringify</span><span>([</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>5</span><span>]),</span>
+</span></span><span><span><span>});</span>
+</span></span></code></pre></div><p>Because an array structure at the top level is valid JSON, if you’re just worried about <em>validity</em>, then you don’t even need to do any transformations. To prepare your array so that you can make a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch">fetch request</a> with it, it’s as simple as using the <code>JSON.stringify()</code> method as we saw above.</p>
+<p>If you want to convert back to an in-memory array, you can use <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse">JSON.parse()</a> on the string.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>arr</span> <span>=</span> <span>JSON</span><span>.</span><span>parse</span><span>(</span><span>&#34;[1, 2, 3]&#34;</span><span>);</span>
+</span></span><span><span><span>// arr is an array
+</span></span></span><span><span><span>// [1, 2, 3]
+</span></span></span></code></pre></div><p>If you’re looking to enhance your JavaScript skills, check out my <a href="https://www.boot.dev/courses/learn-javascript">full JS course on Boot.dev</a>!</p>
+<h2 id="array-to-json-with-indexes-as-keys">
+  <span> Array to JSON with indexes as keys</span> <a href="#array-to-json-with-indexes-as-keys">🔗</a></h2>
+<p>If you don’t want the direct string representation of a JSON array, you might want an object where the keys are the <em>indexes</em> of the array.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>[</span><span>&#34;apple&#34;</span><span>,</span> <span>&#34;orange&#34;</span><span>,</span> <span>&#34;banana&#34;</span><span>]</span>
+</span></span><span><span>
+</span></span><span><span><span>// becomes
+</span></span></span><span><span><span></span>
+</span></span><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;0&#34;</span><span>:</span> <span>&#34;apple&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;1&#34;</span><span>:</span> <span>&#34;orange&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;2&#34;</span><span>:</span> <span>&#34;banana&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>To get a JSON object from an array with index keys you can use the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign">Object.assign</a> method in conjunction with <code>JSON.stringify</code>.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>array</span> <span>=</span> <span>[</span><span>&#34;apple&#34;</span><span>,</span> <span>&#34;orange&#34;</span><span>,</span> <span>&#34;banana&#34;</span><span>];</span>
+</span></span><span><span><span>const</span> <span>jsonString</span> <span>=</span> <span>JSON</span><span>.</span><span>stringify</span><span>(</span><span>Object</span><span>.</span><span>assign</span><span>({},</span> <span>array</span><span>));</span>
+</span></span><span><span><span>// jsonString becomes
+</span></span></span><span><span><span>// {&#34;0&#34;:&#34;apple&#34;,&#34;1&#34;:&#34;orange&#34;,&#34;2&#34;:&#34;banana&#34;}
+</span></span></span></code></pre></div><h2 id="convert-each-item-in-an-array-into-json">
+  <span> Convert each item in an array into JSON</span> <a href="#convert-each-item-in-an-array-into-json">🔗</a></h2>
+<p>If for some insane reason you need to stringify all the items in an array, but not the array as a whole, the <a href="https://blog.boot.dev/javascript/javascript-map-function/">.map()</a> function is useful.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>arr</span> <span>=</span> <span>[</span><span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>];</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>jsonStrings</span> <span>=</span> <span>arr</span><span>.</span><span>map</span><span>((</span><span>item</span><span>)</span> <span>=&gt;</span> <span>JSON</span><span>.</span><span>stringify</span><span>(</span><span>item</span><span>));</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>backToNumbers</span> <span>=</span> <span>jsonStrings</span><span>.</span><span>map</span><span>((</span><span>s</span><span>)</span> <span>=&gt;</span> <span>JSON</span><span>.</span><span>parse</span><span>(</span><span>s</span><span>));</span>
+</span></span></code></pre></div><h2 id="when-dealing-with-an-api-should-you-use-objects-or-arrays">
+  <span> When dealing with an API, should you use objects or arrays?</span> <a href="#when-dealing-with-an-api-should-you-use-objects-or-arrays">🔗</a></h2>
+<p>If you’re writing client-side code you probably won’t get to decide. The API (back end) system that you’re working with will probably have documentation that will specify the shape of the data it expects.</p>
+<p>In general, I would say it’s much more likely that an API will expect a top-level object for the request body, and if arrays of data are required they’ll be a nested value within that top-level object.</p>
+<p>For example, if I was writing an API that wanted a list of usernames, I’d probably accept the following JSON object:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;usernames&#34;</span><span>:</span> <span>[</span><span>&#34;bill&#34;</span><span>,</span> <span>&#34;bob&#34;</span><span>,</span> <span>&#34;karen&#34;</span><span>,</span> <span>&#34;sue&#34;</span><span>]</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Instead of a “naked” array, which is technically valid JSON:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>[</span><span>&#34;bill&#34;</span><span>,</span> <span>&#34;bob&#34;</span><span>,</span> <span>&#34;karen&#34;</span><span>,</span> <span>&#34;sue&#34;</span><span>]</span>
+</span></span></code></pre></div><p>The reason that I generally prefer top-level objects is that I can add additional fields to the object in the future, without requiring large changes to the code. I also like it because it “self-documents” in a way. When you look at the first request body you can tell it’s an array of usernames, in the second example, those strings could be anything.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

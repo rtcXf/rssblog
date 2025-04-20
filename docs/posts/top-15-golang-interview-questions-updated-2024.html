@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Top 15 Golang Interview Questions [Updated 2024] | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/top-golang-interview-questions/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Top 15 Golang Interview Questions [Updated 2024]</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Let’s take a look at some good technical <a href="https://www.golanginterview.dev/questions/">questions</a> to be familiar with, whether you are looking to nail your next <a href="https://www.golanginterview.dev/">Golang interview</a>, or if you’re the interviewer yourself..</p>
+<h2 id="1-whats-the-difference-between-a-goroutine-and-an-operating-system-thread">
+  <span> 1. What’s the difference between a goroutine and an operating system thread?</span> <a href="#1-whats-the-difference-between-a-goroutine-and-an-operating-system-thread">🔗</a></h2>
+<ul>
+<li>Go provides built-in channels for goroutines to communicate safely between themselves.</li>
+<li>More goroutines can run on a typical system than system threads. For example, with Java, you can run many <em>thousands</em> of threads. With Go, you can run many <em>millions</em> of goroutines.</li>
+<li>Goroutines startup more quickly than operating system threads.</li>
+<li>Multiple Goroutines are multiplexed onto OS threads, rather than a 1:1 mapping.</li>
+<li>You can write massively concurrent servers without having to resort to event programming.</li>
+<li>Goroutines are not hardware-dependent like threads.</li>
+<li>Goroutines are more lightweight, largely due to <a href="https://blog.cloudflare.com/how-stacks-are-handled-in-go/#segmentedstacks">segmented stacks</a> in memory</li>
+</ul>
+<h2 id="2-can-constants-be-computed-in-go">
+  <span> 2. Can constants be computed in Go?</span> <a href="#2-can-constants-be-computed-in-go">🔗</a></h2>
+<p>Constants can <strong>not</strong> be computed at runtime, their value must be known at compile time. That said, constants can be computed at compile-time, typically as a derivative of other constants. For example:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>hours</span> <span>=</span> <span>7643</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>minutes</span> <span>=</span> <span>hours</span> <span>*</span> <span>60</span>
+</span></span></code></pre></div><h2 id="3-what-does-the-go-ecosystem-use-for-package-and-dependency-management">
+  <span> 3. What does the Go ecosystem use for package and dependency management?</span> <a href="#3-what-does-the-go-ecosystem-use-for-package-and-dependency-management">🔗</a></h2>
+<p>Until recently the GOPATH setup allowed developers to import packages as long as they were in the local Go workspace. As of Go ~1.13 it’s recommended to use <code>go mod</code>. With <code>go mod</code>, source code isn’t required to be a part of the <code>GOPATH</code> environment variable.</p>
+<p>Go doesn’t use a package manager like NPM or Cargo. The Go toolchain provides commands like <code>go get</code> for fetching external dependencies straight from their remote source control repositories, and <code>go mod</code> for managing the dependencies of a specific project.</p>
+<h2 id="4-how-would-you-succinctly-swap-the-values-of-two-variables-in-go">
+  <span> 4. How would you succinctly swap the values of two variables in Go?</span> <a href="#4-how-would-you-succinctly-swap-the-values-of-two-variables-in-go">🔗</a></h2>
+<h2 id="5-do-you-have-any-preferences-for-error-handling-methodologies-in-go">
+  <span> 5. Do you have any preferences for error-handling methodologies in Go?</span> <a href="#5-do-you-have-any-preferences-for-error-handling-methodologies-in-go">🔗</a></h2>
+<p>Errors in Go are an interface type, where any type that implements the single <code>Error()</code> method can be considered an error:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>error</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>Error</span><span>()</span> <span>string</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Whenever a function has a possibility to go wrong, like a network call or a type conversion, the function should return an error as its last return variable. The caller should check the error value, and any value other than <code>nil</code> is considered an error.</p>
+<p>Idiomatic Go developers should prefer <a href="https://blog.boot.dev/clean-code/guard-clauses/">guard clauses</a> over if-else chains, especially when handling errors. Errors should also be <a href="https://blog.boot.dev/golang/wrapping-errors-in-go-how-to-handle-nested-errors/">wrapped in a meaningful way</a> as they are passed up the call stack if appropriate.</p>
+<h2 id="6-what-is-a-pointer-and-when-would-you-use-it">
+  <span> 6. What is a pointer and when would you use it?</span> <a href="#6-what-is-a-pointer-and-when-would-you-use-it">🔗</a></h2>
+<p>A <a href="https://blog.boot.dev/golang/the-proper-use-of-pointers-in-go-golang/">pointer</a> holds the memory address of a value.</p>
+<ul>
+<li><code>&amp;</code> generates a pointer to its operand.</li>
+<li><code>*</code> dereferences a pointer (exposes the underlying value).</li>
+</ul>
+<p>Pointers can be used to:</p>
+<ul>
+<li>Allow a function to directly mutate a value that is passed to it</li>
+<li>To increase performance in edge cases. Sometimes passing a large struct of data results in inefficient copying of data</li>
+<li>To signify the lack of a value. For example, when <a href="https://blog.boot.dev/golang/json-golang/">unmarshalling JSON data</a> into a struct it can be useful to know if a key was absent rather than it being present with the zero value.</li>
+</ul>
+<h2 id="7-describe-the-difference-between-syncmutexhttpsgolangorgpkgsyncmutex-and-syncrwmutexhttpsgolangorgpkgsyncrwmutex">
+  <span> 7. Describe the difference between <a href="https://golang.org/pkg/sync/#Mutex">sync.Mutex</a> and <a href="https://golang.org/pkg/sync/#RWMutex">sync.RWMutex</a></span> <a href="#7-describe-the-difference-between-syncmutexhttpsgolangorgpkgsyncmutex-and-syncrwmutexhttpsgolangorgpkgsyncrwmutex">🔗</a></h2>
+<p>The normal mutex locks data so that only one goroutine can access it at a time.</p>
+<p>A <a href="https://blog.boot.dev/golang/golang-mutex/">RWMutex (read/write)</a> can lock data for “reading” and for “writing”. When locked for reading, other readers can also lock and access data. When locked for writing no other goroutines, including other readers can access the data.</p>
+<h2 id="8-consider-the-following-code-what-will-be-the-value-of-s1">
+  <span> 8. Consider the following code. What will be the value of s1?</span> <a href="#8-consider-the-following-code-what-will-be-the-value-of-s1">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>primes</span> <span>:=</span> <span>[</span><span>6</span><span>]</span><span>int</span><span>{</span><span>2</span><span>,</span> <span>3</span><span>,</span> <span>5</span><span>,</span> <span>7</span><span>,</span> <span>11</span><span>,</span> <span>13</span><span>}</span>
+</span></span><span><span><span>s1</span> <span>:=</span> <span>primes</span><span>[</span><span>1</span><span>:</span><span>4</span><span>]</span>
+</span></span></code></pre></div><p><code>s1</code> will be: <code>[3 5 7]</code></p>
+<p>When slicing an existing array or slice the first index is inclusive while the last index is exclusive. If an index is omitted on one side of the colon, then all values until the edge of the original slice are included in the result.</p>
+<h2 id="9-are-channels-and-maps-safe-for-concurrent-access">
+  <span> 9. Are channels and maps safe for concurrent access?</span> <a href="#9-are-channels-and-maps-safe-for-concurrent-access">🔗</a></h2>
+<p>Channels are safe for concurrent access, for this reason, they have blocking operations. Maps are unsafe for concurrent access and require a locking mechanism like a mutex to be safely used across goroutines.</p>
+<h2 id="10-how-would-you-sortgolangsorting-in-go-dont-reinvent-this-wheel-a-slice-of-custom-structs">
+  <span> 10. How would you <a href="https://blog.boot.dev/golang/sorting-in-go-dont-reinvent-this-wheel/">sort</a> a slice of custom structs?</span> <a href="#10-how-would-you-sortgolangsorting-in-go-dont-reinvent-this-wheel-a-slice-of-custom-structs">🔗</a></h2>
+<p>I would build a new type that represents a slice of that struct type. For example:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>fruitSlice</span><span>[]</span><span>fruit</span>
+</span></span><span><span>
+</span></span><span><span><span>type</span> <span>car</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>size</span> <span>int</span>
+</span></span><span><span>	<span>color</span> <span>string</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Then I would fulfill the standard library’s <a href="https://golang.org/pkg/sort/#Interface">sort.Interface</a>:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Interface</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>Len</span><span>()</span> <span>int</span>
+</span></span><span><span>    <span>Less</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>bool</span>
+</span></span><span><span>    <span>Swap</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>I would then be able to use the <a href="https://golang.org/pkg/sort/#Sort">sort.Sort</a> function:</p>
+<pre tabindex="0"><code>sort.Sort(fruitSlice(cars))
+</code></pre><h2 id="11-does-go-support-generic-programming">
+  <span> 11. Does Go support generic programming?</span> <a href="#11-does-go-support-generic-programming">🔗</a></h2>
+<p>Go doesn’t currently support <a href="https://blog.boot.dev/golang/how-to-use-golangs-generics/">generics</a>, but <a href="https://blog.golang.org/generics-proposal">support is coming in 1.18</a>. Generics will allow us as developers to write code that operates on types without needing to re-implement the same function multiple times for all the different types.</p>
+<p>For example, say you want to implement a Binary Tree in Go, that can store any type of item. This <em>should</em> be easy because the binary tree shouldn’t care about the types it stores, it never needs direct access to them. Currently, you only have two options: rewrite the tree for every type you want to support, or use an interface and cast the type every time you insert or remove something from the tree, neither of which are ideal solutions.</p>
+<h2 id="12-is-nil-only-valid-on-pointer-types">
+  <span> 12. Is <code>ni</code>l only valid on pointer types?</span> <a href="#12-is-nil-only-valid-on-pointer-types">🔗</a></h2>
+<p>Nope! <code>nil</code> is the zero value for pointers, interfaces, maps, slices, channels, and function types. <code>nil</code> represents an <em>uninitialized</em> value.</p>
+<h2 id="13-does-go-provide-support-for-oop-via-classes">
+  <span> 13. Does Go provide support for OOP via classes?</span> <a href="#13-does-go-provide-support-for-oop-via-classes">🔗</a></h2>
+<p>No, Go isn’t an object-oriented programming language. Interfaces are the way we handle most abstractions in Go, and it requires an entirely different way of thinking.</p>
+<h2 id="14-how-do-you-export-functions-from-a-package">
+  <span> 14. How do you export functions from a package?</span> <a href="#14-how-do-you-export-functions-from-a-package">🔗</a></h2>
+<p>Exported functions in Go just need to be capitalized to be exported.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>DoWork</span><span>(){</span>
+</span></span><span><span>    <span>// this function is usable outside this package
+</span></span></span><span><span><span></span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>doWork</span><span>(){</span>
+</span></span><span><span>    <span>// this function is NOT usable outside this package
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="15-what-do-you-like-about-go">
+  <span> 15. What do you like about Go?</span> <a href="#15-what-do-you-like-about-go">🔗</a></h2>
+<p>Well, this one’s up to you, but <a href="https://blog.boot.dev/golang/why-learn-golang/">I have a few things in mind</a>.</p>
+<ul>
+<li>Easy for beginners</li>
+<li>Modern language with simple syntax</li>
+<li>Ease of concurrency</li>
+<li>Great pay</li>
+<li>Built for the web</li>
+<li>Fast</li>
+<li>Memory efficient</li>
+</ul>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

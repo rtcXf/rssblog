@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Check if a File Exists in Python | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/python/file-exists-python/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Check if a File Exists in Python</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>When working with files in Python, you’ll often need to check if a file exists before you do anything else with it, such as reading from or writing to it. Luckily, the Python standard library makes this a piece of cake.</p>
+<h2 id="use-pathlibpathexistspath-to-check-for-files-and-directories">
+  <span> Use pathlib.Path.exists(path) to check for files and directories</span> <a href="#use-pathlibpathexistspath-to-check-for-files-and-directories">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>from</span> <span>pathlib</span> <span>import</span> <span>Path</span>
+</span></span><span><span>
+</span></span><span><span><span>path_exists</span> <span>=</span> <span>Path</span><span>.</span><span>exists</span><span>(</span><span>&#34;home/dir/file.txt&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>if</span> <span>path_exists</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;found it!&#34;</span><span>)</span>
+</span></span><span><span><span>else</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;not found :(&#34;</span><span>)</span>
+</span></span></code></pre></div><p>Notice that <code>path_exists</code> will be <code>True</code> whether this is a file or a directory, it’s only checking if the <em>path</em> exists.</p>
+<p>Note: On older versions of Python you may not have access to the <a href="https://docs.python.org/3/library/pathlib.html">pathlib module</a>. If that’s the case, you can use <code>os.path.exists()</code>.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>from</span> <span>os.path</span> <span>import</span> <span>exists</span>
+</span></span><span><span>
+</span></span><span><span><span>path_exists</span> <span>=</span> <span>exists</span><span>(</span><span>&#34;home/dir/file.txt&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>if</span> <span>path_exists</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;found it!&#34;</span><span>)</span>
+</span></span><span><span><span>else</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;not found :(&#34;</span><span>)</span>
+</span></span></code></pre></div><h2 id="use-pathlibpathpathis_file-to-check-for-only-files">
+  <span> Use pathlib.Path(path).is_file() to check for only files</span> <a href="#use-pathlibpathpathis_file-to-check-for-only-files">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>from</span> <span>pathlib</span> <span>import</span> <span>Path</span>
+</span></span><span><span>
+</span></span><span><span><span>file_exists</span> <span>=</span> <span>Path</span><span>.</span><span>is_file</span><span>(</span><span>&#34;home/dir/file.txt&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>if</span> <span>file_exists</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;found it!&#34;</span><span>)</span>
+</span></span><span><span><span>else</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;not found :(&#34;</span><span>)</span>
+</span></span></code></pre></div><h2 id="use-pathlibpathpathis_dir-to-check-for-only-directories">
+  <span> Use pathlib.Path(path).is_dir() to check for only directories</span> <a href="#use-pathlibpathpathis_dir-to-check-for-only-directories">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>from</span> <span>pathlib</span> <span>import</span> <span>Path</span>
+</span></span><span><span>
+</span></span><span><span><span>dir_exists</span> <span>=</span> <span>Path</span><span>.</span><span>is_dir</span><span>(</span><span>&#34;home/dir&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>if</span> <span>dir_exists</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;found it!&#34;</span><span>)</span>
+</span></span><span><span><span>else</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;not found :(&#34;</span><span>)</span>
+</span></span></code></pre></div><h2 id="use-pathlibpathpathis_symlink-to-check-for-only-symlinks">
+  <span> Use pathlib.Path(path).is_symlink() to check for only symlinks</span> <a href="#use-pathlibpathpathis_symlink-to-check-for-only-symlinks">🔗</a></h2>
+<p>A <a href="https://en.wikipedia.org/wiki/Symbolic_link">symlink</a> is a path that points to, or aliases another path in a filesystem.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>from</span> <span>pathlib</span> <span>import</span> <span>Path</span>
+</span></span><span><span>
+</span></span><span><span><span>symlink_exists</span> <span>=</span> <span>Path</span><span>.</span><span>is_dir</span><span>(</span><span>&#34;home/dir/some_symlink&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>if</span> <span>symlink_exists</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;found it!&#34;</span><span>)</span>
+</span></span><span><span><span>else</span><span>:</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;not found :(&#34;</span><span>)</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

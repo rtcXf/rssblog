@@ -22,7 +22,94 @@
         <h1>Implementing interactive languages</h1>
         <section>
             
-            <a href="https://www.scattered-thoughts.net/writing/implementing-interactive-languages/">Implementing interactive languages</a>
+            <div id="readability-page-1" class="page"><article>
+  <p>(<em>This is part of a series on the design of <a href="https://github.com/jamii/zest">zest</a>. See the list of posts <a href="https://www.scattered-thoughts.net/#zest">here</a></em>.)</p>
+<p>Suppose I want to implement an interactive language - one where code is often run immediately after writing. Think scientific computing, database queries, system shells etc. So we care about both compile-time and run-time performance because we&#39;ll usually experience their sum.</p>
+<p>A traditional switch-based bytecode interpreter is very easy to implement and very portable, but typically leaves 10-1000x run-time performance on the floor compared to a good optimizing compiler.</p>
+<p>On the other hand, using an AOT-focused compiler like llvm or gcc can often leave 10-1000x compile-time performance on the floor compared to a simple interpreter.</p>
+<p>It would be nice to find a sweet spot somewhere in the middle of the pareto curve. Let&#39;s say that for any given program we&#39;d like the combined compile-time and run-time to always be within 5x of (pure) cpython AND within 5x of clang. So on small data our programs start up quickly, but on large data they still run reasonably quickly.</p>
+<p>Also let&#39;s make life even harder and also demand:</p>
+<ul>
+<li>Only 1-2 years of dev effort to implement.</li>
+<li>Predictable, explainable performance.</li>
+<li>A small, embedabble runtime.</li>
+<li>Support for repl / incremental programming (ie adding one function shouldn&#39;t require stopping the process and re-compiling the entire project).</li>
+<li>Support for debugging and profiling.</li>
+</ul>
+<p>This isn&#39;t going to be one of those blogvertisements where I describe the problem as a prelude to selling the solution. I don&#39;t know yet whether this is a feasible set of demands.</p>
+<h2 id="pruning">pruning</h2>
+<p>Some options I can immediately discard:</p>
+<ul>
+<li>LLVM has unacceptable compile times.</li>
+<li>Tracing JITs produce unpredictable performance, and seem to be time-consuming to implement.</li>
+<li>Futumura projections (eg <a href="https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/">truffle</a>, <a href="https://rpython.readthedocs.io/en/latest/">rpython</a>) haven&#39;t seen much uptake and come with huge opaque runtimes.</li>
+</ul>
+<h2 id="language">language</h2>
+<p>Performance certainly depends on the language we&#39;re implementing. There&#39;s not much to gain by compiling a language like python - it&#39;s all hash-table lookups and dynamic dispatch. I can see all the bodies on that hill.</p>
+<p>So let&#39;s say we have a language that provides at least the basic affordances for a performant implementation:</p>
+<ul>
+<li>Ability to use static dispatch, static field offsets and stack allocation.</li>
+<li>Control over memory layout - at minimum being able to express arrays-of-structs without pointer soup.</li>
+</ul>
+<h2 id="fast-interpreters">fast interpreters</h2>
+<p>Direct threaded interpreters can be pretty fast. Eg <a href="https://github.com/wasm3/wasm3">wasm3</a> runs ~30x slower than a good wasm compiler and is written in ~18kloc of fairly portable c. That&#39;s especially impressive given that wasm is such a low-level bytecode. Could an interpreter for a language with higher-level operations make it within the 5x I&#39;m looking for?</p>
+<p>The interpreters with the lowest overhead are usually written in assembly to avoid the overhead of c calling conventions. Unfortunately I don&#39;t know of any in this style that are written for compiler-friendly languages, so it&#39;s hard to judge the relative performance and thus whether it&#39;s worth the additional work compared to a threaded interpreter.</p>
+<p>Interpreter generators exist which take a high-level description of an interpreter and generate the assembly for the core interpreter. As far as I know none of these are particularly production-ready yet, but it&#39;s worth keeping an eye on eg <a href="https://sillycross.github.io/2022/11/22/2022-11-22/">deegen</a>.</p>
+<h2 id="existing-compilers">existing compilers</h2>
+<p>LLVM is not the only game in town, but most of the competition is immature.</p>
+<p><a href="https://cranelift.dev/">Cranelift</a> seems to be the most battle-tested alternative. It&#39;s runtime performance is often close to LLVM&#39;s. In <a href="https://arxiv.org/pdf/2011.13127.pdf">this paper</a> linked from it&#39;s homepage comparing wasm backends, the cranelift backends have compile-times ~10x less than that of llvm (but still ~100x copy-and-patch, which itself has longer startup times than an interpreter).</p>
+<p><img src="https://www.scattered-thoughts.net/writing/implementing-interactive-languages/cranelift.png" alt=""/></p>
+<p>One thing to note on that graph is the scale of the axes. It&#39;s possible to gain a lot on compile-time performance without giving up much on run-time performance. For most industrial usecases this is a terrible tradeoff because we compile code once and ship it to hundreds of thousands of devices. But for interactive programming the tradeoffs are very different and mostly underserved, which is what might make these demands plausible.</p>
+<h2 id="custom-compilers">custom compilers</h2>
+<p>Here&#39;s a set of graphs from the <a href="https://link.springer.com/content/pdf/10.1007/s00778-020-00643-4.pdf">umbra</a> database:</p>
+<p><img src="https://www.scattered-thoughts.net/writing/implementing-interactive-languages/umbra2.png" alt=""/></p>
+<p>&#39;Flying start&#39; is a query compiler written entirely from scratch which produces ~100x better compile-time than their llvm-based query compiler, at the cost of only 1.2x worse run-time. This is well worth the tradeoff for one-off queries:</p>
+<p><img src="https://www.scattered-thoughts.net/writing/implementing-interactive-languages/umbra1.png" alt=""/></p>
+<p>The entire compiler is ~24kloc for x86. <a href="https://db.in.tum.de/people/sites/gruber/p791-gruber.pdf?lang=en">The recent arm backend</a> adds another 8kloc. That&#39;s not too intimidating, but it&#39;s not obvious whether writing a similar compiler for an entire programming language would be as approachable.</p>
+<p>We can see some similar sweetspots when <a href="https://arxiv.org/pdf/2305.13241.pdf">comparing wasm backends</a>:</p>
+<p><img src="https://www.scattered-thoughts.net/writing/implementing-interactive-languages/wasm.png" alt=""/></p>
+<p>Many of the baseline compilers in that blue box fit in the 5x-worse sweetspot. But again, not clear whether this will generalize. The wasm in these experiments has already been through a lot of optimization work AOT.</p>
+<p>I didn&#39;t find any similar experiments for actual programming languages.</p>
+<h2 id="wasm">wasm</h2>
+<p>Webassembly is appealing as a backend for a custom compiler:</p>
+<ul>
+<li>I&#39;d want to be able to target wasm anyway to run code in browsers.</li>
+<li>There&#39;s a wealth of backends for running wasm, many of which focus on fast compile-times.</li>
+<li>It&#39;s well-specified and easy to emit.</li>
+</ul>
+<p>On the other hand:</p>
+<ul>
+<li>Linking basically only exists for languages using the c ffi, via a <a href="https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md">separate spec</a> that embeds custom sections. The <a href="https://github.com/WebAssembly/component-model">wasm component model</a> still seems pretty far away.</li>
+<li>There doesn&#39;t seem to be a consensus on debug info. The compilers I&#39;ve tried produce dwarf but the firefox and chrome debuggers expect source maps. (There is a <a href="https://chrome.google.com/webstore/detail/cc%20%20-devtools-support-dwa/pdcpmagijalfljmkmjngeonclgbbannb">beta extension</a> for chrome to read dwarf, which I haven&#39;t tried yet.)</li>
+<li>I&#39;m not sure yet which backends have support for editing/reloading code. This <em>might</em> be possible in js backends by adding a new module which imports the old module&#39;s memory and edits the function table. (I also haven&#39;t yet tested the overhead of calling functions through imports, which requires bouncing into the js runtime.)</li>
+<li>Only a small subset of vector instructions are supported which limits the options for vector kernels, hashing, cryptography etc.</li>
+</ul>
+<h2 id="tiers">tiers</h2>
+<p>In <a href="https://cr.yp.to/talks/2015.04.16/slides-djb-20150416-a4.pdf">this talk</a> djb argues that most code doesn&#39;t benefit from heavy optimization, and that the remaining hot spots would benefit from more explicit control.</p>
+<p>This is thematically compatibly with:</p>
+<ul>
+<li>Two-language ecosystems like python/numpy where interpreted python code is used to orchestrate calls into heavily optimized c kernels.</li>
+<li>OLAP databases where the bulk of input data is filtered or aggregated by heavily optimized columnar scans.</li>
+<li>Tiered jit compilers like v8 where most code runs either in an interpreter or through a single-pass baseline compiler, and only hotspots run through the optimizing compiler.</li>
+</ul>
+<p>Vectorized interpreters are really appealing because they&#39;re so cost-effective. You get all the benefits of an interpreter (fast startup, easy tooling), and as long as your code fits the pre-compiled kernels you get the performance of an aggressively compiled language.</p>
+<p>But some code doesn&#39;t fit your existing kernels, and some code just doesn&#39;t vectorize well at all. In scientific computing people talk about <a href="https://youtu.be/QTbPtKxDquc?t=526">the two-language problem</a>. In databases, vectorized interpreters <a href="https://www.vldb.org/pvldb/vol11/p2209-kersten.pdf">struggle with OLTP queries and can&#39;t efficiently integrate user-defined functions</a>. Even when code can be written in a vectorized style it&#39;s often awkward.</p>
+<p>(In <a href="https://www.scattered-thoughts.net/#imp_v1">imp</a> I explored how much a relational language could be written in a scalar style while still being automatically translated to vectorized style. I could cover most of core SQL but still kept running into functions at the edges that are inherently scalar: custom aggregates, functions on strings/arrays, transitions in state machines etc.)</p>
+<p>This does suggest one plausible strategy though: Have two backends for the same language and support mixing both within a single program. Glue code can go through the low-latency, barely-optimizing backend for quick startup times, but hot spots and vector kernels can go through the high-latency, aggressively optimizing backend. This is more or less what tiered jit compilers are doing, except that the performance can be made predictable by putting the tier decision in the programmers hands.</p>
+<p>The downside, of course, is that now you have to write two backends. So they better both be pretty easy to write. Spidermonkey is interesting in this regard, because it&#39;s baseline interpreter and baseline jit compiler <a href="https://hacks.mozilla.org/2019/08/the-baseline-interpreter-a-faster-js-interpreter-in-firefox-70/">share a lot of code</a>.</p>
+<h2 id="next">next</h2>
+<p>I have a wealth of unknowns.</p>
+<p>I&#39;ve written a babys-first-wasm-compiler (next post) which answered some questions about linking and abi choices, but isn&#39;t suitable for performance experiments because it&#39;s a weird toy language for which no interesting code exists. Probably the most useful experiment would be to write a similar compiler for an existing language that already has a reasonable bytecode interpreter. Ocaml or erlang might be good choices.</p>
+<p>It&#39;s probably worth doing some kind of benchmarks with tcc, go, ocaml, the new zig backends etc to get a sense whether it&#39;s practical to just copy an existing architecture.</p>
+<p>Julia comes close to being a good interactive language in this sense, but it plagued by long compile times when importing modules (this has been somewhat reduced by pervasive precompilation, but it&#39;s still painful). I&#39;d like to know how much of this is llvm being slow vs compiling everything at O3 vs julia&#39;s frontend being slow vs monomorphization generating too much code. If julia were mostly interpreted would the compile times be reasonable, or does monomorphization already blow the budget?</p>
+<p>I should read more about how both umbra and spidermonkey work, since those are the closest I&#39;ve seen to hitting the sweetspot. I need to get a sense of how much work it would take to do a similar quality single-pass compiler for a simple imperative language. The comparison <a href="https://dercuano.github.io/notes/bytecodes-slow.html#addtoc_6">here</a> is the only input I have at the moment:</p>
+<blockquote>
+<p>In short, the native-code compiler for OCaml is about half the size of its interpreter, and so is presumably much more &#34;naive&#34;, in the sense that it required much less effort to implement. But it still performs one to two orders of magnitude better than the bytecode interpreter.</p>
+</blockquote>
+<p>I don&#39;t know how fast an interpreter for a performance-friendly language could be. All the examples I know of are for very dynamic languages like lua or javascript. The ocaml interpreter is much slower than the ocaml compiler, but neither are state-of-the-art.</p>
+<p>I also have no idea how painful it is to provide debugger support for a custom compiler (either via emitting dwarf or by writing a custom compiler, as is planned for the guile scheme wasm backend). I&#39;m not even really sure how best to find out. Maybe I should try to emit dwarf for my toy compiler?</p>
+
+</article></div>
         </section>
     </article>
 </main>

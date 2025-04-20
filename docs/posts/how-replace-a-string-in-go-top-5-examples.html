@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How Replace a String in Go - Top 5 Examples | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/replace-strings-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How Replace a String in Go - Top 5 Examples</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Go has a powerful standard library that makes string manipulation easy right out of the box. One of the functions I use most often is the <a href="https://golang.org/pkg/strings">strings</a> package’s <a href="https://golang.org/pkg/strings/#Replace">Replace()</a> function. <code>strings.Replace()</code> returns a <em>copy</em> of its input string after replacing all instances of a given substring with a new one.</p>
+<h2 id="how-to-use-stringsreplace-in-go">
+  <span> How to use strings.Replace in Go</span> <a href="#how-to-use-stringsreplace-in-go">🔗</a></h2>
+<p>Function signature:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>Replace</span><span>(</span><span>s</span><span>,</span> <span>old</span><span>,</span> <span>new</span> <span>string</span><span>,</span> <span>n</span> <span>int</span><span>)</span> <span>string</span>
+</span></span></code></pre></div><p>Example usage:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>strings</span><span>.</span><span>Replace</span><span>(</span><span>&#34;one one two two three&#34;</span><span>,</span> <span>&#34;one&#34;</span><span>,</span> <span>&#34;1&#34;</span><span>,</span> <span>-</span><span>1</span><span>)</span>
+</span></span><span><span><span>// 1 1 two two three
+</span></span></span></code></pre></div><p>Notes about the function:</p>
+<ul>
+<li><code>s</code> is the original string that contains the substrings to be replaced.</li>
+<li><code>old</code> is the substring you want to be replaced.</li>
+<li><code>new</code> is the substring that will be swapped out for <code>old</code>.</li>
+<li><code>n</code> limits the number of replacements. If you want to replace them all, just set <code>n</code> to <code>-1</code>, or use the more explicit <a href="https://golang.org/pkg/strings/#ReplaceAll">ReplaceAll</a> function.</li>
+</ul>
+<h2 id="example-1---replacing-delimiters">
+  <span> Example #1 - Replacing delimiters</span> <a href="#example-1---replacing-delimiters">🔗</a></h2>
+<p>Let’s say you have some comma-separated values, CSVs. Perhaps you want to separate each word with a <em>space</em> instead of a <em>comma</em>. This can be useful if you need to make your delimiters consistent so you can later <a href="https://blog.boot.dev/golang/split-strings-golang/">split the string into a slice</a>.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>    <span>&#34;fmt&#34;</span>
+</span></span><span><span>    <span>&#34;strings&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>strings</span><span>.</span><span>Replace</span><span>(</span><span>&#34;apple,banana,orange,pear&#34;</span><span>,</span> <span>&#34;,&#34;</span><span>,</span> <span>&#34; &#34;</span><span>,</span> <span>-</span><span>1</span><span>))</span>
+</span></span><span><span>    <span>// prints &#34;apple banana orange pear&#34;
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="example-2---only-replace-some-strings">
+  <span> Example #2 - Only replace some strings</span> <a href="#example-2---only-replace-some-strings">🔗</a></h2>
+<p>It can be useful to only print the replace the first <code>n</code> instances of a word. For example, let’s say we had some text containing dialogue, like in a movie script. If you want to change the delimiter between the speaker and there lines to be a dash instead of a colon, but <em>don’t</em> want to replace any colons in the dialogue, you can set <code>n=1</code>.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>    <span>&#34;fmt&#34;</span>
+</span></span><span><span>    <span>&#34;strings&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>strings</span><span>.</span><span>Replace</span><span>(</span><span>&#34;Lane: &#39;The box said price:1&#39;&#34;</span><span>,</span> <span>&#34;:&#34;</span><span>,</span> <span>&#34; -&#34;</span><span>,</span> <span>1</span><span>))</span>
+</span></span><span><span>    <span>// prints &#34;Lane - &#39;The box said price:1&#39;&#34;
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="example-3---remove-all-instances-of-a-string">
+  <span> Example #3 - Remove all instances of a string</span> <a href="#example-3---remove-all-instances-of-a-string">🔗</a></h2>
+<p>Sometimes you just want to strip out specific characters. For example, you may want to remove all periods. To do so, you can simply replace all periods with an empty string.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>    <span>&#34;fmt&#34;</span>
+</span></span><span><span>    <span>&#34;strings&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>strings</span><span>.</span><span>Replace</span><span>(</span><span>&#34;123.456.789.0&#34;</span><span>,</span> <span>&#34;.&#34;</span><span>,</span> <span>&#34;&#34;</span><span>,</span> <span>-</span><span>1</span><span>))</span>
+</span></span><span><span>    <span>// prints &#34;1234567890&#34;
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="example-4---high-performance-string-replacement">
+  <span> Example #4 - High-performance string replacement</span> <a href="#example-4---high-performance-string-replacement">🔗</a></h2>
+<p>If you need to perform the same replacements on many different documents, it can make sense to initialize a <a href="https://golang.org/pkg/strings/#Replacer">Replacer</a>, which is much faster that the <code>strings.Replace</code> function when used repeatedly. It’s faster is because it builds a <a href="https://en.wikipedia.org/wiki/Trie">trie structure</a> under the hood that it keeps in memory, and that structure can be used repeatedly.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>    <span>&#34;fmt&#34;</span>
+</span></span><span><span>    <span>&#34;strings&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>replacer</span> <span>:=</span> <span>strings</span><span>.</span><span>NewReplacer</span><span>(</span><span>&#34;,&#34;</span><span>,</span> <span>&#34;:&#34;</span><span>,</span> <span>&#34;!&#34;</span><span>,</span> <span>&#34;?&#34;</span><span>)</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>replacer</span><span>.</span><span>Replace</span><span>(</span><span>&#34;hello,there!good,reader!&#34;</span><span>))</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>replacer</span><span>.</span><span>Replace</span><span>(</span><span>&#34;glad,to!have,you!&#34;</span><span>))</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>replacer</span><span>.</span><span>Replace</span><span>(</span><span>&#34;bye,now!thank,you!&#34;</span><span>))</span>
+</span></span><span><span>    <span>// prints:
+</span></span></span><span><span><span></span>    <span>// hello:there?good:reader?
+</span></span></span><span><span><span></span>    <span>// glad:to?have:you?
+</span></span></span><span><span><span></span>    <span>// bye:now?thank:you?
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><p><a href="https://golang.org/pkg/strings/#NewReplacer">NewReplacer()</a> takes a list of old-new string pairs, so you can use it to perform many different replacement operations.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>NewReplacer</span><span>(</span><span>oldnew</span> <span>...</span><span>string</span><span>)</span> <span>*</span><span>Replacer</span>
+</span></span></code></pre></div><h2 id="example-5---complicated-replacements-with-regex">
+  <span> Example #5 - Complicated Replacements with Regex</span> <a href="#example-5---complicated-replacements-with-regex">🔗</a></h2>
+<p>We’re shifting packages entirely now, and will be using the standard library’s <a href="https://golang.org/pkg/regexp">regexp</a> package. This package exposes a <a href="https://golang.org/pkg/regexp/#Regexp.ReplaceAllString">ReplaceAllString()</a> function that lets us do more complicated replacements using a standard regex. This may be useful if you need to do some dynamic replacements, or are fluent in regular expressions.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>(</span><span>re</span> <span>*</span><span>Regexp</span><span>)</span> <span>ReplaceAllString</span><span>(</span><span>src</span><span>,</span> <span>repl</span> <span>string</span><span>)</span> <span>string</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>    <span>&#34;fmt&#34;</span>
+</span></span><span><span>    <span>&#34;regexp&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>re</span> <span>:=</span> <span>regexp</span><span>.</span><span>MustCompile</span><span>(</span><span>`r.t`</span><span>)</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>re</span><span>.</span><span>ReplaceAllString</span><span>(</span><span>&#34;rat cat rot dog&#34;</span><span>,</span> <span>&#34;ram&#34;</span><span>))</span>
+</span></span><span><span>    <span>// prints &#34;ram cat ram dog&#34;
+</span></span></span><span><span><span></span>
+</span></span><span><span>    <span>re</span> <span>=</span> <span>regexp</span><span>.</span><span>MustCompile</span><span>(</span><span>`-.*-`</span><span>)</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>re</span><span>.</span><span>ReplaceAllString</span><span>(</span><span>&#34;-rasjdkajnsdt-hello world&#34;</span><span>,</span> <span>&#34;&#34;</span><span>))</span>
+</span></span><span><span>    <span>// prints &#34;hello world&#34;
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>All the Kinds of Functions in Python | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/stories/a-guide-to-all-the-types-of-functions-in-python/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>All the Kinds of Functions in Python</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Functions are one of the most versatile tools in any Python programmer’s toolbox. They enable code reuse and provide a form of abstraction. Python offers many different types of functions. In this article, I will be discussing the different types of functions you will encounter as a Python developer.</p>
+<h2 id="impure-functions">
+  <span> Impure Functions</span> <a href="#impure-functions">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>num</span> <span>=</span> <span>0</span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>sq</span><span>(</span><span>x</span><span>):</span>
+</span></span><span><span>    <span>global</span> <span>num</span>
+</span></span><span><span>    <span>num</span> <span>=</span> <span>x</span> <span># side effect</span>
+</span></span><span><span>    <span>return</span> <span>x</span> <span>*</span> <span>x</span>
+</span></span><span><span>
+</span></span><span><span><span>sq_num</span> <span>=</span> <span>sq</span><span>(</span><span>2</span><span>)</span> <span># returns 4</span>
+</span></span><span><span><span>print</span><span>(</span><span>num</span><span>)</span> <span># 2</span>
+</span></span><span><span><span>print</span><span>(</span><span>sq_num</span><span>)</span> <span># 4</span>
+</span></span></code></pre></div><p>Impure functions are one of the most common type of function. they take an input either by value or reference and return a value. They are impure because they perform <a href="https://en.wikipedia.org/wiki/Side_effect_(computer_science)">side effects</a>.</p>
+<p>In the example above, the function performs a side effect by altering the global variable <code>num</code>. This is a valid side effect, but you’ll often also encounter “side effects” like HTTP requests, printing to the console or accessing a database.</p>
+<p>Impure functions are useful but are often error-prone and hard to test due to their side effects.</p>
+<h2 id="pure-functions">
+  <span> Pure functions</span> <a href="#pure-functions">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>sq</span><span>(</span><span>x</span><span>):</span>
+</span></span><span><span>    <span>return</span> <span>x</span> <span>*</span> <span>x</span>
+</span></span><span><span>
+</span></span><span><span><span>sq_num</span> <span>=</span> <span>sq</span><span>(</span><span>2</span><span>)</span> <span># returns 4</span>
+</span></span></code></pre></div><p>Pure functions are functions with no side effects. They are similar to <a href="https://en.wikipedia.org/wiki/Function_(mathematics)">functions</a> in mathematics. They take in an input and produce an output without altering any external states.</p>
+<p>It makes them easy to test and predictable. Pure functions are widely used in <a href="https://en.wikipedia.org/wiki/Functional_programming">functional programming</a></p>
+<h2 id="subroutine">
+  <span> Subroutine</span> <a href="#subroutine">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>sub</span><span>(</span><span>x</span><span>):</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>f</span><span>&#34;The square of </span><span>{</span><span>x</span><span>}</span><span> is </span><span>{</span><span>x</span> <span>*</span> <span>x</span><span>}</span><span>&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>sub</span><span>(</span><span>2</span><span>)</span>
+</span></span><span><span><span># The square of 2 is 4</span>
+</span></span></code></pre></div><p>A subroutine is a function that doesn’t return a value. It performs a task, and that task can be an effect. It could take in a value in other to perform it’s task. After execution, it gives control back to the caller.</p>
+<h2 id="coroutine">
+  <span> Coroutine</span> <a href="#coroutine">🔗</a></h2>
+<p>Coroutines are functions capable of multitasking cooperatively. A function working cooperatively can pause its execution and hand control off to another function when it is idle or performing a <a href="https://en.wikipedia.org/wiki/Blocking_(computing)">blocking</a> task.</p>
+<p>Coroutines are a form of <a href="https://en.wikipedia.org/wiki/Concurrency_(computer_science)">concurrency</a>. They are preferred to other concurrency models like <a href="https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)">multithreading</a>. Thanks to the <code>async</code> and <code>await</code> keywords introduced in <a href="https://peps.python.org/pep-0492/">PEP 492</a>, they have become common and intuitive. Below is an example of coroutines in Python using the <a href="https://docs.python.org/3/library/asyncio.html">asyncio</a> library.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>import</span> <span>asyncio</span>
+</span></span><span><span><span>import</span> <span>time</span>
+</span></span><span><span>
+</span></span><span><span><span>async</span> <span>def</span> <span>chill</span><span>(</span><span>label</span><span>:</span> <span>str</span><span>,</span> <span>n</span><span>:</span> <span>int</span><span>):</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>f</span><span>&#34;</span><span>{</span><span>label</span><span>}</span><span>: Chilling for </span><span>{</span><span>n</span><span>}</span><span> seconds&#34;</span><span>)</span>
+</span></span><span><span>    <span>await</span> <span>asyncio</span><span>.</span><span>sleep</span><span>(</span><span>n</span><span>)</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>f</span><span>&#34;Done chilling for </span><span>{</span><span>label</span><span>}</span><span>&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>
+</span></span><span><span><span>async</span> <span>def</span> <span>main</span><span>():</span>
+</span></span><span><span>    <span>task1</span> <span>=</span> <span>asyncio</span><span>.</span><span>create_task</span><span>(</span><span>chill</span><span>(</span><span>&#34;A&#34;</span><span>,</span> <span>2</span><span>))</span>
+</span></span><span><span>    <span>task2</span> <span>=</span> <span>asyncio</span><span>.</span><span>create_task</span><span>(</span><span>chill</span><span>(</span><span>&#34;B&#34;</span><span>,</span> <span>5</span><span>))</span>
+</span></span><span><span>    <span>task3</span> <span>=</span> <span>asyncio</span><span>.</span><span>create_task</span><span>(</span><span>chill</span><span>(</span><span>&#34;C&#34;</span><span>,</span> <span>3</span><span>))</span>
+</span></span><span><span>
+</span></span><span><span>    <span>starttime</span> <span>=</span> <span>time</span><span>.</span><span>perf_counter</span><span>()</span>
+</span></span><span><span>    <span>await</span> <span>task1</span>
+</span></span><span><span>    <span>await</span> <span>task2</span>
+</span></span><span><span>    <span>await</span> <span>task3</span>
+</span></span><span><span>    <span>endtime</span> <span>=</span> <span>time</span><span>.</span><span>perf_counter</span><span>()</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>f</span><span>&#34;Task finished in </span><span>{</span><span>endtime</span> <span>-</span> <span>starttime</span><span>}</span><span>&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>asyncio</span><span>.</span><span>run</span><span>(</span><span>main</span><span>())</span>
+</span></span><span><span>
+</span></span><span><span><span>&#34;&#34;&#34; Sample output:
+</span></span></span><span><span><span>A: Chilling for 2 seconds
+</span></span></span><span><span><span>B: Chilling for 5 seconds
+</span></span></span><span><span><span>C: Chilling for 3 seconds
+</span></span></span><span><span><span>Done chilling for A
+</span></span></span><span><span><span>Done chilling for C
+</span></span></span><span><span><span>Done chilling for B
+</span></span></span><span><span><span>Task finished in 5.004022927998449
+</span></span></span><span><span><span>&#34;&#34;&#34;</span>
+</span></span></code></pre></div><p>The coroutine <code>chill</code> is called three times, and each instance of it blocks for a certain period. When a particular coroutine starts blocking it passes control to another coroutine. The coroutines in the example above block for a total of 10 seconds but they perform their task in 5 seconds in real-time because they worked cooperatively at the same time.</p>
+<h2 id="generators">
+  <span> Generators</span> <a href="#generators">🔗</a></h2>
+<p>When regular functions are called they perform their task and return to their caller. If they are called again they start execution from the beginning and return to their caller again.</p>
+<p>Generators are functions that can pause their execution after being called. If they are called again they resume from where they stopped previously.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>infCount</span><span>():</span>
+</span></span><span><span>    <span>&#34;&#34;&#34;
+</span></span></span><span><span><span>    Infinite counter
+</span></span></span><span><span><span>    &#34;&#34;&#34;</span>
+</span></span><span><span>    <span>i</span> <span>=</span> <span>0</span>
+</span></span><span><span>    <span>while</span> <span>True</span><span>:</span>
+</span></span><span><span>        <span>yield</span> <span>i</span>
+</span></span><span><span>        <span>i</span> <span>+=</span> <span>1</span>
+</span></span><span><span>
+</span></span><span><span><span># Usage</span>
+</span></span><span><span><span>inf</span> <span>=</span> <span>infCount</span><span>()</span>
+</span></span><span><span><span>next</span><span>(</span><span>inf</span><span>)</span> <span># 0</span>
+</span></span><span><span><span>next</span><span>(</span><span>inf</span><span>)</span> <span># 1</span>
+</span></span><span><span><span>next</span><span>(</span><span>inf</span><span>)</span> <span># 2</span>
+</span></span></code></pre></div><p>The code above implements an infinite counter using generators in Python. The built-in <code>next()</code> function is used to call a generator. After each call, it pauses its execution and resumes on the next call.</p>
+<h2 id="methods">
+  <span> Methods</span> <a href="#methods">🔗</a></h2>
+<p>An Object is a collection of related data and functions. Functions in an object are called <strong>methods</strong>. Rather than manipulating the data directly, methods are used. This is known as <strong>Encapsulation</strong>. The method definition is contained in the <strong>class</strong> of the object along with its related data. When an instance of the class has been created the method can be accessed via the syntax <code>instance-name.method-name</code>.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>class</span> <span>Position</span><span>:</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>__init__</span><span>(</span><span>self</span><span>,</span> <span>x</span><span>,</span> <span>y</span><span>):</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>x</span> <span>=</span> <span>x</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>y</span> <span>=</span> <span>y</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>pos</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>return</span> <span>(</span><span>self</span><span>.</span><span>x</span><span>,</span> <span>self</span><span>.</span><span>y</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>set_pos</span><span>(</span><span>self</span><span>,</span> <span>x</span><span>,</span> <span>y</span><span>):</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>x</span> <span>=</span> <span>x</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>y</span> <span>=</span> <span>y</span>
+</span></span><span><span>        <span>print</span><span>(</span><span>f</span><span>&#34;New positiom </span><span>{</span><span>self</span><span>.</span><span>x</span><span>}</span><span> and </span><span>{</span><span>self</span><span>.</span><span>y</span><span>}</span><span>&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>p</span> <span>=</span> <span>Position</span><span>(</span><span>2</span><span>,</span><span>3</span><span>)</span>
+</span></span><span><span><span>p</span><span>.</span><span>pos</span><span>()</span> <span># (2, 3)</span>
+</span></span><span><span><span>p</span><span>.</span><span>set_pos</span><span>(</span><span>4</span><span>,</span> <span>5</span><span>)</span> <span># New positiom 4 and 5</span>
+</span></span><span><span><span>p</span><span>.</span><span>pos</span><span>()</span> <span># (4, 5)</span>
+</span></span></code></pre></div><p>The class above defines 3 methods. The <code>__init__()</code> method is the constructor, <code>pos()</code> returns a tuple of the object’s position and <code>set_pos()</code> changes the object’s position. <code>self.x</code> and <code>self.y</code> are member variables mutated by the various methods.</p>
+<h2 id="anonymous-function">
+  <span> Anonymous function</span> <a href="#anonymous-function">🔗</a></h2>
+<p>Anonymous functions are functions without an assigned name. They are used to perform one-off tasks. The code below is an example of and anonymous function in Python.</p>
+<p>Anonymous functions are also called <strong>lambda expressions</strong>. The functions can then be saved in variables.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>sq</span> <span>=</span> <span>lambda</span> <span>x</span><span>:</span> <span>x</span> <span>*</span> <span>x</span>
+</span></span><span><span><span>sq</span><span>(</span><span>2</span><span>)</span> <span># returns 4</span>
+</span></span></code></pre></div><h2 id="higher-order-functions">
+  <span> Higher-Order Functions</span> <a href="#higher-order-functions">🔗</a></h2>
+<p>Higher-order functions take in other functions as input or return other functions. Here’s a list of popular higher-order functions:</p>
+<ul>
+<li><code>map()</code></li>
+<li><code>filter()</code></li>
+<li><code>reduce()</code></li>
+</ul>
+<h3 id="map">
+  <span> map()</span> <a href="#map">🔗</a></h3>
+<p>The <code>map()</code> higher-order function takes in an array and another function. It then applies the function across the array.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>data</span> <span>=</span> <span>map</span><span>(</span><span>lambda</span> <span>x</span><span>:</span> <span>x</span><span>*</span><span>x</span><span>,</span> <span>[</span><span>1</span><span>,</span><span>2</span><span>,</span><span>3</span><span>,</span><span>4</span><span>,</span><span>5</span><span>])</span>
+</span></span><span><span><span>list</span><span>(</span><span>data</span><span>)</span> <span># [1, 4, 9, 16, 25]</span>
+</span></span></code></pre></div><p>The code above uses the <code>map</code> higher-order function in Python to square all the values in the array via an anonymous function.</p>
+<p>The map function returns an iterator which needs to be converted to a list to get the new values.</p>
+<h3 id="filter">
+  <span> filter()</span> <a href="#filter">🔗</a></h3>
+<p>The <code>filter()</code> higher-order function takes in an array and another function,
+which is called the <strong>predicate</strong>.
+It selects the entries in the array that are true based on the predicate function.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>data</span> <span>=</span> <span>filter</span><span>(</span><span>lambda</span> <span>x</span><span>:</span> <span>x</span> <span>%</span> <span>2</span> <span>==</span> <span>0</span><span>,</span> <span>[</span><span>1</span><span>,</span><span>2</span><span>,</span><span>3</span><span>,</span><span>4</span><span>,</span><span>5</span><span>,</span><span>6</span><span>,</span><span>7</span><span>,</span><span>8</span><span>,</span><span>9</span><span>,</span><span>10</span><span>])</span>
+</span></span><span><span><span>list</span><span>(</span><span>data</span><span>)</span> <span># [2, 4, 6, 8, 10]</span>
+</span></span></code></pre></div><p>The filter function also returns an iterator.</p>
+<h3 id="reduce">
+  <span> reduce()</span> <a href="#reduce">🔗</a></h3>
+<p>The <code>reduce()</code> higher-order function reduces an array of values to a single value using another function called the <strong>reducer</strong>.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>from</span> <span>functools</span> <span>import</span> <span>reduce</span>
+</span></span><span><span>
+</span></span><span><span><span>reduce</span><span>(</span><span>lambda</span> <span>a</span><span>,</span> <span>b</span><span>:</span> <span>a</span> <span>+</span> <span>b</span><span>,</span> <span>[</span><span>&#34;H&#34;</span><span>,</span> <span>&#34;E&#34;</span><span>,</span> <span>&#34;L&#34;</span><span>,</span> <span>&#34;L&#34;</span><span>,</span> <span>&#34;O&#34;</span><span>])</span>
+</span></span><span><span><span># &#34;HELLO&#34;</span>
+</span></span></code></pre></div><p>The <code>reduce</code> higher-order function needs to be imported from <a href="https://docs.python.org/3/library/functools.html">functools</a>.</p>
+<h2 id="closures">
+  <span> Closures</span> <a href="#closures">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>factory</span><span>():</span>
+</span></span><span><span>    <span>num</span> <span>=</span> <span>10</span>
+</span></span><span><span>    <span>def</span> <span>mult_by_10</span><span>(</span><span>inp</span><span>):</span>
+</span></span><span><span>        <span>return</span> <span>num</span> <span>*</span> <span>inp</span>
+</span></span><span><span>    <span>return</span> <span>mult_by_10</span>
+</span></span><span><span>
+</span></span><span><span><span>clos</span> <span>=</span> <span>factory</span><span>()</span>
+</span></span><span><span><span>clos</span><span>(</span><span>2</span><span>)</span> <span># returns 20</span>
+</span></span></code></pre></div><p>A closure is a function capable of capturing variables from where it was created. They are functions with internal state. They are created by a <strong>higher-order function</strong>.</p>
+<p>The example above has a higher-order function called <code>factory</code>. The function has a variable called <code>num</code>. Another function is defined within the factory function called <code>mult_by_10</code>.</p>
+<p>The <code>factory</code> function returns the <code>mult_by_10</code> function which is the <strong>closure</strong>. When the returned function is called, it still has access to the <code>num</code> value.</p>
+<h2 id="recursive-function">
+  <span> Recursive function</span> <a href="#recursive-function">🔗</a></h2>
+<p>A recursive function is a function that can call itself. It has a base case,
+which serves as it’s termination point. Recursion is often an alternative to iteration.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>nthSum</span><span>(</span><span>n</span><span>):</span>
+</span></span><span><span>    <span>if</span> <span>n</span> <span>==</span> <span>0</span><span>:</span> <span># Base case</span>
+</span></span><span><span>        <span>return</span> <span>0</span>
+</span></span><span><span>    <span>else</span><span>:</span> <span># else case</span>
+</span></span><span><span>        <span>return</span> <span>n</span> <span>+</span> <span>nthSum</span><span>(</span><span>n</span> <span>-</span> <span>1</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>nthSum</span><span>(</span><span>5</span><span>)</span> <span># returns 15</span>
+</span></span></code></pre></div><p><code>nthSum()</code> is a recursive function that calculates the sum of n natural numbers.</p>
+<h2 id="curried-function">
+  <span> Curried function</span> <a href="#curried-function">🔗</a></h2>
+<p>A curried function is a function whose inputs can be partially applied. Curried functions are a form of <strong>closures</strong>.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>add</span><span>(</span><span>x</span><span>):</span>
+</span></span><span><span>    <span>def</span> <span>add2</span><span>(</span><span>y</span><span>):</span>
+</span></span><span><span>        <span>return</span> <span>x</span> <span>+</span> <span>y</span>
+</span></span><span><span>    <span>return</span> <span>add2</span>
+</span></span><span><span>
+</span></span><span><span><span>add10</span> <span>=</span> <span>add</span><span>(</span><span>10</span><span>)</span>
+</span></span><span><span><span>add10</span><span>(</span><span>2</span><span>)</span> <span># returns 12</span>
+</span></span></code></pre></div><p>Through this partial application, new functions can be created.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>from</span> <span>functools</span> <span>import</span> <span>partial</span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>add</span><span>(</span><span>x</span><span>,</span> <span>y</span><span>):</span>
+</span></span><span><span>    <span>retrun</span> <span>x</span> <span>+</span> <span>y</span>
+</span></span><span><span>
+</span></span><span><span><span>add10</span> <span>=</span> <span>partial</span><span>(</span><span>add</span><span>,</span> <span>y</span><span>=</span><span>10</span><span>)</span>
+</span></span><span><span><span>add10</span><span>(</span><span>2</span><span>)</span> <span># returns 12</span>
+</span></span></code></pre></div><p>A non-curried function can be partially applied via the <code>partial</code> function from <code>functools</code>.</p>
+<h2 id="decorators">
+  <span> Decorators</span> <a href="#decorators">🔗</a></h2>
+<p>Decorators are functions which add extra functionality to previously existing functions. They are similar to closures but have a special syntax.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>def</span> <span>decor</span><span>(</span><span>func</span><span>):</span>
+</span></span><span><span>    <span>def</span> <span>wrapp</span><span>():</span>
+</span></span><span><span>        <span>print</span><span>(</span><span>&#34;############&#34;</span><span>)</span>
+</span></span><span><span>        <span>func</span><span>()</span>
+</span></span><span><span>        <span>print</span><span>(</span><span>&#34;############&#34;</span><span>)</span>
+</span></span><span><span>    <span>return</span> <span>decor</span>
+</span></span><span><span>
+</span></span><span><span><span>@decor</span>
+</span></span><span><span><span>def</span> <span>hello</span><span>():</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>&#34;Hello World!&#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>&#34;&#34;&#34;Sample Output
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>############
+</span></span></span><span><span><span>Hello world!
+</span></span></span><span><span><span>############
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>&#34;&#34;&#34;</span>
+</span></span></code></pre></div><p>The example above defines a decorator called <code>decor</code> which takes in a function <code>func</code> as a parameter. Another function called <code>wrapp</code> is defined within <code>decor</code>. The <code>wrapp</code> function serves as a wrapper to the <code>func</code> function.</p>
+<p>The <code>decor</code> is then used to decorate the <code>hello</code> function. Decorators are just <a href="https://en.wikipedia.org/wiki/Syntactic_sugar">syntactic sugar</a>.</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>decor</span><span>(</span><span>hello</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>&#34;&#34;&#34;Sample Output
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>############
+</span></span></span><span><span><span>Hello world!
+</span></span></span><span><span><span>############
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>&#34;&#34;&#34;</span>
+</span></span></code></pre></div><p>Python offers a wide range of functions and techniques for creating functions. Knowing the different types of functions helps you write better code, and also understand other programmers’ code.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

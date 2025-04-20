@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Break From Nested Loops in Rust | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/rust/loops-in-rust-breaking-from-nested-loops/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Break From Nested Loops in Rust</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Loops in Rust aren’t the same as standard C-style languages. The syntax is different and there are some powerful options that make looping easier. First, let’s go over some looping basics, then we will cover how to handle breaking and continuing in nested loops in Rust.</p>
+<h2 id="standard-for-loop">
+  <span> Standard For-Loop</span> <a href="#standard-for-loop">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>for</span><span> </span><span>x</span><span> </span><span>in</span><span> </span><span>0</span><span>..</span><span>10</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>x</span><span>);</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>Which prints:</p>
+<pre tabindex="0"><code>0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+</code></pre><p>0..10 is an <a href="https://doc.rust-lang.org/1.2.0/book/iterators.html">iterator</a> where the lower-bound is inclusive and the upper bound is exclusive.</p>
+<p>More generically:</p>
+<pre tabindex="0"><code>for var in iterator {
+    // do stuff
+}
+</code></pre><p>In my opinion, all languages should move to a single syntax with for-loops based on iterators. The simplicity makes Rust’s loops easy to read, while the ability to create custom <a href="https://doc.rust-lang.org/stable/rust-by-example/trait/iter.html">iterators</a> makes it more powerful than even more verbose formats like Go’s:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>10</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>i</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Rust’s for-loop doesn’t specify what happens after each iteration (i++) or what condition is required to continue the loop (i &lt; 10), an <a href="https://doc.rust-lang.org/1.2.0/book/iterators.html">ite</a><a href="https://doc.rust-lang.org/1.2.0/book/iterators.html">r</a><a href="https://doc.rust-lang.org/1.2.0/book/iterators.html">ator</a> is simply supplied.</p>
+<h2 id="continue-and-break">
+  <span> Continue and Break</span> <a href="#continue-and-break">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>for</span><span> </span><span>x</span><span> </span><span>in</span><span> </span><span>0</span><span>..</span><span>10</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>if</span><span> </span><span>x</span><span> </span><span>&gt;</span><span> </span><span>5</span><span> </span><span>&amp;&amp;</span><span> </span><span>x</span><span> </span><span>&lt;</span><span> </span><span>7</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>continue</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>x</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>The <code>continue</code> keyword works in a familiar manner. In this example when <code>x &gt; 5 AND x &lt; 7</code> the loop continues to the next iteration without printing. This results in:</p>
+<pre tabindex="0"><code>0
+1
+2
+3
+4
+5
+7
+8
+9
+</code></pre><p>The <code>break</code> keyword is also familiar:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>for</span><span> </span><span>x</span><span> </span><span>in</span><span> </span><span>0</span><span>..</span><span>10</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>if</span><span> </span><span>x</span><span> </span><span>&gt;</span><span> </span><span>5</span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>break</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>x</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>which prints:</p>
+<pre tabindex="0"><code>0
+1
+2
+3
+4
+5
+</code></pre><h2 id="working-with-nested-loops">
+  <span> Working With Nested Loops</span> <a href="#working-with-nested-loops">🔗</a></h2>
+<p>Nested loops can get tricky in a lot of languages. What if I want to continue through an outer loop when a condition within an inner loop occurs? We can do the following:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>&#39;outer</span>: <span>for</span><span> </span><span>x</span><span> </span><span>in</span><span> </span><span>0</span><span>..</span><span>5</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>for</span><span> </span><span>y</span><span> </span><span>in</span><span> </span><span>0</span><span>..</span><span>5</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>if</span><span> </span><span>y</span><span> </span><span>&gt;</span><span> </span><span>2</span><span>{</span><span>
+</span></span></span><span><span><span>            </span><span>break</span><span> </span><span>&#39;outer</span><span>
+</span></span></span><span><span><span>        </span><span>}</span><span>
+</span></span></span><span><span><span>        </span><span>println!</span><span>(</span><span>&#34;x: </span><span>{}</span><span>, y: </span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>x</span><span>,</span><span> </span><span>y</span><span>);</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>prints:</p>
+<pre tabindex="0"><code>x: 0, y: 0
+x: 0, y: 1
+x: 0, y: 2
+</code></pre><p>By using the label <code>&#39;outer</code> we are able to control explicitly which loop is broken. The default would have been to just break from the inner loop. The same labeling system works with the <em>continue</em> keyword as well.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

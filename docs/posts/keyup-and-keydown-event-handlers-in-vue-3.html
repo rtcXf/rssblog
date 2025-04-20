@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Keyup and Keydown Event Handlers in Vue 3 | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/vue-key-events/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Keyup and Keydown Event Handlers in Vue 3</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I recently spent <em>far too long</em> fighting with Vue’s <code>keyup</code> and <code>keydown</code> functionality while building <a href="https://www.boot.dev">Boot.dev’s</a> front-end. I wanted to handle <code>ctrl+period</code> keyboard events and it took me <em>forever</em> to find the part of the documentation that addressed my use case. Hopefully, this guide can save you some time!</p>
+<p><strong>Take note: This guide is for Vue 3! If you’re on Vue 2, find a different guide.</strong></p>
+<h2 id="keyup-and-keydown">
+  <span> @keyup and @keydown</span> <a href="#keyup-and-keydown">🔗</a></h2>
+<p>Some default keypress scenarios are quite simple. For example, want to capture when someone presses the “enter” key? You can do:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>.</span><span>enter</span><span>=</span><span>&#34;onPressEnter&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><p>Or maybe you want your event to fire when the key is <em>pressed</em>, rather than when it’s <em>released</em>:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keydown</span><span>.</span><span>enter</span><span>=</span><span>&#34;onPressEnter&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><p>Keep in mind that the <code>onPressEnter</code> needs to be defined and exposed to your template! If you’re on the options API, that means it should be defined as a method, and if you’re using <code>setup()</code>, it means you should be returning it from the <code>setup()</code> function.</p>
+<h2 id="which-keys-work">
+  <span> Which keys work?</span> <a href="#which-keys-work">🔗</a></h2>
+<p>According <a href="https://vuejs.org/guide/essentials/event-handling.html#key-modifiers">to the docs</a>, aliases are provided for common keys:</p>
+<ul>
+<li><code>.enter</code></li>
+<li><code>.tab</code></li>
+<li><code>.delete</code> (captures both “Delete” and “Backspace” keys)</li>
+<li><code>.esc</code></li>
+<li><code>.space</code></li>
+<li><code>.up</code></li>
+<li><code>.down</code></li>
+<li><code>.left</code></li>
+<li><code>.right</code></li>
+</ul>
+<p>But what if you want to capture a <em>different</em> key?</p>
+<p>Turns out that can use the <code>kebab-case</code> name for any key you want to use as a modifier. For example:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>.</span><span>a</span><span>=</span><span>&#34;onPressA&#34;</span> <span>/&gt;</span>
+</span></span><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>.</span><span>page-down</span><span>=</span><span>&#34;onPressPageDown&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><p>It even works for <em>some</em> punctuation characters like the comma:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>.,=&#34;</span><span>onPressComma</span><span>&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><p>Now we get to my problem:</p>
+<blockquote>
+<p>What if I want to capture an event on the period key?</p>
+</blockquote>
+<p>The following does <strong>not</strong> work:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>..=&#34;</span><span>onPressPeriod</span><span>&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><p>Instead, you need to write a handler that captures <em>all</em> the “keydown” and “keyup” events and watch manually for the right property:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>=</span><span>&#34;onPress&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>onPress</span> <span>=</span> <span>(</span><span>e</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>e</span><span>.</span><span>key</span> <span>!==</span> <span>&#34;.&#34;</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>// guard against non-period presses
+</span></span></span><span><span><span></span>    <span>return</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>onPressPeriod</span><span>()</span>
+</span></span><span><span><span>};</span>
+</span></span></code></pre></div><h2 id="system-modifiers">
+  <span> System Modifiers</span> <a href="#system-modifiers">🔗</a></h2>
+<p>The topic of “system modifiers” or “key combinations” is <a href="https://vuejs.org/guide/essentials/event-handling.html#key-modifiers">explained well in the docs</a>, so I won’t spend much time on it. The four options available to you are:</p>
+<ul>
+<li><code>.ctrl</code></li>
+<li><code>.alt</code></li>
+<li><code>.shift</code></li>
+<li><code>.meta</code> (The “meta” key is “command” on Apple keyboards and the “windows” key on Windows keyboards)</li>
+</ul>
+<p>If you want to fire an event on <code>ctrl+enter</code> you can just chain the modifier:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>.</span><span>ctrl</span><span>.</span><span>enter</span><span>=</span><span>&#34;onPressEnter&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><h2 id="event-modifiers">
+  <span> Event modifiers</span> <a href="#event-modifiers">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>.</span><span>ctrl</span><span>.</span><span>stop</span><span>=</span><span>&#34;onPressCtrl&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><p>Syntactically, event modifiers are chained onto the <code>@keyup</code> keyword as well. Your options include:</p>
+<ul>
+<li><code>.stop</code> - Stop the event’s propagation to other handlers</li>
+<li><code>.prevent</code> - Prevent default handling of the event (like a page reload for a form submission)</li>
+<li><code>.self</code> - Only fire events for this element, not children</li>
+<li><code>.capture</code> - Handle the event here before handling it at the child level</li>
+<li><code>.once</code> - Trigger this event once at most</li>
+<li><code>.passive</code> - Process the default behavior immediately, and also handle it here without blocking</li>
+</ul>
+<h2 id="exact-modifier">
+  <span> .exact modifier</span> <a href="#exact-modifier">🔗</a></h2>
+<p>If you want to fire your handler when the exact keys you’ve specified are pressed, use the <code>.exact</code> modifier.</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;!-- this will fire even if alt or another key is also pressed --&gt;</span>
+</span></span><span><span><span>&lt;</span><span>button</span> <span>@</span><span>keyup</span><span>.</span><span>ctrl</span><span>=</span><span>&#34;onPressCtrl&#34;</span><span>&gt;</span>A<span>&lt;/</span><span>button</span><span>&gt;</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;!-- this will fire if ONLY ctrl is pressed --&gt;</span>
+</span></span><span><span><span>&lt;</span><span>input</span> <span>@</span><span>keyup</span><span>.</span><span>ctrl</span><span>.</span><span>exact</span><span>=</span><span>&#34;onPressCtrl&#34;</span> <span>/&gt;</span>
+</span></span></code></pre></div><h2 id="mouse-button-modifiers-dont-let-them-fool-you">
+  <span> Mouse button modifiers, don’t let them fool you</span> <a href="#mouse-button-modifiers-dont-let-them-fool-you">🔗</a></h2>
+<p>At first, I assumed that <code>.left</code> and <code>.right</code> referred to the arrow keys, while in reality they refer to the mouse buttons. All three of the following modifiers can be used to restrict the event to the three mouse buttons.</p>
+<ul>
+<li><code>.left</code></li>
+<li><code>.right</code></li>
+<li><code>.middle</code></li>
+</ul>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

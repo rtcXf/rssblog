@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Programming types and (incorrect) mindsets | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/reacting-to-programming-types-and-mindsets/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Programming types and (incorrect) mindsets</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>DHH, the creator of Ruby on Rails, Hey, Basecamp, and a few other things, recently wrote an article titled “<a href="https://world.hey.com/dhh/programming-types-and-mindsets-5b8490bc">Programming types and mindsets</a>”, and I just <em>have</em> to chime in on this one.</p>
+<p>I thought we’d moved past this by now. A decade or so ago, it seemed like there was healthy banter about the pros and cons of dynamically typed vs statically typed languages, and genuinely interesting discussions about the tradeoffs took place. My perception, and certainly my belief at present is this:</p>
+<blockquote>
+<p>There are effectively no good arguments for a dynamic type system</p>
+</blockquote>
+<p>“Hmm…” you might say. “That’s not a very balanced take Lane.” Agreed. DHH might even say that I’m expressing “utter disbelief that the other side might hold a reasonable position”.</p>
+<p>I actually would <em>love</em> to hear some good reasons in support of the idea that dynamic typing helps <em>in any way</em>. Unfortunately, I don’t see any concrete arguments in the original essay apart from statements like:</p>
+<blockquote>
+<p>[dynamic typing] allows the poetic syntax that results in such beautiful code</p>
+</blockquote>
+<p>To be fair, making arguments about the merits of dynamic types may not be the point of DHH’s article in the first place. It seems to be more about his mindset of “to each their own, I like my dynamic typing.”</p>
+<h2 id="steelmanning-the-dynamic-typing-argument">
+  <span> Steelmanning the dynamic typing argument</span> <a href="#steelmanning-the-dynamic-typing-argument">🔗</a></h2>
+<p>I’ve gone to external resources to try to find some arguments for dynamic typing. I’ve found a few, but I think they’re generally bad arguments, or worse, they actually deal with something tangential to the type system itself. Let’s jump in.</p>
+<h2 id="argument-1-simpler-syntax">
+  <span> Argument 1. Simpler syntax</span> <a href="#argument-1-simpler-syntax">🔗</a></h2>
+<blockquote>
+<p>Dynamically typed languages often have simpler syntax and less boilerplate code</p>
+</blockquote>
+<p>True. I choose to start developers with Python on <a href="https://www.boot.dev">Boot.dev</a> because I think it has a simple syntax.</p>
+<p>Python makes for an amazing environment in which to learn programming, but that’s <em>despite</em> the dynamic typing, not <em>because</em> of it.</p>
+<p>With languages that support type inference, 80% of the “boilerplate” code is just gone. In Python, we have:</p>
+<p>and in Go, we have:</p>
+<p>The difference is that in the Go version, if I later try to use <code>x</code> as a string, or I pass it into a function that expects a non-integer, I’ll be warned <em>before</em> I run my code.</p>
+<p>This is an outdated argument, and it originates from back when good type inference wasn’t as common.</p>
+<p>Now, type inference does <em>not</em> eliminate the “boilerplate” syntax that is actually useful, namely, <em>function signatures</em>. For example, in Python, we have:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>increment</span><span>(</span><span>x</span><span>):</span>
+</span></span><span><span>    <span>return</span> <span>x</span> <span>+</span> <span>1</span>
+</span></span></code></pre></div><p>and in Go, we have:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>increment</span><span>(</span><span>x</span> <span>int</span><span>)</span> <span>int</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>x</span> <span>+</span> <span>1</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>I’m sorry, but my take here is that if you’re not interested in declaring to the world the expected inputs and outputs of your functions, <em>you’re not interested in writing code that can be easily understood and maintained by humans</em>. In the dynamically typed world, the solution to this is to write more external documentation and add comments. I’d rather have my tooling be able to tell me what’s going on from within my editor.</p>
+<h3 id="argument-2-enhanced-productivity">
+  <span> Argument 2. Enhanced productivity</span> <a href="#argument-2-enhanced-productivity">🔗</a></h3>
+<blockquote>
+<p>Due to their flexibility and ease of use, dynamically typed languages can lead to increased productivity for certain tasks or projects, especially when rapid development or prototyping is crucial.</p>
+</blockquote>
+<p>It’s true that certain languages “get out of your way” and can make certain tasks a bit easier. I need to parse a CSV? I’m probably whipping out Python. But that’s not <em>because</em> it’s a dynamically typed language. It’s because:</p>
+<ul>
+<li>The syntax reads like English</li>
+<li>It’s interpreted and therefore has no compilation step</li>
+<li>It has an amazing wealth of libraries for those kinds of tasks</li>
+</ul>
+<p>There’s no <em>fundamental reason</em> that this syntax couldn’t work with type safety:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>for</span> <span>car</span> <span>in</span> <span>cars</span><span>:</span>
+</span></span><span><span>    <span># use car here</span>
+</span></span></code></pre></div><p>Python has great enumeration syntax, and Python is dynamically typed, but those two things aren’t strictly dependent on each other.</p>
+<p>And to be honest, I do find myself writing more and more CLI “scripts” in Go these days because compile times are so short, and yet I still get the benefits of a statically typed language.</p>
+<h3 id="argument-3-duck-typing">
+  <span> Argument 3. Duck typing</span> <a href="#argument-3-duck-typing">🔗</a></h3>
+<blockquote>
+<p>Dynamically typed languages often employ duck typing, which allows for more flexible and reusable code</p>
+</blockquote>
+<p>What is duck typing? Well, it’s the idea that if something <em>acts</em> like a duck, it <em>is</em> a duck.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>class</span> <span>Mallard</span><span>():</span>
+</span></span><span><span>    <span>def</span> <span>quack</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>return</span> <span>&#34;Quack!&#34;</span>
+</span></span><span><span>
+</span></span><span><span><span>class</span> <span>RubberDuck</span><span>():</span>
+</span></span><span><span>    <span>def</span> <span>quack</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>return</span> <span>&#34;Squeak!&#34;</span>
+</span></span></code></pre></div><p>Both <code>Mallard</code> and <code>RubberDuck</code> can now be treated as a “duck” because they can both <code>.quack()</code></p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>main</span><span>():</span>
+</span></span><span><span>    <span>ducks</span> <span>=</span> <span>[</span><span>Mallard</span><span>(),</span> <span>RubberDuck</span><span>()]</span>
+</span></span><span><span>    <span>for</span> <span>duck</span> <span>in</span> <span>ducks</span><span>:</span>
+</span></span><span><span>        <span>print</span><span>(</span><span>duck</span><span>.</span><span>quack</span><span>())</span>
+</span></span></code></pre></div><p>Yup. Duck typing is <em>awesome</em>. But this version of duck typing is just duck typing without any compile-time, or heck, even <em>tooling</em>-time support. If I throw a <code>Tire()</code> object into my list of <code>ducks</code>, I won’t know that it doesn’t <code>.quack()</code> until I run my code and watch it fail. In a statically typed language, I would have been warned <em>before</em> I ran my code because I’d be using interfaces to <em>ensure</em> that my types can <code>.quack()</code>.</p>
+<h3 id="4-using-the-same-variable-for-different-types">
+  <span> 4. Using the same variable for different types</span> <a href="#4-using-the-same-variable-for-different-types">🔗</a></h3>
+<blockquote>
+<p>In dynamically typed languages, variables can hold values of different types at different times. This flexibility can be useful for certain programming tasks and patterns.</p>
+</blockquote>
+<p>I have nothing to say here. This is just bad practice. In no world should you be changing the <em>type</em> of thing a variable holds. I can’t think of a better way to write spaghetti code, and hopefully this doesn’t need any further explanation.</p>
+<h2 id="is-dhh-just-wrong">
+  <span> Is DHH just wrong?</span> <a href="#is-dhh-just-wrong">🔗</a></h2>
+<p>About typing? I think so. Is he also smarter than me? Likely. Is he more experienced than me? Absolutely.</p>
+<p>Here’s the thing, I’m not saying Ruby and Python and JavaScript are unusable, or even that they’re <em>worse</em> languages than all their statically typed counterparts. Every language I’ve used has things I like, and things I dislike. However, their dynamic nature is certainly a <em>flaw</em>, not a <em>feature</em>.</p>
+<p>All this said, I agree with DHH’s point here:</p>
+<blockquote>
+<p>That’s not to say all matters of programming approaches boil down to equal but different mindsets. There are limits to this relativism. But dynamic vs static typing is certain within its confines. So too is functional vs object-oriented programming. Poles on both these axes have shown to deliver excellent software over the decades (and awful stuff too!).</p>
+</blockquote>
+<p>In many, many, <em>many</em> cases, the answer truly is that “it depends”. OOP vs functional? It depends. Monolith vs services? It depends. Synchronous HTTP call vs async events? It depends.</p>
+<p><strong>Static vs dynamic typing? Almost certainly static.</strong></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

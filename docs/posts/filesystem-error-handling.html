@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Filesystem error handling | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://danluu.com/filesystem-errors/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Filesystem error handling</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+
+
+<p>We’re going to reproduce some <a href="https://danluu.com/file-consistency/">results from papers on filesystem robustness that were written up roughly a decade ago</a>: <a href="http://research.cs.wisc.edu/wind/Publications/iron-sosp05.pdf">Prabhakaran et al. SOSP 05 paper</a>, which injected errors below the filesystem and  <a href="https://www.usenix.org/legacy/event/fast08/tech/full_papers/gunawi/gunawi_html/index.html">Gunawi et al. FAST 08</a>, which looked at how often filesystems failed to check return codes of functions that can return errors.</p>
+
+<p><a href="http://research.cs.wisc.edu/wind/Publications/iron-sosp05.pdf">Prabhakaran et al.</a> injected errors at the block device level (just underneath the filesystem) and found that <code>ext3</code>, <code>resierfs</code>, <code>ntfs</code>, and <code>jfs</code> mostly handled read errors reasonbly but <code>ext3</code>, <code>ntfs</code>, and <code>jfs</code> mostly ignored write errors. While the paper is interesting, someone installing Linux on a system today is much more likely to use <code>ext4</code> than any of the now-dated filesystems tested by Prahbhakaran et al. We’ll try to reproduce some of the basic results from the paper on more modern filesystems like <code>ext4</code> and <code>btrfs</code>, some legacy filesystems like <code>exfat</code>, <code>ext3</code>, and <code>jfs</code>, as well as on <code>overlayfs</code>.</p>
+
+<p><a href="https://www.usenix.org/legacy/event/fast08/tech/full_papers/gunawi/gunawi_html/index.html">Gunawi et al. </a> found that errors weren’t checked most of the time. After we look at error injection on modern filesystems, we’ll look at how much (or little) filesystems have improved their error handling code.</p>
+
+<h3 id="error-injection">Error injection</h3>
+
+<p>A cartoon view of a file read might be: <code>pread syscall -&gt; OS generic filesystem code -&gt; filesystem specific code -&gt; block device code -&gt; device driver -&gt; device controller -&gt; disk</code>. Once the disk gets the request, it sends the data back up: <code>disk -&gt; device controller -&gt; device driver -&gt; block device code -&gt; filesystem specific code -&gt; OS generic filesystem code -&gt; pread</code>. We’re going to look at error injection at the block device level, right below the file system.</p>
+
+<p>Let’s look at what happened when we injected errors in 2017 vs. what Prabhakaran et al. found in 2005.</p>
+
+<table>
+<tbody><tr><th rowspan="3"></th><th colspan="3">2005</th><th colspan="6">2017</th></tr>
+<tr>
+<th>read</th><th>write</th><th>silent</th><th>read</th><th>write</th><th>silent</th><th>read</th><th>write</th><th>silent</th></tr>
+<tr><th colspan="6">file</th><th colspan="3">mmap</th></tr>
+<tr>
+<th>btrfs</th><td colspan="3"></td><td>prop</td><td>prop</td><td>prop</td><td>prop</td><td>prop</td><td>prop</td></tr>
+<tr>
+<th>exfat</th><td colspan="3"></td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>ext3</th><td>prop</td><td>ignore</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>ext4</th><td colspan="3"></td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>fat</th><td colspan="3"></td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>jfs</th><td>prop</td><td>ignore</td><td>ignore</td><td>prop</td><td>ignore</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>reiserfs</th><td>prop</td><td>prop</td><td>ignore</td><td colspan="6"></td></tr>
+<tr>
+<th>xfs</th><td colspan="3"></td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+</tbody></table>
+
+<p>Each row shows results for one filesystem. <code>read</code> and <code>write</code> indicating reading and writing data, respectively, where the block device returns an error indicating that the operation failed. <code>silent</code> indicates a read failure (incorrect data) where the block device didn’t indicate an error. This could happen if there’s disk corruption, a transient read failure, or a transient write failure silently caused bad data to be written. <code>file</code> indicates that the operation was done on a file opened with <code>open</code> and <code>mmap</code> indicates that the test was done on a file mapped with <code>mmap</code>. <code>ignore</code> (red) indicates that the error was ignored, <code>prop</code> (yellow) indicates that the error was propagated and that the <code>pread</code> or <code>pwrite</code> syscall returned an error code, and <code>fix</code> (green) indicates that the error was corrected. No errors were corrected. Grey entries indicate configurations that weren’t tested.</p>
+
+<p>From the table, we can see that, in 2005, <code>ext3</code> and <code>jfs</code> ignored write errors even when the block device indicated that the write failed and that things have improved, and that any filesystem you’re likely to use will correctly tell you that a write failed. <code>jfs</code> hasn’t improved, but <code>jfs</code> is now rarely used outside of legacy installations.</p>
+
+<p>No tested filesystem other than <code>btrfs</code> handled silent failures correctly. The other filesystems tested neither duplicate nor checksum data, making it impossible for them to detect silent failures. <code>zfs</code> would probably also handle silent failures correctly but wasn’t tested. <code>apfs</code>, despite post-dating <code>btrfs</code> and <code>zfs</code>, made the explicit decision to not checksum data and silently fail on silent block device errors. We’ll discuss this more later.</p>
+
+<p>In all cases tested where errors were propagated, file reads and writes returned <code>EIO</code> from <code>pread</code> or <code>pwrite</code>, respectively; <code>mmap</code> reads and writes caused the process to receive a <code>SIGBUS</code> signal.</p>
+
+<p>The 2017 tests above used an 8k file where the first block that contained file data either returned an error at the block device level or was corrupted, depending on the test. The table below tests the same thing, but with a 445 byte file instead of an 8k file. The choice of 445 was arbitrary.</p>
+
+<table>
+<tbody><tr><th rowspan="3"></th><th colspan="3">2005</th><th colspan="6">2017</th></tr>
+<tr>
+<th>read</th><th>write</th><th>silent</th><th>read</th><th>write</th><th>silent</th><th>read</th><th>write</th><th>silent</th></tr>
+<tr><th colspan="6">file</th><th colspan="3">mmap</th></tr>
+<tr>
+<th>btrfs</th><td colspan="3"></td><td>fix</td><td>fix</td><td>fix</td><td>fix</td><td>fix</td><td>fix</td></tr>
+<tr>
+<th>exfat</th><td colspan="3"></td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>ext3</th><td>prop</td><td>ignore</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>ext4</th><td colspan="3"></td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>fat</th><td colspan="3"></td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>jfs</th><td>prop</td><td>ignore</td><td>ignore</td><td>prop</td><td>ignore</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+<tr>
+<th>reiserfs</th><td>prop</td><td>prop</td><td>ignore</td><td colspan="6"></td></tr>
+<tr>
+<th>xfs</th><td colspan="3"></td><td>prop</td><td>prop</td><td>ignore</td><td>prop</td><td>prop</td><td>ignore</td></tr>
+</tbody></table>
+
+<p>In the small file test table, all the results are the same, except for <code>btrfs</code>, which returns correct data in every case tested. What’s happening here is that the filesystem was created on a rotational disk and, by default, <code>btrfs</code> duplicates filesystem metadata on rotational disks (it can be configured to do so on SSDs, but that’s not the default). Since the file was tiny, <code>btrfs</code> packed the file into the metadata and the file was duplicated along with the metadata, allowing the filesystem to fix the error when one block either returned bad data or reported a failure.</p>
+
+<h4 id="overlay">Overlay</h4>
+
+<p><a href="https://en.wikipedia.org/wiki/OverlayFS">Overlayfs</a> allows one file system to be “overlaid” on another. <a href="https://github.com/torvalds/linux/commit/e9be9d5e76e34872f0c37d72e25bc27fe9e2c54c">As explained in the initial commit</a>, one use case might be to put an (upper) read-write directory tree on top of a (lower) read-only directory tree, where all modifications go to the upper, writable layer.</p>
+
+<p>Although not listed on the tables, we also tested every filesystem other than <code>fat</code> as the lower filesystem with overlay fs (ext4 was the upper filesystem for all tests). Every filessytem tested showed the same results when used as the bottom layer in <code>overlay</code> as when used alone. <code>fat</code> wasn’t tested because mounting <code>fat</code> resulted in a <code>filesystem not supported</code> error.</p>
+
+<h4 id="error-correction">Error correction</h4>
+
+<p><code>btrfs</code> doesn’t, by default, duplicate metadata on SSDs because the developers believe that redundancy wouldn’t provide protection against errors on SSD (which is the same reason <code>apfs</code> doesn’t have redundancy). SSDs do a kind of write coalescing, which is likely to cause writes which happen consecutively to fall into the same block. If that block has a total failure, the redundant copies would all be lost, so redundancy doesn’t provide as much protection against failure as it would on a rotational drive.</p>
+
+<p>I’m not sure that this means that redundancy wouldn’t help -- Individual flash cells degrade with operation and lose charge as they age. SSDs have built-in <a href="https://en.wikipedia.org/wiki/Wear_leveling">wear-leveling</a> and <a href="https://en.wikipedia.org/wiki/Low-density_parity-check_code">error-correction</a> that’s designed to reduce the probability that a block returns bad data, but over time, some blocks will develop so many errors that the error-correction won’t be able to fix the error and the block will return bad data. In that case, a read should return some bad bits along with mostly good bits. AFAICT, the publicly available data on SSD error rates seems to line up with this view.</p>
+
+<h4 id="error-detection">Error detection</h4>
+
+<p>Relatedly, it appears that <a href="http://dtrace.org/blogs/ahl/2016/06/19/apfs-part5/"><code>apfs</code> doesn’t checksum data because “[apfs] engineers contend that Apple devices basically don’t return bogus data”</a>. Publicly available studies on SSD reliability have not found that there’s a model that doesn’t sometimes return bad data. It’s a common conception that SSDs are less likely to return bad data than rotational disks, but when Google studied this across their drives, they found:</p>
+
+<blockquote>
+<p>The annual replacement rates of hard disk drives have previously been reported to be 2-9% [19,20], which is high compared to the 4-10% of flash drives we see being replaced in a 4 year period. However, flash drives are less attractive when it comes to their error rates. More than 20% of flash drives develop uncorrectable errors in a four year period, 30-80% develop bad blocks and 2-7% of them develop bad chips. In comparison, previous work [1] on HDDs reports that only 3.5% of disks in a large population developed bad sectors in a 32 months period – a low number when taking into account that the number of sectors on a hard disk is orders of magnitudes larger than the number of either blocks or chips on a solid state drive, and that sectors are smaller than blocks, so a failure is less severe.</p>
+</blockquote>
+
+<p>While there is one sense in which SSDs are more reliable than rotational disks, there’s also a sense in which they appear to be less reliable. It’s not impossible that Apple uses some kind of custom firmware on its drive that devotes more bits to error correction than you can get in publicly available disks, but even if that’s the case, you might plug a non-apple drive into your apple computer and want some kind of protection against data corruption.</p>
+
+<h3 id="internal-error-handling">Internal error handling</h3>
+
+<p>Now that we’ve reproduced some tests from Prabhakaran et al., we’re going to move on to <a href="https://www.usenix.org/legacy/event/fast08/tech/full_papers/gunawi/gunawi_html/index.html">Gunawi et al.</a>. Since the paper is fairly involved, we’re just going to look at one small part of the paper, the part where they examined three function calls, <code>filemap_fdatawait</code>, <code>filemap_fdatawrite</code>, and <code>sync_blockdev</code> to see how often errors weren’t checked for these functions.</p>
+
+<p>Their justification for looking at these function is given as:</p>
+
+<blockquote>
+<p>As discussed in Section 3.1, a function could return more than one error code at the same time, and checking only one of them suffices. However, if we know that a certain function only returns a single error code and yet the caller does not save the return value properly, then we would know that such call is really a flaw. To find real flaws in the file system code, we examined three important functions that we know only return single error codes: sync_blockdev, filemap_fdatawrite, and filemap_fdatawait. A file system that does not check the returned error codes from these functions would obviously let failures go unnoticed in the upper layers.</p>
+</blockquote>
+
+<p>Ignoring errors from these functions appears to have fairly serious consequences. The documentation for <code>filemap_fdatawait</code> says:</p>
+
+<blockquote>
+<p>filemap_fdatawait — wait for all under-writeback pages to complete
+...
+Walk the list of under-writeback pages of the given address space and wait for all of them. Check error status of the address space and return it.
+Since the error status of the address space is cleared by this function, callers are responsible for checking the return value and handling and/or reporting the error.</p>
+</blockquote>
+
+<p>The comment next to the code for <code>sync_blockdev</code> reads:</p>
+
+<blockquote>
+<p>Write out and wait upon all the dirty data associated with a block device via its mapping.  Does not take the superblock lock.</p>
+</blockquote>
+
+<p>In both of these cases, it appears that ignoring the error code could mean that data would fail to get written to disk without notifying the writer that the data wasn’t actually written?</p>
+
+<p>Let’s look at  how often calls to these functions didn’t completely ignore the error code:</p>
+
+<table>
+<thead>
+<tr>
+<th>fn</th>
+<th>2008</th>
+<th>&#39;08 %</th>
+<th>2017</th>
+<th>&#39;17 %</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>filemap_fdatawait</td>
+<td>7 / 29</td>
+<td>24</td>
+<td>12 / 17</td>
+<td>71</td>
+</tr>
+
+<tr>
+<td>filemap_fdatawrite</td>
+<td>17 / 47</td>
+<td>36</td>
+<td>13 / 22</td>
+<td>59</td>
+</tr>
+
+<tr>
+<td>sync_blockdev</td>
+<td>6 / 21</td>
+<td>29</td>
+<td>7 / 23</td>
+<td>30</td>
+</tr>
+</tbody>
+</table>
+
+<p>This table is for all code in linux under <code>fs</code>. Each row shows data for calls of one function. For each year, the leftmost cell shows the number of calls that do something with the return value over the total number of calls. The cell to the right shows the percentage of calls that do something with the return value. “Do something” is used very loosely here -- branching on the return value and then failing to handle the error in either branch, returning the return value and having the caller fail to handle the return value, as well as saving the return value and then ignoring it are all considered doing something for the purposes of this table.</p>
+
+<p>For example Gunawi et al. noted that <code>cifs/transport.c</code> had</p>
+
+<pre><code>int SendReceive () { 
+    int rc;
+    rc = cifs_sign_smb(); // 
+    ... 
+    rc = smb_send();
+}
+</code></pre>
+
+<p>Although <code>cifs_sign_smb</code> returned an error code, it was never checked before being overwritten by <code>smb_send</code>, which counted as being used for our purposes even though the error wasn’t handled.</p>
+
+<p>Overall, the table appears to show that many more errors are handled now than were handled in 2008 when Gunawi et al. did their analysis, but it’s hard to say what this means from looking at the raw numbers because it might be ok for some errors not to be handled and different lines of code are executed with different probabilities.</p>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>Filesystem error handling seems to have improved. Reporting an error on a <code>pwrite</code> if the block device reports an error is perhaps the most basic error propagation a robust filesystem should do; few filesystems reported that error correctly in 2005. Today, most filesystems will correctly report an error when the simplest possible error condition that doesn’t involve the entire drive being dead occurs if there are no complicating factors.</p>
+
+<p>Most filesystems don’t have checksums for data and leave error detection and correction up to userspace software. When I talk to server-side devs at big companies, their answer is usually something like “who cares? All of our file accesses go through a library that checksums things anyway and redundancy across machines and datacenters takes care of failures, so we only need error detection and not correction”. While that’s true for developers at certain big companies, there’s a lot of software out there that isn’t written robustly and just assumes that filesystems and disks don’t have errors.</p>
+
+<p><i>This was a joint project with Wesley Aptekar-Cassels; the vast majority of the work for the project was done while pair programming at <a href="https://www.recurse.com/scout/click?t=b504af89e87b77920c9b60b2a1f6d5e8">RC</a>. We also got </i>a lot<i> of help from Kate Murphy. Both Wesley (w.aptekar@gmail.com) and Kate (hello@kate.io) are looking for work. They’re great and I highly recommend talking to them if you’re hiring!</i></p>
+
+<h3 id="appendix-error-handling-in-c">Appendix: error handling in C</h3>
+
+<p>A fair amount of effort has been applied to get error handling right. But C makes it very easy to get things wrong, even when you apply a fair amount effort and even apply extra tooling. One example of this in the code is the <code>submit_one_bio</code> function. If you look at the definition, you can see that it’s annotated with <code>__must_check</code>, which will cause a compiler warning when the result is ignored. But if you look at calls of <code>submit_one_bio</code>, you’ll see that its callers aren’t annotated and can ignore errors. If you dig around enough you’ll find one path of error propagation that looks like:</p>
+
+<pre><code>submit_one_bio
+submit_extent_page
+__extent_writepage
+extent_write_full_page
+write_cache_pages
+generic_writepages
+do_writepages
+__filemap_fdatawrite_range
+__filemap_fdatawrite
+filemap_fdatawrite
+</code></pre>
+
+<p>Nine levels removed from  <code>submit_one_bio</code>, we see our old friend, `filemap_fdatawrite, which we know often doesn’t get checked for errors.</p>
+
+<p>There&#39;s a very old debate over how to prevent things like this from accidentally happening. One school of thought, which I&#39;ll call the Uncle Bob (UB) school believes that <a href="https://twitter.com/danluu/status/916315156199636992">we can&#39;t fix these kinds of issues with tools or processes and simply need to be better programmers in order to avoid bugs</a>. You&#39;ll often hear people of the UB school say things like, &#34;you can&#39;t get rid of all bugs with better tools (or processes)&#34;. In his famous and well-regarded talk, <a href="https://github.com/matthiasn/talk-transcripts/blob/master/Hickey_Rich/SimpleMadeEasy.md">Simple Made Easy</a>, Rich Hickey says</p>
+
+<blockquote>
+<p>What&#39;s true of every bug found in the field?</p>
+
+<p>[Audience reply: Someone wrote it?] [Audience reply: It got written.]</p>
+
+<p>It got written. Yes. What&#39;s a more interesting fact about it? It passed the type checker.</p>
+
+<p>[Audience laughter]</p>
+
+<p>What else did it do?</p>
+
+<p>[Audience reply: (Indiscernible)]</p>
+
+<p>It passed all the tests. Okay. So now what do you do? Right? I think we&#39;re in this world I&#39;d like to call guardrail programming. Right? It&#39;s really sad. We&#39;re like: I can make change because I have tests. Who does that? Who drives their car around banging against the guardrail saying, &#34;Whoa! I&#39;m glad I&#39;ve got these guardrails because I&#39;d never make it to the show on time.&#34;</p>
+
+<p>[Audience laughter]</p>
+</blockquote>
+
+<p>If you watch the talk, Rich uses &#34;simplicity&#34; the way Uncle Bob uses &#34;discipline&#34;. They way these statements are used, they&#39;re roughly equivalent to Ken Thompson saying &#34;<a href="https://twitter.com/danluu/status/885214004649615360">Bugs are bugs. You write code with bugs because you do</a>&#34;. The UB school throws tools and processes under the bus, saying that it&#39;s unsafe to rely solely on tools or processes.</p>
+
+<p>Rich&#39;s rhetorical trick is brilliant -- I&#39;ve heard that line quoted tens of times since the talk to argue against tests or tools or types. But, like guardrails, most tools and processes aren&#39;t about eliminating all bugs, they&#39;re about reducing the severity or probability of bugs. If we look at this particular function call, we can see that a static analysis tool failed to find this bug. Does that mean that we should give up on static analysis tools? A static analysis tool could look for all calls of <code>submit_one_bio</code> and show you the cases where the error is propagated up N levels only to be dropped. Gunawi et al. did exactly that and found <em>a lot</em> of bugs. A person basically can&#39;t do the same thing without tooling. They could try, but people are lucky if they get 95% accuracy when manually digging through things like this. The sheer volume of code guarantees that a human doing this by hand would make mistakes.</p>
+
+<p>Even better than a static analysis tool would be a language that makes it harder to accidentally forget about checking for an error. One of the issues here is that it&#39;s sometimes valid to drop an error. There are a number of places where there&#39;s no interace that allows an error to get propagated out of the filesystem, making it correct to drop the error, modulo changing the interface. In the current situation, as an outsider reading the code, if you look at a bunch of calls that drop errors, it&#39;s very hard to say, for all of them, which of those is a bug and which of those is correct. If the default is that we have a kind of guardrail that says &#34;this error must be checked&#34;, people can still incorrectly ignore errors, but you at least get an annotation that the omission was on purpose. For example, if you&#39;re forced to specifically write code that indicates that you&#39;re ignoring an error, and in code that&#39;s inteded to be robust, like filesystem code, code that drops an error on purpose is relatively likely to be accompanied by a comment explaining why the error was dropped.</p>
+
+<h3 id="appendix-why-wasn-t-this-done-earlier">Appendix: why wasn&#39;t this done earlier?</h3>
+
+<p>After all, it would be nice if we knew if modern filesystems could do basic tasks correctly. Filesystem developers probably know this stuff, but since I don&#39;t <a href="http://lkml.iu.edu/hypermail/linux/kernel/0908.3/01481.html">follow LKML</a>, I had no idea whether or not things had improved since 2005 until we ran the experiment.</p>
+
+<p>The papers we looked at here came out of Andrea and Remzi Arpaci-Dusseau&#39;s research lab. Remzi has a talk where he mentioned that grad students don&#39;t want to reproduce and update old work. That&#39;s entirely reasonable, given the incentives they face. And I don&#39;t mean to pick on academia here -- this work came out of academia, not industry. It&#39;s possible this kind of work simply wouldn&#39;t have happened if not for the academic incentive system.</p>
+
+<p>In general, it seems to be quite difficult to fund work on correctness. There are a fair number of papers on new ways to find bugs, but that&#39;s relatively little work on applying existing techniques to existing code. In academia, that seems to be hard to get a good publication out of, in the open source world, that seems to be less interesting to people than writing new code. That&#39;s also entirely reasonable -- people should work on what they want, and even if they enjoy working on correctness, that&#39;s probably not a great career decision in general. I was at the <a href="https://www.recurse.com/scout/click?t=b504af89e87b77920c9b60b2a1f6d5e8">RC</a> career fair the other night and my badge said I was interested in testing. The first person who chatted me up opened with &#34;do you work in QA?&#34;. Back when I worked in hardware, that wouldn&#39;t have been a red flag, but in software, &#34;QA&#34; is code for a low-skill, tedious, and poorly paid job. Much of industry considers testing and QA to be an afterthought. As a result, open source projects that companies rely on are often <a href="https://en.wikipedia.org/wiki/OpenSSL">woefully underfunded</a>. Google funds some great work (like afl-fuzz), but that&#39;s the exception and not the rule, even within Google, and most companies don&#39;t fund any open source work. The work in this post was done by a few people who are intentionally temporarily unemployed, which isn&#39;t really a scalable model.</p>
+
+<p>Occasionally, you&#39;ll see someone spend a lot of effort on immproving correctness, but that&#39;s usually done as a massive amount of free labor. Kyle Kingsbury might be the canonical example of this -- my understanding is that he worked on the <a href="http://jepsen.io/">Jepsen distributed systems testing tool</a> on nights and weekends for years before turning that into a consulting business. It&#39;s great that he did that -- he showed that almost every open source distributed system had serious data loss or corruption bugs. I think that&#39;s great, but stories about heoric effort like that always worry me because heroism doesn&#39;t scale. If Kyle hadn&#39;t come along, would most of the bugs that he and his tool found still plague open source distributed systems today? That&#39;s a scary thought.</p>
+
+<p>If I knew how to fund more work on correctness, I&#39;d try to convince you that we should switch to this new model, but I don&#39;t know of a funding model that works. I&#39;ve set up a <a href="https://www.patreon.com/danluu">patreon (donation account)</a>, but it would be quite extraordinary if that was sufficient to actually fund a signifcant amount of work. If you look at how much programmers make off of donations, if I made two order of magnitude less than I could if I took a job in industry, that would already put me in the top 1% of programmers on patreon. If I made one order of magnitude less than I&#39;d make in industry, that would be extraordinary. Off the top of my head, the only programmers who make more than that off of patreon either make something with much broader appeal (like games) or are Evan You, who makes one of the most widely use front-end libraries in existence. And if I actually made as much as I can make in industry, I suspect that would make me the highest grossing programmer on patreon, even though, by industry standards, my compensation hasn&#39;t been anything special.</p>
+
+<p>If I had to guess, I&#39;d say that part of the reason it&#39;s hard to fund this kind of work is that consumers don&#39;t incentivize companies to fund this sort of work. If you look at &#34;big&#34; tech companies, two of them are substantially more serious about correctness than their competitors. This results in many fewer horror stories about lost emails and documents as well as lost entire accounts. If you look at the impact on consumers, it might be something like the difference between 1% of people seeing lost/corrupt emails vs. 0.001%. I think that&#39;s pretty significant if you multiply that cost across all consumers, but the vast majority of consumers aren&#39;t going to make decisions based on that kind of difference. If you look at an area where correctness problems are much more apparent, like databases or backups, you&#39;ll find that even the worst solutions have defenders who will pop into any dicussions and say &#34;works for me&#34;. A backup solution that works 90% of the time is quite bad, but if you have one that works 90% of the time, it will still have staunch defenders who drop into discussions to say things like &#34;I&#39;ve restored from backup three times and it&#39;s never failed! You must be making stuff up!&#34;. I don&#39;t blame companies for rationally responding to consumers, but I do think that the result is unfortunate for consumers.</p>
+
+<p>Just as an aside, one of the great wonders of doing open work for free is that the more free work you do, the more people complain that you didn&#39;t do enough free work. As David MacIver has said, <a href="https://www.youtube.com/watch?v=2XCDm3MoXUY">doing open source work is like doing normal paid work, except that you get paid in complaints instead of cash</a>. It&#39;s basically guaranteed that the most common comment on this post, for all time, will be that didn&#39;t test someone&#39;s pet filesystem because we&#39;re <code>btrfs</code> shills or just plain lazy, even though we include a link to a repo that lets anyone add tests as they please. Pretty much every time I&#39;ve done any kind of free experimental work, people who obvously haven&#39;t read the experimental setup or the source code complain that the experiment couldn&#39;t possibly be right because of [thing that isn&#39;t true that anyone could see by looking at the setup] and that it&#39;s absolutely inexcusable that I didn&#39;t run the experiment on the exact pet thing they wanted to see. Having played video games competitively in the distant past, I&#39;m used to much more intense internet trash talk, but in general, this incentive system seems to be backwards.</p>
+
+<h3 id="appendix-experimental-setup">Appendix: experimental setup</h3>
+
+<p>For the error injection setup, a high-level view of the experimental setup is that <a href="https://stackoverflow.com/q/1870696/334816"><code>dmsetup</code></a> was used to simulate bad blocks on the disk.</p>
+
+<p>A list of the commands run looks something like:</p>
+
+<pre><code>cp images/btrfs.img.gz /tmp/tmpeas9efr6.gz
+gunzip -f /tmp/tmpeas9efr6.gz
+losetup -f
+losetup /dev/loop19 /tmp/tmpeas9efr6
+blockdev --getsize /dev/loop19
+#        0 74078 linear /dev/loop19 0
+#        74078 1 error
+#        74079 160296 linear /dev/loop19 74079
+dmsetup create fserror_test_1508727591.4736078
+mount /dev/mapper/fserror_test_1508727591.4736078 /mnt/fserror_test_1508727591.4736078/
+mount -t overlay -o lowerdir=/mnt/fserror_test_1508727591.4736078/,upperdir=/tmp/tmp4qpgdn7f,workdir=/tmp/tmp0jn83rlr overlay /tmp/tmpeuot7zgu/
+./mmap_read /tmp/tmpeuot7zgu/test.txt
+umount /tmp/tmpeuot7zgu/
+rm -rf /tmp/tmp4qpgdn7f
+rm -rf /tmp/tmp0jn83rlr
+umount /mnt/fserror_test_1508727591.4736078/
+dmsetup remove fserror_test_1508727591.4736078
+losetup -d /dev/loop19
+rm /tmp/tmpeas9efr6
+</code></pre>
+
+<p><a href="https://github.com/danluu/fs-errors/">See this github repo for the exact set of commands run to execute tests</a>.</p>
+
+<p>Note that all of these tests were done on linux, so <code>fat</code> means the linux <code>fat</code> implementation, not the windows <code>fat</code> implementation. <code>zfs</code> and <code>reiserfs</code> weren’t tested because they couldn’t be trivially tested in the exact same way that we tested other filesystems (one of us spent an hour or two trying to get <code>zfs</code> to work, but its configuration interface is inconsistent with all of the filesystems tested; <code>reiserfs</code> appears to have a consistent interface but testing it requires doing extra work for a filesystem that appears to be dead). <code>ext3</code> support is now provided by the <code>ext4</code> code, so what <code>ext3</code> means now is different from what it meant in 2005.</p>
+
+<p>All tests were run on both ubuntu 17.04, 4.10.0-37, as well as on arch, 4.12.8-2. We got the same results on both machines. All filesystems were configured with default settings. For <code>btrfs</code>, this meant duplicated metadata without duplicated data and, as far as we know, the settings wouldn&#39;t have made a difference for other filesystems.</p>
+
+<p>The second part of this doesn’t have much experimental setup to speak of. The setup was to grep the linux source code for the relevant functions.</p>
+
+<p><em>Thanks to Leah Hanson, David Wragg, Ben Kuhn, Wesley Aptekar-Cassels, Joel Borggrén-Franck, Yuri Vishnevsky, and Dan Puttick for comments/corrections on this post.</em></p>
+
+</div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

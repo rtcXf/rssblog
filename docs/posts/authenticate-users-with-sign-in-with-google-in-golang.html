@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Authenticate Users with &#34;Sign In With Google&#34; in Golang | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/how-to-implement-sign-in-with-google-in-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Authenticate Users with &#34;Sign In With Google&#34; in Golang</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Users love convenience. If your goal is to make it easy for users to register with your app or website, then implementing the “Sign in with Google” option should be at the top of your priority list. If you are like me, then you may find Google’s documentation on the subject to be lackluster at best, and downright confusing at worst. Here we will go step-by-step through the authentication process so you can implement Google sign-in easily.</p>
+<h2 id="front-end-stuff">
+  <span> Front-End Stuff</span> <a href="#front-end-stuff">🔗</a></h2>
+<p>We aren’t going to focus on the front-end part of the authentication process because that’s the easy part. That said, for any of this to make sense we will briefly touch on how it works.</p>
+<p>The front-end’s job is to do some redirect OAuth magic to obtain a <a href="https://blog.boot.dev/golang/jwts-in-golang/">JWT</a> signed by Google. This is accomplished by <a href="https://developers.google.com/identity/sign-in/web/sign-in#load_the_google_platform_library">including Google’s SDK</a> in your HTML, <a href="https://developers.google.com/identity/sign-in/web/sign-in#create_authorization_credentials">making an application</a> in GCP, and <a href="https://developers.google.com/identity/sign-in/web/sign-in#add_a_google_sign-in_button">creating a button</a> using the proper class. I would recommend following <a href="https://developers.google.com/identity/sign-in/web/sign-in">Google’s quick tutorial</a> to get this working.</p>
+<p>Once you are done with all that, you should have a button on your web page. When a user clicks on the button and authorizes their Google account, you will get a <a href="https://developers.google.com/identity/sign-in/web/sign-in#get_profile_information">JWT</a> back in the <code>onSignIn</code> callback function:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>onSignIn</span><span>(</span><span>googleUser</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>const</span> <span>googleJWT</span> <span>=</span> <span>googleUser</span><span>.</span><span>getAuthResponse</span><span>().</span><span>id_token</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>All we care about is that JWT. We are going to create a backend function in Go that receives the JWT and ensures it’s validity before allowing the user to login to our app.</p>
+<h2 id="validation-function">
+  <span> Validation Function</span> <a href="#validation-function">🔗</a></h2>
+<p>Let’s build a single function that validates JWT’s from Google. It has the following function signature:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// ValidateGoogleJWT -
+</span></span></span><span><span><span></span><span>func</span> <span>ValidateGoogleJWT</span><span>(</span><span>tokenString</span> <span>string</span><span>)</span> <span>(</span><span>GoogleClaims</span><span>,</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><code>ValidateGoogleJWT</code> takes a JWT string (that we get from the front-end) and returns the validated <code>GoogleClaims</code> struct if the JWT passes our checks. Otherwise, we will return an error explaining what went wrong.</p>
+<h2 id="claims">
+  <span> Claims</span> <a href="#claims">🔗</a></h2>
+<p>JWT’s are just <a href="https://blog.boot.dev/golang/json-golang/">JSON objects</a> that are signed with a private key to ensure they haven’t been tampered with. The signed JSON object’s fields are referred to as “claims”. We will be using the most popular JWT library in Go to build our solution: <a href="https://github.com/golang-jwt/jwt">https://github.com/golang-jwt/jwt</a>, and the claims that Google sends have the following shape:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// GoogleClaims -
+</span></span></span><span><span><span></span><span>type</span> <span>GoogleClaims</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>Email</span>         <span>string</span> <span>`json:&#34;email&#34;`</span>
+</span></span><span><span>	<span>EmailVerified</span> <span>bool</span>   <span>`json:&#34;email_verified&#34;`</span>
+</span></span><span><span>	<span>FirstName</span>     <span>string</span> <span>`json:&#34;given_name&#34;`</span>
+</span></span><span><span>	<span>LastName</span>      <span>string</span> <span>`json:&#34;family_name&#34;`</span>
+</span></span><span><span>	<span>jwt</span><span>.</span><span>StandardClaims</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="googles-public-key">
+  <span> Google’s Public Key</span> <a href="#googles-public-key">🔗</a></h2>
+<p>Google hosts their public key over HTTPS. Each time we need to verify a request we can go grab their public key as follows:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>getGooglePublicKey</span><span>(</span><span>keyID</span> <span>string</span><span>)</span> <span>(</span><span>string</span><span>,</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>resp</span><span>,</span> <span>err</span> <span>:=</span> <span>http</span><span>.</span><span>Get</span><span>(</span><span>&#34;https://www.googleapis.com/oauth2/v1/certs&#34;</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>&#34;&#34;</span><span>,</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>dat</span><span>,</span> <span>err</span> <span>:=</span> <span>ioutil</span><span>.</span><span>ReadAll</span><span>(</span><span>resp</span><span>.</span><span>Body</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>&#34;&#34;</span><span>,</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>myResp</span> <span>:=</span> <span>map</span><span>[</span><span>string</span><span>]</span><span>string</span><span>{}</span>
+</span></span><span><span>	<span>err</span> <span>=</span> <span>json</span><span>.</span><span>Unmarshal</span><span>(</span><span>dat</span><span>,</span> <span>&amp;</span><span>myResp</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>&#34;&#34;</span><span>,</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>key</span><span>,</span> <span>ok</span> <span>:=</span> <span>myResp</span><span>[</span><span>keyID</span><span>]</span>
+</span></span><span><span>	<span>if</span> <span>!</span><span>ok</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>&#34;&#34;</span><span>,</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;key not found&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>return</span> <span>key</span><span>,</span> <span>nil</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The keyID is in the JWT header under the <code>kid</code> field. If you are confused, don’t worry, it will make sense in the next section.</p>
+<h2 id="complete-validation-function">
+  <span> Complete Validation Function</span> <a href="#complete-validation-function">🔗</a></h2>
+<p>Now that we have our claims structure and a way to fetch Google’s public key we can finish our validation function:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// ValidateGoogleJWT -
+</span></span></span><span><span><span></span><span>func</span> <span>ValidateGoogleJWT</span><span>(</span><span>tokenString</span> <span>string</span><span>)</span> <span>(</span><span>GoogleClaims</span><span>,</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>claimsStruct</span> <span>:=</span> <span>GoogleClaims</span><span>{}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>token</span><span>,</span> <span>err</span> <span>:=</span> <span>jwt</span><span>.</span><span>ParseWithClaims</span><span>(</span>
+</span></span><span><span>		<span>tokenString</span><span>,</span>
+</span></span><span><span>		<span>&amp;</span><span>claimsStruct</span><span>,</span>
+</span></span><span><span>		<span>func</span><span>(</span><span>token</span> <span>*</span><span>jwt</span><span>.</span><span>Token</span><span>)</span> <span>(</span><span>interface</span><span>{},</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>			<span>pem</span><span>,</span> <span>err</span> <span>:=</span> <span>getGooglePublicKey</span><span>(</span><span>fmt</span><span>.</span><span>Sprintf</span><span>(</span><span>&#34;%s&#34;</span><span>,</span> <span>token</span><span>.</span><span>Header</span><span>[</span><span>&#34;kid&#34;</span><span>]))</span>
+</span></span><span><span>			<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>				<span>return</span> <span>nil</span><span>,</span> <span>err</span>
+</span></span><span><span>			<span>}</span>
+</span></span><span><span>			<span>key</span><span>,</span> <span>err</span> <span>:=</span> <span>jwt</span><span>.</span><span>ParseRSAPublicKeyFromPEM</span><span>([]</span><span>byte</span><span>(</span><span>pem</span><span>))</span>
+</span></span><span><span>			<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>				<span>return</span> <span>nil</span><span>,</span> <span>err</span>
+</span></span><span><span>			<span>}</span>
+</span></span><span><span>			<span>return</span> <span>key</span><span>,</span> <span>nil</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>	<span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>GoogleClaims</span><span>{},</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>claims</span><span>,</span> <span>ok</span> <span>:=</span> <span>token</span><span>.</span><span>Claims</span><span>.(</span><span>*</span><span>GoogleClaims</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>!</span><span>ok</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>GoogleClaims</span><span>{},</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;Invalid Google JWT&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>if</span> <span>claims</span><span>.</span><span>Issuer</span> <span>!=</span> <span>&#34;accounts.google.com&#34;</span> <span>&amp;&amp;</span> <span>claims</span><span>.</span><span>Issuer</span> <span>!=</span> <span>&#34;https://accounts.google.com&#34;</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>GoogleClaims</span><span>{},</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;iss is invalid&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>if</span> <span>claims</span><span>.</span><span>Audience</span> <span>!=</span> <span>&#34;YOUR_CLIENT_ID_HERE&#34;</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>GoogleClaims</span><span>{},</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;aud is invalid&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>if</span> <span>claims</span><span>.</span><span>ExpiresAt</span> <span>&lt;</span> <span>time</span><span>.</span><span>Now</span><span>().</span><span>UTC</span><span>().</span><span>Unix</span><span>()</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>GoogleClaims</span><span>{},</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;JWT is expired&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>return</span> <span>*</span><span>claims</span><span>,</span> <span>nil</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Make sure that you have your client id (the one you used on your front-end that you got from GCP) set here in the backend as well.</p>
+<p>If the function returns without an error then you have a struct containing a valid email, first name, and last name, all collected and verified by Google! In your login HTTP handler, you can return a valid cookie or JWT of your own that you use to identify logged-in users on your site. For example:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>(</span><span>cfg</span> <span>config</span><span>)</span> <span>loginHandler</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>r</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>defer</span> <span>r</span><span>.</span><span>Body</span><span>.</span><span>Close</span><span>()</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// parse the GoogleJWT that was POSTed from the front-end
+</span></span></span><span><span><span></span>	<span>type</span> <span>parameters</span> <span>struct</span> <span>{</span>
+</span></span><span><span>		<span>GoogleJWT</span> <span>*</span><span>string</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>decoder</span> <span>:=</span> <span>json</span><span>.</span><span>NewDecoder</span><span>(</span><span>r</span><span>.</span><span>Body</span><span>)</span>
+</span></span><span><span>	<span>params</span> <span>:=</span> <span>parameters</span><span>{}</span>
+</span></span><span><span>	<span>err</span> <span>:=</span> <span>decoder</span><span>.</span><span>Decode</span><span>(</span><span>&amp;</span><span>params</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>respondWithError</span><span>(</span><span>w</span><span>,</span> <span>500</span><span>,</span> <span>&#34;Couldn&#39;t decode parameters&#34;</span><span>)</span>
+</span></span><span><span>		<span>return</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// Validate the JWT is valid
+</span></span></span><span><span><span></span>	<span>claims</span><span>,</span> <span>err</span> <span>:=</span> <span>auth</span><span>.</span><span>ValidateGoogleJWT</span><span>(</span><span>*</span><span>params</span><span>.</span><span>GoogleJWT</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>respondWithError</span><span>(</span><span>w</span><span>,</span> <span>403</span><span>,</span> <span>&#34;Invalid google auth&#34;</span><span>)</span>
+</span></span><span><span>		<span>return</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>if</span> <span>claims</span><span>.</span><span>Email</span> <span>!=</span> <span>user</span><span>.</span><span>Email</span> <span>{</span>
+</span></span><span><span>		<span>respondWithError</span><span>(</span><span>w</span><span>,</span> <span>403</span><span>,</span> <span>&#34;Emails don&#39;t match&#34;</span><span>)</span>
+</span></span><span><span>		<span>return</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// create a JWT for OUR app and give it back to the client for future requests
+</span></span></span><span><span><span></span>	<span>tokenString</span><span>,</span> <span>err</span> <span>:=</span> <span>auth</span><span>.</span><span>MakeJWT</span><span>(</span><span>claims</span><span>.</span><span>Email</span><span>,</span> <span>cfg</span><span>.</span><span>JWTSecret</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>respondWithError</span><span>(</span><span>w</span><span>,</span> <span>500</span><span>,</span> <span>&#34;Couldn&#39;t make authentication token&#34;</span><span>)</span>
+</span></span><span><span>		<span>return</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>respondWithJSON</span><span>(</span><span>w</span><span>,</span> <span>200</span><span>,</span> <span>struct</span> <span>{</span>
+</span></span><span><span>		<span>Token</span> <span>string</span> <span>`json:&#34;token&#34;`</span>
+</span></span><span><span>	<span>}{</span>
+</span></span><span><span>		<span>Token</span><span>:</span> <span>tokenString</span><span>,</span>
+</span></span><span><span>	<span>})</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Let me know if this guide can be improved or if you have any questions. This is <em>roughly</em> the process that we use at <a href="https://www.boot.dev/">boot.dev</a> and it has worked well for us.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

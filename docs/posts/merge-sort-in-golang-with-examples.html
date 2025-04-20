@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Merge Sort in Golang with Examples | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/merge-sort-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Merge Sort in Golang with Examples</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Merge sort is a recursive sorting algorithm and, luckily for us, it’s quite a bit faster than <a href="https://blog.boot.dev/golang/bubble-sort-golang/">bubble sort</a>. Merge sort is a <a href="https://en.wikipedia.org/wiki/Divide-and-conquer_algorithm">divide and conquer algorithm</a>.</p>
+<h3 id="divide">
+  <span> Divide</span> <a href="#divide">🔗</a></h3>
+<ul>
+<li>Divide the input slice into two (equal) halves</li>
+<li>Recursively sort the two halves</li>
+</ul>
+<h3 id="conquer">
+  <span> Conquer</span> <a href="#conquer">🔗</a></h3>
+<ul>
+<li>Merge the two halves to form a sorted array</li>
+</ul>
+<p><img src="https://blog.boot.dev/img/800/merge_sort_gif.gif" alt="merge sort gif"/></p>
+<h2 id="full-example-of-the-merge-sort-algorithm">
+  <span> Full example of the merge sort algorithm</span> <a href="#full-example-of-the-merge-sort-algorithm">🔗</a></h2>
+<p>Merge sort actually has two functions involved, the recursive <code>mergeSort</code> function, and the <code>merge</code> function.</p>
+<p>Let’s write the <code>mergeSort()</code> function first. It’s a recursive function, which means it calls itself, and in this case, it actually calls itself <em>twice</em>. The point of the <code>mergeSort</code> function is to split the array into two roughly equal parts, call itself on those parts, then call <code>merge()</code> to fit those halves back together.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>mergeSort</span><span>(</span><span>items</span> <span>[]</span><span>int</span><span>)</span> <span>[]</span><span>int</span> <span>{</span>
+</span></span><span><span>    <span>if</span> <span>len</span><span>(</span><span>items</span><span>)</span> <span>&lt;</span> <span>2</span> <span>{</span>
+</span></span><span><span>        <span>return</span> <span>items</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>first</span> <span>:=</span> <span>mergeSort</span><span>(</span><span>items</span><span>[:</span><span>len</span><span>(</span><span>items</span><span>)</span><span>/</span><span>2</span><span>])</span>
+</span></span><span><span>    <span>second</span> <span>:=</span> <span>mergeSort</span><span>(</span><span>items</span><span>[</span><span>len</span><span>(</span><span>items</span><span>)</span><span>/</span><span>2</span><span>:])</span>
+</span></span><span><span>    <span>return</span> <span>merge</span><span>(</span><span>first</span><span>,</span> <span>second</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The <code>merge()</code> function is used for merging two sorted lists back into a single sorted list, its where the “magic” really happens. At the lowest level of recursion, the two “sorted” lists will each have a length of 1. Those single element lists will be merged into a sorted list of length two, and we can build of from there.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>merge</span><span>(</span><span>a</span> <span>[]</span><span>int</span><span>,</span> <span>b</span> <span>[]</span><span>int</span><span>)</span> <span>[]</span><span>int</span> <span>{</span>
+</span></span><span><span>    <span>final</span> <span>:=</span> <span>[]</span><span>int</span><span>{}</span>
+</span></span><span><span>    <span>i</span> <span>:=</span> <span>0</span>
+</span></span><span><span>    <span>j</span> <span>:=</span> <span>0</span>
+</span></span><span><span>    <span>for</span> <span>i</span> <span>&lt;</span> <span>len</span><span>(</span><span>a</span><span>)</span> <span>&amp;&amp;</span> <span>j</span> <span>&lt;</span> <span>len</span><span>(</span><span>b</span><span>)</span> <span>{</span>
+</span></span><span><span>        <span>if</span> <span>a</span><span>[</span><span>i</span><span>]</span> <span>&lt;</span> <span>b</span><span>[</span><span>j</span><span>]</span> <span>{</span>
+</span></span><span><span>            <span>final</span> <span>=</span> <span>append</span><span>(</span><span>final</span><span>,</span> <span>a</span><span>[</span><span>i</span><span>])</span>
+</span></span><span><span>            <span>i</span><span>++</span>
+</span></span><span><span>        <span>}</span> <span>else</span> <span>{</span>
+</span></span><span><span>            <span>final</span> <span>=</span> <span>append</span><span>(</span><span>final</span><span>,</span> <span>b</span><span>[</span><span>j</span><span>])</span>
+</span></span><span><span>            <span>j</span><span>++</span>
+</span></span><span><span>        <span>}</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>for</span> <span>;</span> <span>i</span> <span>&lt;</span> <span>len</span><span>(</span><span>a</span><span>);</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>        <span>final</span> <span>=</span> <span>append</span><span>(</span><span>final</span><span>,</span> <span>a</span><span>[</span><span>i</span><span>])</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>for</span> <span>;</span> <span>j</span> <span>&lt;</span> <span>len</span><span>(</span><span>b</span><span>);</span> <span>j</span><span>++</span> <span>{</span>
+</span></span><span><span>        <span>final</span> <span>=</span> <span>append</span><span>(</span><span>final</span><span>,</span> <span>b</span><span>[</span><span>j</span><span>])</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>return</span> <span>final</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="using-the-algorithm-in-code">
+  <span> Using the algorithm in code</span> <a href="#using-the-algorithm-in-code">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>unsorted</span> <span>:=</span> <span>[]</span><span>int</span><span>{</span><span>10</span><span>,</span> <span>6</span><span>,</span> <span>2</span><span>,</span> <span>1</span><span>,</span> <span>5</span><span>,</span> <span>8</span><span>,</span> <span>3</span><span>,</span> <span>4</span><span>,</span> <span>7</span><span>,</span> <span>9</span><span>}</span>
+</span></span><span><span>    <span>sorted</span> <span>:=</span> <span>mergeSort</span><span>(</span><span>unsortedInput</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span>// sorted = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="why-use-merge-sort">
+  <span> Why use merge sort?</span> <a href="#why-use-merge-sort">🔗</a></h2>
+<h3 id="pros">
+  <span> Pros</span> <a href="#pros">🔗</a></h3>
+<ul>
+<li>Fast. Merge sort is much faster than bubble sort, being <code>O(n*log(n))</code> instead of <code>O(n^2)</code>.</li>
+<li>Stable. Merge sort is also a <a href="https://en.wikipedia.org/wiki/Category:Stable_sorts">stable sort</a> which means that values with duplicate keys in the original list will be in the same order in the sorted list.</li>
+</ul>
+<h3 id="cons">
+  <span> Cons</span> <a href="#cons">🔗</a></h3>
+<ul>
+<li>Extra memory. Most sorting algorithms can be performed using a single copy of the original array. Merge sort requires an extra array in memory to merge the sorted subarrays.</li>
+<li>Recursive: Merge sort requires many recursive function calls, and function calls can have significant resource overhead.</li>
+</ul>
+<p>If you need a sorting algorithm to use in a production system, I recommend <a href="https://blog.boot.dev/golang/sorting-in-go-dont-reinvent-this-wheel/">not reinventing the wheel and using the built-in sort.Sort method</a>.</p>
+<h2 id="merge-sort-big-o-complexity">
+  <span> Merge sort Big-O complexity</span> <a href="#merge-sort-big-o-complexity">🔗</a></h2>
+<p>Merge sort has a complexity of <code>O(n*log(n))</code>. Don’t be fooled because there aren’t an explicit number of for-loops to count in the code. In merge sort’s case, the number of recursive function calls is important.</p>
+<p>PS: I’ve got two courses if you want to dig in deeper to this stuff:</p>
+<ul>
+<li><a href="https://www.boot.dev/courses/learn-algorithms-python">Learn Algorithms</a></li>
+<li><a href="https://www.boot.dev/courses/learn-golang">Learn Go</a></li>
+</ul>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Running Go in the Browser with WASM and Web Workers | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/running-go-in-the-browser-wasm-web-workers/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Running Go in the Browser with WASM and Web Workers</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>We’ve recently made big changes to how we execute Go in the browser on <a href="https://www.boot.dev/">boot.dev</a> and want to explain the enhancements. Web Workers are the reason we’ve been able to solve some of the serious browser-related coding problems that were holding us back. Consider this article a sequel to <a href="https://blog.boot.dev/golang/running-go-in-the-browser-with-web-assembly-wasm/">Running Go in the Browser with Web Assembly</a>.</p>
+<p>While publishing our latest course, <a href="https://www.boot.dev/courses/learn-algorithms-python">Learn Algorithms</a>, we needed a way to print console output while code is still executing. We ran into a problem when running computationally expensive algorithms in the browser; the browser gets so bogged down that it can’t render new lines of output. We decided to implement web workers, and they solved the problem handily.</p>
+<h2 id="the-problem">
+  <span> The Problem</span> <a href="#the-problem">🔗</a></h2>
+<p>In the old boot.dev, console output was all printed at once. The program executed, then the output was displayed. We found this to be less than ideal because it is often useful to see <em>when</em> something prints, especially when trying to optimize an algorithm for speed.</p>
+<p>For example, this code used to print all of its output at once:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>(){</span>
+</span></span><span><span>	<span>const</span> <span>max</span> <span>=</span> <span>100000000</span>
+</span></span><span><span>	<span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>max</span><span>;</span> <span>i</span><span>++</span><span>{</span>
+</span></span><span><span>		<span>if</span> <span>i</span> <span>%</span> <span>(</span><span>max</span><span>/</span><span>10</span><span>)</span> <span>==</span> <span>0</span><span>{</span>
+</span></span><span><span>			<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>i</span><span>)</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Since adding Web Workers, now it appropriately prints each number at the time of execution. You can see for yourself on the <a href="https://www.boot.dev/playground/go">playground here</a>.</p>
+<h2 id="what-is-a-web-worker">
+  <span> What Is a Web Worker?</span> <a href="#what-is-a-web-worker">🔗</a></h2>
+<blockquote>
+<p>Web Workers are a simple means for web content to run scripts in background threads.</p>
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers">Mozilla</a></p>
+</blockquote>
+<p>In other words, its a way for us to finally break free from the single-threaded clutches of JavaScript! We can offload expensive tasks to another thread of execution. Doing this leaves the browser free to render updates on the screen.</p>
+<h2 id="how-it-works---the-worker">
+  <span> How It Works - The Worker</span> <a href="#how-it-works---the-worker">🔗</a></h2>
+<p>As you know, we compile code in the editor to WASM on our servers. If you are curious about that part, you can read about it in our <a href="https://blog.boot.dev/golang/running-go-in-the-browser-with-web-assembly-wasm/">previous post.</a> Once the code is compiled to Web Assembly, it’s shipped back to our front end for execution.</p>
+<p>To run a Web Worker, we need a script that defines the worker. It’s just a JavaScript file:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>addEventListener</span><span>(</span>
+</span></span><span><span>  <span>&#34;message&#34;</span><span>,</span>
+</span></span><span><span>  <span>async</span> <span>(</span><span>e</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>    <span>// initialize the Go WASM glue
+</span></span></span><span><span><span></span>    <span>const</span> <span>go</span> <span>=</span> <span>new</span> <span>self</span><span>.</span><span>Go</span><span>();</span>
+</span></span><span><span>
+</span></span><span><span>    <span>// e.data contains the code from the main thread
+</span></span></span><span><span><span></span>    <span>const</span> <span>result</span> <span>=</span> <span>await</span> <span>WebAssembly</span><span>.</span><span>instantiate</span><span>(</span><span>e</span><span>.</span><span>data</span><span>,</span> <span>go</span><span>.</span><span>importObject</span><span>);</span>
+</span></span><span><span>
+</span></span><span><span>    <span>// hijack the console.log function to capture stdout
+</span></span></span><span><span><span></span>    <span>let</span> <span>oldLog</span> <span>=</span> <span>console</span><span>.</span><span>log</span><span>;</span>
+</span></span><span><span>    <span>// send each line of output to the main thread
+</span></span></span><span><span><span></span>    <span>console</span><span>.</span><span>log</span> <span>=</span> <span>(</span><span>line</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>      <span>postMessage</span><span>({</span>
+</span></span><span><span>        <span>message</span><span>:</span> <span>line</span><span>,</span>
+</span></span><span><span>      <span>});</span>
+</span></span><span><span>    <span>};</span>
+</span></span><span><span>
+</span></span><span><span>    <span>// run the code
+</span></span></span><span><span><span></span>    <span>await</span> <span>go</span><span>.</span><span>run</span><span>(</span><span>result</span><span>.</span><span>instance</span><span>);</span>
+</span></span><span><span>    <span>console</span><span>.</span><span>log</span> <span>=</span> <span>oldLog</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>    <span>// tell the main thread we are done
+</span></span></span><span><span><span></span>    <span>postMessage</span><span>({</span>
+</span></span><span><span>      <span>done</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>    <span>});</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>false</span>
+</span></span><span><span><span>);</span>
+</span></span></code></pre></div><p>The worker communicates with the main thread by listening to <code>message</code> events, and sending data back via the <code>postMessage</code> function.</p>
+<p>Note: I omitted the wasm_exec.js file that is necessary for the worker to be able to run Go code, but it can be found on your machine if you have Go installed.</p>
+<pre tabindex="0"><code>cat $(go env GOROOT)/misc/wasm/wasm_exec.js
+</code></pre><h2 id="how-it-works---main-thread">
+  <span> How it Works - Main Thread</span> <a href="#how-it-works---main-thread">🔗</a></h2>
+<p>Now that we have a worker file that can execute compiled Web Assembly, let’s take a look at how the main thread communicates with the worker. I built an ES6 module that exports some helper functions:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>export</span> <span>function</span> <span>getWorker</span><span>(</span><span>lang</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>return</span> <span>{</span>
+</span></span><span><span>    <span>webWorker</span><span>:</span> <span>new</span> <span>window</span><span>.</span><span>Worker</span><span>(</span><span>`/</span><span>${</span><span>lang</span><span>}</span><span>_worker.js`</span><span>),</span>
+</span></span><span><span>    <span>lang</span><span>,</span>
+</span></span><span><span>  <span>};</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>function</span> <span>useWorker</span><span>(</span><span>worker</span><span>,</span> <span>params</span><span>,</span> <span>callback</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>const</span> <span>promise</span> <span>=</span> <span>new</span> <span>Promise</span><span>((</span><span>resolve</span><span>,</span> <span>reject</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>    <span>worker</span><span>.</span><span>webWorker</span><span>.</span><span>onmessage</span> <span>=</span> <span>(</span><span>event</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>      <span>if</span> <span>(</span><span>event</span><span>.</span><span>data</span><span>.</span><span>done</span><span>)</span> <span>{</span>
+</span></span><span><span>        <span>resolve</span><span>();</span>
+</span></span><span><span>        <span>return</span><span>;</span>
+</span></span><span><span>      <span>}</span>
+</span></span><span><span>      <span>if</span> <span>(</span><span>event</span><span>.</span><span>data</span><span>.</span><span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>        <span>reject</span><span>(</span><span>event</span><span>.</span><span>data</span><span>.</span><span>error</span><span>);</span>
+</span></span><span><span>        <span>return</span><span>;</span>
+</span></span><span><span>      <span>}</span>
+</span></span><span><span>      <span>callback</span><span>(</span><span>event</span><span>.</span><span>data</span><span>.</span><span>message</span><span>);</span>
+</span></span><span><span>    <span>};</span>
+</span></span><span><span>  <span>});</span>
+</span></span><span><span>  <span>worker</span><span>.</span><span>webWorker</span><span>.</span><span>postMessage</span><span>(</span><span>params</span><span>);</span>
+</span></span><span><span>  <span>return</span> <span>promise</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>function</span> <span>terminateWorker</span><span>(</span><span>worker</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>worker</span><span>.</span><span>webWorker</span><span>.</span><span>terminate</span><span>();</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>When the page loads we will create a new Web Worker using <code>getWorker</code>. When the user runs some code we send the code to the worker using <code>useWorker</code>. When we navigate away from the code editor we can clean up the worker using <code>terminateWorker</code>.</p>
+<p>The <code>useWorker</code> function is the post interesting part. It takes the worker that was created with <code>getWorker</code>, an object called <code>params</code> that will be passed to the worker (it contains the compiled WASM), and a callback function to execute when the worker is finished with the job.</p>
+<p>For example, in our Vue app we use these functions as follows:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>this</span><span>.</span><span>output</span> <span>=</span> <span>[];</span>
+</span></span><span><span><span>this</span><span>.</span><span>isLoading</span> <span>=</span> <span>true</span><span>;</span>
+</span></span><span><span><span>const</span> <span>wasm</span> <span>=</span> <span>await</span> <span>compileGo</span><span>(</span><span>this</span><span>.</span><span>code</span><span>);</span>
+</span></span><span><span><span>await</span> <span>useWorker</span><span>(</span><span>this</span><span>.</span><span>worker</span><span>,</span> <span>wasm</span><span>,</span> <span>(</span><span>data</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>this</span><span>.</span><span>output</span><span>.</span><span>push</span><span>(</span><span>data</span><span>);</span>
+</span></span><span><span><span>});</span>
+</span></span><span><span><span>this</span><span>.</span><span>isLoading</span> <span>=</span> <span>false</span><span>;</span>
+</span></span></code></pre></div><p>And because <code>this.output</code> is a reactive property on our Vue instance, each time we receive data from the Web Worker, new output is printed to the console.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

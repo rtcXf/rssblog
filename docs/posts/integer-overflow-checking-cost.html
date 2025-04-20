@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Integer overflow checking cost | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://danluu.com/integer-overflow/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Integer overflow checking cost</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div> <p>How much overhead should we expect from enabling integer overflow checks? Using a compiler flag or built-in intrinsics, we should be able to do the check with a conditional branch that branches based on the overflow flag that <code>add</code> and <code>sub</code> set. Code that looks like</p> <pre><code>add     %esi, %edi
+</code></pre> <p>should turn into something like</p> <pre><code>add     %esi, %edi
+jo      &lt;handle_overflow&gt;
+</code></pre> <p>Assuming that branch is always correctly predicted (which should be the case for most code), the costs of the branch are the cost of executing that correctly predicted not-taken branch, the pollution the branch causes in the branch history table, and the cost of decoding the branch (on x86, <code>jo</code> and <code>jno</code> don&#39;t fuse with <code>add</code> or <code>sub</code>, which means that on the fast path, the branch will take up one of the 4 opcodes that can come from the decoded instruction cache per cycle). That&#39;s probably less than a 2x penalty per <code>add</code> or <code>sub</code> on front-end limited in the worst case (which might happen in a tightly optimized loop, but should be rare in general), plus some nebulous penalty from branch history pollution which is really difficult to measure in microbenchmarks. Overall, we can use 2x as a pessimistic guess for the total penalty.</p> <p>2x sounds like a lot, but how much time do applications spend adding and subtracting? If we look at the most commonly used benchmark of “workstation” integer workloads, <a href="http://www.spec.org/cpu2006/">SPECint</a>, the composition is maybe 40% load/store ops, 10% branches, and 50% other operations. Of the 50% “other” operations, maybe 30% of those are integer add/sub ops. If we guesstimate that load/store ops are 10x as expensive as add/sub ops, and other ops are as expensive as add/sub, a 2x penalty on add/sub should result in a <code>(40*10+10+50 + 12) / (40*10+10+50) = 3%</code> penalty. That the penalty for a branch is 2x, that add/sub ops are only 10x faster than load/store ops, and that add/sub ops aren&#39;t faster than other &#34;other&#34; ops are all pessimistic assumptions, so this estimate should be on the high end for most workloads.</p>  <p>John Regehr, who&#39;s done serious analysis on integer overflow checks estimates that the penalty should be <a href="http://blog.regehr.org/archives/1154">about 5%</a>, which is in the same ballpark as our napkin sketch estimate.</p> <p>A spec license costs $800, so let&#39;s benchmark bzip2 (which is a component of SPECint) instead of paying $800 for SPECint. Compiling bzip2 with <code>clang -O3</code> vs. <code>clang -O3 -fsanitize=signed-integer-overflow,unsigned-integer-overflow</code> (which prints out a warning on overflow) vs. <code>-fsanitize-undefined-trap-on-error</code> with undefined overflow checks (which causes a crash on an undefined overflow), we get the following results on compressing and decompressing 1GB of code and binaries that happened to be lying around on my machine.</p> <table> <thead> <tr> <th>options</th> <th>zip (s)</th> <th>unzip (s)</th> <th>zip (ratio)</th> <th>unzip (ratio)</th> </tr> </thead> <tbody> <tr> <td>normal</td> <td>93</td> <td>45</td> <td>1.0</td> <td>1.0</td> </tr> <tr> <td>fsan</td> <td>119</td> <td>49</td> <td>1.28</td> <td>1.09</td> </tr> <tr> <td>fsan ud</td> <td>94</td> <td>45</td> <td>1.01</td> <td>1.00</td> </tr> </tbody> </table> <p>In the table, ratio is the relative ratio of the run times, not the compression ratio. The difference between <code>fsan ud, unzip</code> and <code>normal, unzip</code> isn&#39;t actually 0, but it rounds to 0 if we measure in whole seconds. If we enable good error messages, decompression doesn&#39;t slow down all that much (45s v. 49s), but compression is a lot slower (93s v. 119s). The penalty for integer overflow checking is 28% for compression and 9% decompression if we print out nice diagnostics, but almost nothing if we don&#39;t. How is that possible? Bzip2 normally has a couple of unsigned integer overflows. If I patch the code to remove those so that the diagnostic printing code path is never executed it still causes a large performance hit.</p> <p>Let&#39;s check out the penalty when we just do some adds with something like</p> <pre><code>for (int i = 0; i &lt; n; ++i) {
+  sum += a[i];
+}
+</code></pre> <p>On my machine (a 3.4 GHz Sandy Bridge), this turns out to be about 6x slower with <code>-fsanitize=signed-integer-overflow,unsigned-integer-overflow</code>. Looking at the disassembly, the normal version uses SSE adds, whereas the fsanitize version uses normal adds. Ok, 6x sounds plausible for unchecked SSE adds v. checked adds.</p> <p>But if I try different permutations of the same loop that don&#39;t allow the the compiler to emit SSE instructions for the unchecked version, I still get a 4x-6x performance penalty for versions compiled with fsanitize. Since there are a lot of different optimizations in play, including loop unrolling, let&#39;s take a look at a simple function that does a single add to get a better idea of what&#39;s going on.</p> <p>Here&#39;s the disassembly for a function that adds two ints, first compiled with <code>-O3</code> and then compiled with <code>-O3 -fsanitize=signed-integer-overflow,unsigned-integer-overflow</code>.</p> <pre><code>0000000000400530 &lt;single_add&gt;:
+  400530:       01 f7                   add    %esi,%edi
+  400532:       89 f8                   mov    %edi,%eax
+  400534:       c3                      retq
+</code></pre> <p>The compiler does a reasonable job on the <code>-O3</code> version. Per the standard AMD64 calling convention, the arguments are passed in via the <code>esi</code> and <code>edi</code> registers, and passed out via the <code>eax</code> register. There&#39;s some overhead over an inlined <code>add</code> instruction because we have to move the result to <code>eax</code> and then return from the function call, but considering that it&#39;s a function call, it&#39;s a totally reasonable implementation.</p> <pre><code>000000000041df90 &lt;single_add&gt;:
+  41df90:       53                      push   %rbx
+  41df91:       89 fb                   mov    %edi,%ebx
+  41df93:       01 f3                   add    %esi,%ebx
+  41df95:       70 04                   jo     41df9b &lt;single_add+0xb&gt;
+  41df97:       89 d8                   mov    %ebx,%eax
+  41df99:       5b                      pop    %rbx
+  41df9a:       c3                      retq
+  41df9b:       89 f8                   mov    %edi,%eax
+  41df9d:       89 f1                   mov    %esi,%ecx
+  41df9f:       bf a0 89 62 00          mov    $0x6289a0,%edi
+  41dfa4:       48 89 c6                mov    %rax,%rsi
+  41dfa7:       48 89 ca                mov    %rcx,%rdx
+  41dfaa:       e8 91 13 00 00          callq  41f340
+&lt;__ubsan_handle_add_overflow&gt;
+  41dfaf:       eb e6                   jmp    41df97 &lt;single_add+0x7&gt;
+</code></pre> <p>The compiler does not do a reasonable job on the <code>-O3 -fsanitize=signed-integer-overflow,unsigned-integer-overflow</code> version. Optimization wizard Nathan Kurz, had this to say about clang&#39;s output:</p> <blockquote> <p>That&#39;s awful (although not atypical) compiler generated code. For some reason the compiler decided that it wanted to use %ebx as the destination of the add. Once it did this, it has to do the rest. The question would by why it didn&#39;t use a scratch register, why it felt it needed to do the move at all, and what can be done to prevent it from doing so in the future. As you probably know, %ebx is a &#39;callee save&#39; register, meaning that it must have the same value when the function returns --- thus the push and pop. Had the compiler just done the add without the additional mov, leaving the input in %edi/%esi as it was passed (and as done in the non-checked version), this wouldn&#39;t be necessary. I&#39;d guess that it&#39;s a residue of some earlier optimization pass, but somehow the ghost of %ebx remained.</p> </blockquote> <p>However, adding <code>-fsanitize-undefined-trap-on-error</code> changes this to</p> <pre><code>0000000000400530 &lt;single_add&gt;:
+  400530:       01 f7                   add    %esi,%edi
+  400532:       70 03                   jo     400537 &lt;single_add+0x7&gt;
+  400534:       89 f8                   mov    %edi,%eax
+  400536:       c3                      retq
+  400537:       0f 0b                   ud2
+</code></pre> <p>Although this is a tiny, contrived, example, we can see a variety of mis-optimizations in other code compiled with options that allow fsanitize to print out diagnostics.</p> <p>While a better C compiler could do better, in theory, gcc 4.82 doesn&#39;t do better than clang 3.4 here. For one thing, gcc&#39;s <code>-ftrapv</code> only checks signed overflow. Worse yet, it doesn&#39;t work, <a href="https://gcc.gnu.org/bugzilla/show_bug.cgi?id=35412">and this bug on ftrapv has been open since 2008</a>. Despite doing fewer checks and not doing them correctly, gcc&#39;s <code>-ftrapv</code> slows things down about as much as clang&#39;s <code>-fsanitize=signed-integer-overflow,unsigned-integer-overflow</code> on bzip2, and substantially more than <code>-fsanitize=signed-integer-overflow</code>.</p> <p>Summing up, integer overflow checks ought to cost a few percent on typical integer-heavy workloads, and they do, as long as you don&#39;t want nice error messages. The current mechanism that produces nice error messages somehow causes optimizations to get screwed up in a lot of cases.</p> <h3 id="update">Update</h3> <p>On clang 3.8.0 and after, and gcc 5 and after, register allocation seems to work as expected (although you may need to pass <code>-fno-sanitize-recover</code>. I haven&#39;t gone back and re-run my benchmarks across different versions of clang and gcc, but I&#39;d like to do that when I get some time.</p> <h3 id="cpu-internals-series">CPU internals series</h3> <ul> <li><a href="https://danluu.com/branch-prediction/">A brief history of branch prediction</a></li> <li><a href="https://danluu.com/new-cpu-features/">New CPU features since the 80s</a></li> <li><a href="https://danluu.com/integer-overflow/">The cost of branches and integer overflow checking in real code</a></li> <li><a href="https://danluu.com/cpu-bugs/">CPU bugs</a></li> <li><a href="https://danluu.com/hardware-unforgiving/">Why CPU development is hard</a></li> <li><a href="https://danluu.com/why-hardware-development-is-hard/">Verilog sucks, part 1</a></li> <li><a href="https://danluu.com/pl-troll/">Verilog sucks, part 2</a></li> </ul> <p><small> Thanks to Nathan Kurz for comments on this topic, including, but not limited to, the quote that&#39;s attributed to him, and to Stan Schwertly, Nick Bergson-Shilcock, Scott Feeney, Marek Majkowski, Adrian and Juan Carlos Borras for typo corrections and suggestions for clarification. Also, huge thanks to Richard Smith, who pointed out the <code>-fsanitize-undefined-trap-on-error</code> option to me. This post was updated with results for that option after Richard&#39;s comment. Also, thanks to Filipe Cabecinhas for noticing that clang fixed this behavior in clang 3.8 (released approximately 1.5 years after this post).</small></p> <p>John Regehr has some <a href="https://plus.google.com/105487075784331805819/posts/dyKKLrW8jXb">more comments here</a> on why clang&#39;s implementation of integer overflow checking isn&#39;t fast (yet).</p>   </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

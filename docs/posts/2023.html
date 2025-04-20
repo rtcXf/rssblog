@@ -22,7 +22,45 @@
         <h1>2023</h1>
         <section>
             
-            <a href="https://www.scattered-thoughts.net/writing/2023/">2023</a>
+            <div id="readability-page-1" class="page"><article>
+  <p>Kind of a fragmented year.</p>
+<h2 id="tigerbeetle">tigerbeetle</h2>
+<p>I left in May. I learned a lot and I&#39;m proud of the work I did. But I don&#39;t like the culture that surrounds startups, and that discomfort turns to burnout over time. 7am meetings probably didn&#39;t help either, putting me well out of sync with my wife who works evening shifts.</p>
+<p>I spent very little of that time writing about what I learned, other than scattered <a href="https://www.scattered-thoughts.net/log">log entries</a> (0030-0034) and a talk at <a href="https://systemsdistributed.com/">systems distributed</a>
+titled <a href="https://www.youtube.com/watch?v=MqbVoSs0lXk">What is a database?</a>.</p>
+<h2 id="zest">zest</h2>
+<p>I spent much of the summer tinkering with programming languages. I convinced myself that a lot of the ideas in <a href="https://www.scattered-thoughts.net/#imp_v0">imp</a> don&#39;t actually require a relational language - it&#39;s just that the properties that are important just happen to have mostly appeared in relational languages to date. In <a href="https://www.scattered-thoughts.net/writing/there-are-no-strings-on-me">There are no strings on me</a> I sketched out a path to importing these propeties into a functional/imperative setting, and in <a href="https://www.scattered-thoughts.net/writing/implementing-interactive-languages">Implementing interactive language</a> and <a href="https://www.scattered-thoughts.net/writing/babys-first-wasm-compiler">Baby&#39;s first wasm compiler</a> I tested out an implementation strategy.</p>
+<p>In the fall I started fleshing out the language in a tree-walking interpreter. So far:</p>
+<ul>
+<li>I&#39;m really happy with the data notation and the control-flow-capturing closures.</li>
+<li>Mutation is totally missing but the core design is worked out and probably won&#39;t change much.</li>
+<li>The dynamic type system exists but will probably see a lot of tweaking.</li>
+<li>The static type system is totally missing but will just be an abstract interpretation of the dynamic type system.</li>
+<li>Error handling via control-flow-capture works but needs a lot of sugar to be pleasant.</li>
+</ul>
+<h2 id="consulting">consulting</h2>
+<p>I spent a month at the start of the winter consulting on adding a columnar query engine to an existing project. I ended up bailing because we couldn&#39;t agree on the approach at all, and I can&#39;t help thinking of this as a missing consulting skill - that I should have been able to figure out beforehand whether we were actually aligned before committing to the project and wasting their time.</p>
+<p>I put a lot of prep time in before the project. I brushed up on the state of the art in <a href="https://www.scattered-thoughts.net/writing/a-shallow-survey-of-olap-and-htap-query-engines">A shallow survey of OLAP and HTAP query engines</a>. I also learned go, which was tangentially useful in that it gave me a very clear list of things not to do in language design (eg see the struggle in <a href="https://www.scattered-thoughts.net/writing/columnar-kernels-in-go/">Columnar kernels in go</a>).</p>
+<h2 id="misc">misc</h2>
+<p>I wanted to experiement with not reading any fiction during 2023, because I tend to end up binge-reading and sucking time away from other things I would rather be doing. I ended up making an exception during the summer when I was burnt out, but I kept it up for the rest of the year. I thought that I would end up reading more non-fiction instead, but it seems like that&#39;s more limited by the number of intesting books I know about than by time. Instead I just ended up being bored a lot. Which isn&#39;t bad in itself, but since I didn&#39;t plan some replacement hobby I often ended up browsing tech media instead.</p>
+<p>In december I experimented with completely ignoring tech social media (hacker news, lobsters, twitter etc) and, having learned my lesson about leaving time vacuums, listening to podcasts instead. That&#39;s been a great change because tech social media is always cynical and mean but the podcasts I&#39;ve been listening too are more curious and engaged. Plus I&#39;m not tied to a screen so I can stretch, juggle or pace around while listening. I&#39;ve been enjoying:</p>
+<ul>
+<li><a href="https://oxide.computer/podcasts/oxide-and-friends">Oxide and friends</a> for computing history and context.</li>
+<li><a href="https://podcast.clearerthinking.org/">Clearer thinking</a> for gently but insistently refusing to allow interviewees to dodge questions or hide behind vagueness. (&#34;So can you give me a concrete example of how that would sound in practice? I&#39;m still not sure I&#39;m following - can you give an example dialogue? Ok, but what actual words would you say?&#34;)</li>
+<li><a href="https://www.thedeeplife.com/listen/">Deep questions</a>, despite being repetitive and full of ads, for a weekly reminder to take thinking seriously.</li>
+<li><a href="https://latticetraining.com/podcast/">Lattice training</a> for solid advice and regular inspiration.</li>
+</ul>
+<p>I&#39;d love some more recommendations. I&#39;m finding that I enjoy listening to well-prepared interviews more than rambling conversation, and to critical discussion more than story-telling (eg I didn&#39;t enjoy 99% invisible).</p>
+
+<p>I&#39;m not feeling full of computering plans right now. Maybe that&#39;s just the winter creeping in to my bones.</p>
+<h2 id="consulting-1">consulting</h2>
+<p>I&#39;ll likely pick up some consulting work from time to time. I haven&#39;t decided yet how much or how often. It&#39;s certainly not going to be the bulk of my time - I&#39;m quite happy to hunker down through the downturn rather than lower my rates and work more.</p>
+<h2 id="zest-1">zest</h2>
+<p>The design is coming together nicely and I want to see how it works out. I know that if I try to make it THE PROJECT then I&#39;ll end up feeling pressured and not wanting to work on it. But maybe it can be a background default - something to tinker with when I don&#39;t have anything else going on. I&#39;d like to at least be able to put up a little interactive tutorial for the core language, and as a stretch get it working well enough to use for some toy projects and get a feel for how the weird design choices play out.</p>
+<h2 id="misc-1">misc</h2>
+<p>Ignoring tech media over the holidays has been wonderful. I aim to continue that forever. I miss nothing.</p>
+
+</article></div>
         </section>
     </article>
 </main>

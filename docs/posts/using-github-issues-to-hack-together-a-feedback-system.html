@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Using GitHub Issues to Hack Together A Feedback System | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/misc/github-issues-for-customers/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Using GitHub Issues to Hack Together A Feedback System</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Boot.dev has been my side-project for the last couple of years now. Being a <a href="https://www.boot.dev">learning path for backend developers</a> focused on quality over quantity, I knew early on that it needed to have a <em>really tight</em> feedback loop from students. We had (and still have) a <a href="https://discord.gg/EEkFwbv">Discord server</a> where myself and the students hang out, and that worked okay at first. Unfortunately, Discord channels have a couple problems when it comes to issue tracking:</p>
+<ul>
+<li>Long conversations make it hard to keep track of individual reports</li>
+<li>There’s not way to “resolve” a “ticket”</li>
+<li>Not all students are in the Discord</li>
+<li>There is more friction to report issues in a different application</li>
+</ul>
+<p>The solution that has been working splendidly for me so far was to add a feedback box directly within each coding assignment! Now students can easily report issues with near-zero hassle. Unfortunately, running SQL queries to get at those submitted issues is a giant pain… <em>The GitHub API has entered the chat</em>.</p>
+<h2 id="using-github-issues-to-track-user-feedback">
+  <span> Using GitHub issues to track user feedback</span> <a href="#using-github-issues-to-track-user-feedback">🔗</a></h2>
+<p>I have a private GitHub repo where I store all the content for the <a href="https://www.boot.dev/tracks/backend">back-end CS courses</a> on Boot.dev in markdown files. It would be <em>really convenient</em> if user reported issues automatically manifested as GitHub issues on that repository! After just a few minutes of digging, I realized it was quite easy to do with the GitHub API. Given that my backend is a REST-ish API written in Go, I decided to use <a href="https://github.com/google/go-github/">Google’s GitHub API client package</a> and the official <a href="https://pkg.go.dev/golang.org/x/oauth2">Golang oauth2 package</a>.</p>
+<p>I you’re interested in following along, first you need is a <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token">personal access token</a> with “repo” permissions.</p>
+<p>Next, I created a <code>githubclient</code> package in my project to manage interactions with the GitHub API. It exposes a <code>Client</code> struct:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// Client -
+</span></span></span><span><span><span></span><span>type</span> <span>Client</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>githubClient</span> <span>*</span><span>github</span><span>.</span><span>Client</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// NewClient -
+</span></span></span><span><span><span></span><span>func</span> <span>NewClient</span><span>(</span><span>personalAccessToken</span> <span>string</span><span>)</span> <span>(</span><span>Client</span><span>,</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>ctx</span> <span>:=</span> <span>context</span><span>.</span><span>Background</span><span>()</span>
+</span></span><span><span>	<span>ts</span> <span>:=</span> <span>oauth2</span><span>.</span><span>StaticTokenSource</span><span>(</span>
+</span></span><span><span>		<span>&amp;</span><span>oauth2</span><span>.</span><span>Token</span><span>{</span><span>AccessToken</span><span>:</span> <span>personalAccessToken</span><span>},</span>
+</span></span><span><span>	<span>)</span>
+</span></span><span><span>	<span>tc</span> <span>:=</span> <span>oauth2</span><span>.</span><span>NewClient</span><span>(</span><span>ctx</span><span>,</span> <span>ts</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>	<span>client</span> <span>:=</span> <span>github</span><span>.</span><span>NewClient</span><span>(</span><span>tc</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>	<span>_</span><span>,</span> <span>ghResp</span><span>,</span> <span>err</span> <span>:=</span> <span>client</span><span>.</span><span>Issues</span><span>.</span><span>List</span><span>(</span><span>ctx</span><span>,</span> <span>false</span><span>,</span> <span>nil</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>Client</span><span>{},</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>if</span> <span>ghResp</span><span>.</span><span>StatusCode</span> <span>&gt;</span> <span>299</span> <span>{</span>
+</span></span><span><span>		<span>dat</span><span>,</span> <span>err</span> <span>:=</span> <span>io</span><span>.</span><span>ReadAll</span><span>(</span><span>ghResp</span><span>.</span><span>Body</span><span>)</span>
+</span></span><span><span>		<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>			<span>return</span> <span>Client</span><span>{},</span> <span>err</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>		<span>return</span> <span>Client</span><span>{},</span> <span>fmt</span><span>.</span><span>Errorf</span><span>(</span><span>&#34;status code: %v, message: %v&#34;</span><span>,</span> <span>ghResp</span><span>.</span><span>StatusCode</span><span>,</span> <span>string</span><span>(</span><span>dat</span><span>))</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>return</span> <span>Client</span><span>{</span>
+</span></span><span><span>		<span>githubClient</span><span>:</span> <span>client</span><span>,</span>
+</span></span><span><span>	<span>},</span> <span>nil</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>You’ll notice that I added some logic to list the issues. We don’t actually do anything with those issues, and you can remove that code if you want. For me, it was useful to test that the token is working on application startup.</p>
+<p>Next, I wrote a simple <code>CreateIssue()</code> method on the client:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// CreateIssue creates an issue in the example-org/example-repo repository
+</span></span></span><span><span><span></span><span>func</span> <span>(</span><span>c</span> <span>Client</span><span>)</span> <span>CreateIssue</span><span>(</span><span>exercisePath</span><span>,</span> <span>fromUsername</span><span>,</span> <span>userComment</span> <span>string</span><span>)</span> <span>error</span> <span>{</span>
+</span></span><span><span>	<span>ctx</span> <span>:=</span> <span>context</span><span>.</span><span>Background</span><span>()</span>
+</span></span><span><span>  <span>const</span> <span>repoName</span> <span>=</span> <span>&#34;example-repo&#34;</span>
+</span></span><span><span>  <span>const</span> <span>orgName</span> <span>=</span> <span>&#34;example-org&#34;</span>
+</span></span><span><span>
+</span></span><span><span>	<span>summary</span> <span>:=</span> <span>userComment</span>
+</span></span><span><span>	<span>const</span> <span>summaryLength</span> <span>=</span> <span>20</span>
+</span></span><span><span>	<span>if</span> <span>len</span><span>(</span><span>summary</span><span>)</span> <span>&gt;</span> <span>summaryLength</span> <span>{</span>
+</span></span><span><span>		<span>summary</span> <span>=</span> <span>summary</span><span>[:</span><span>summaryLength</span><span>]</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>title</span> <span>:=</span> <span>fmt</span><span>.</span><span>Sprintf</span><span>(</span><span>&#34;exercise: %v, Summary: %v&#34;</span><span>,</span> <span>exercisePath</span><span>,</span> <span>summary</span><span>)</span>
+</span></span><span><span>	<span>body</span> <span>:=</span> <span>fmt</span><span>.</span><span>Sprintf</span><span>(</span><span>`
+</span></span></span><span><span><span>Comment: %v
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>From: %v
+</span></span></span><span><span><span>`</span><span>,</span> <span>userComment</span><span>,</span> <span>fromUsername</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>	<span>_</span><span>,</span> <span>ghResp</span><span>,</span> <span>err</span> <span>:=</span> <span>c</span><span>.</span><span>githubClient</span><span>.</span><span>Issues</span><span>.</span><span>Create</span><span>(</span><span>ctx</span><span>,</span> <span>orgName</span><span>,</span> <span>repoName</span><span>,</span> <span>&amp;</span><span>github</span><span>.</span><span>IssueRequest</span><span>{</span>
+</span></span><span><span>		<span>Title</span><span>:</span>  <span>&amp;</span><span>title</span><span>,</span>
+</span></span><span><span>		<span>Body</span><span>:</span>   <span>&amp;</span><span>body</span><span>,</span>
+</span></span><span><span>		<span>Labels</span><span>:</span> <span>&amp;</span><span>[]</span><span>string</span><span>{</span><span>&#34;course-feedback&#34;</span><span>},</span>
+</span></span><span><span>	<span>})</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>if</span> <span>ghResp</span><span>.</span><span>StatusCode</span> <span>&gt;</span> <span>299</span> <span>{</span>
+</span></span><span><span>		<span>dat</span><span>,</span> <span>err</span> <span>:=</span> <span>io</span><span>.</span><span>ReadAll</span><span>(</span><span>ghResp</span><span>.</span><span>Body</span><span>)</span>
+</span></span><span><span>		<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>			<span>return</span> <span>err</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>		<span>return</span> <span>fmt</span><span>.</span><span>Errorf</span><span>(</span><span>&#34;status code: %v, message: %v&#34;</span><span>,</span> <span>ghResp</span><span>.</span><span>StatusCode</span><span>,</span> <span>string</span><span>(</span><span>dat</span><span>))</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>return</span> <span>nil</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>As you can see, given an…</p>
+<ul>
+<li>exercise path (which is just the filepath to the exercise receiving feedback)</li>
+<li>username of the reporter</li>
+<li>comment from the reporter</li>
+</ul>
+<p>…the <code>CreateIssue</code> method simply creates a new issue in the repo with a static label. I’ve split the inputs into a GitHub issue “title” and “body” that’s formatted to my needs so that I can resolve the issues as quickly as possible.</p>
+<h2 id="why-not-use-an-out-of-the-box-solution">
+  <span> Why not use an out of the box solution?</span> <a href="#why-not-use-an-out-of-the-box-solution">🔗</a></h2>
+<p>I know there are a billion and a half issue tracking tools you can buy on the market, but I really liked this solution for a few reasons:</p>
+<ul>
+<li>It took about an hour to code from start to finish</li>
+<li>It’s free</li>
+<li>It’s integrated with the tooling I already use daily (GitHub)</li>
+</ul>
+<p>If you need a simple issue tracker for your app I’d recommend looking into using GitHub issues via the API, at least until it stops working for you!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

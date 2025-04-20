@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Boot.dev Beat. November 2023 | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/news/bootdev-beat-2023-11/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>The Boot.dev Beat. November 2023</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Hope you had a fantastic Halloween. I spent last weekend in Seattle with Allan and Hunter (the other two full-timers here at Boot.dev) at the DotA 2 International. Absolute blast. I’ve never been to such an enormous gaming event in person. Ah, well, back to coding.</p>
+<p>Regards, Lane</p>
+<h2 id="patch-notes">
+  <span> Patch notes</span> <a href="#patch-notes">🔗</a></h2>
+<h3 id="1-new-unit-test-lesson-type">
+  <span> 1. New Unit Test Lesson Type</span> <a href="#1-new-unit-test-lesson-type">🔗</a></h3>
+<p>This is a massive change that we’ve been wanting to pull the trigger on for awhile now, and finally have! We now have distinct kinds of “in browser coding” lessons:</p>
+<ul>
+<li>Standard output tests</li>
+<li>Unit tests</li>
+</ul>
+<p>Up until now, all lessons were tested based on standard output (what’s printed to the console). If it matches, you pass. If not, you fail. That kind of testing is still good for some of the lessons, but for the majority of lessons, the new unit test type is a better experience.</p>
+<p>With the unit tests, instead of checking stdout, we check to make sure your function returns the correct values, and we do that programmatically. This has a few great benefits:</p>
+<ul>
+<li>You can leave in your debugging “print” statements</li>
+<li>You have nicely formatted feedback on each test with pass/fail conditions</li>
+<li>The test code is in a separate read-only file so you don’t accidentally modify it</li>
+<li>You get practice working in a test-driven style</li>
+</ul>
+<h3 id="2-new-explainer-videos">
+  <span> 2. New Explainer Videos</span> <a href="#2-new-explainer-videos">🔗</a></h3>
+<p>Now that we’ve started to get into an efficient routine with the podcast, I’m turning my attention back to making some more explainer videos for the courses themselves. I’m working on a new style of video that’s more visual and fast paced. Here are a few examples:</p>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=kLdw64oBeCI">Should you learn Python?</a></li>
+<li><a href="https://www.youtube.com/watch?v=CH6yLUtMZ28">The Queue Data Structure Explained</a></li>
+<li><a href="https://www.youtube.com/watch?v=LNlIP2zCXD4">Bitwise &amp; Operator Explained</a></li>
+</ul>
+<p>They’re obviously not perfect, but I’m happy with the <em>idea</em> and we’ll keep working to improve them.</p>
+<h2 id="what-is-yet-to-come">
+  <span> What is yet to come</span> <a href="#what-is-yet-to-come">🔗</a></h2>
+<ul>
+<li>“Learn Kubernetes” course development is underway</li>
+<li>Challenges and reworking of the “Learn JavaScript” course</li>
+<li>Updates to make sharpshooter less painful and more rewarding</li>
+<li>Lore for Boots</li>
+</ul>
+<h2 id="backend-banter-podcast">
+  <span> Backend Banter Podcast</span> <a href="#backend-banter-podcast">🔗</a></h2>
+<p>We created a <a href="https://www.youtube.com/watch?v=PclSNl1JRpI">new trailer</a> for the podcast. You know, so you can share it with your friends.</p>
+<p>This month’s episodes include:</p>
+<ul>
+<li><a href="https://www.backendbanter.fm/episodes/024-behind-htmx-carson-gross-on-the-re-rise-of-hypermedia">#024 - Behind HTMX: Carson Gross on the re-Rise of Hypermedia</a></li>
+<li><a href="https://www.backendbanter.fm/episodes/023-has-web-development-regressed-a-conversation-with-wes-bos">#023 - Has Web Development Regressed? A Conversation with Wes Bos</a></li>
+<li><a href="https://www.backendbanter.fm/episodes/021-job-hunting-as-a-self-taught-programmer-with-don-the-developer">#022 - Job Hunting as a Self-Taught Programmer with Don the Developer</a></li>
+<li><a href="https://www.backendbanter.fm/episodes/021-typescript-vs-elixir-an-fp-showdown-with-theo-browne">#021 - TypeScript vs Elixir: An FP Showdown with Theo Browne</a></li>
+</ul>
+<p>By the way, this show is NOT free. The cost is a podcast rating or a YouTube subscription. I can’t verify that you’ve done your part, but we have an honor system here. If you have enjoyed more than one episode, do your part. I appreciate you.</p>
+<h2 id="the-cream-of-the-crop">
+  <span> The cream of the crop</span> <a href="#the-cream-of-the-crop">🔗</a></h2>
+<h3 id="podcast-lukas-fittl-on-postgres-performancehttpswwwse-radionet202309se-radio-583-lukas-fittl-on-postgres-performance">
+  <span> <a href="https://www.se-radio.net/2023/09/se-radio-583-lukas-fittl-on-postgres-performance/">(Podcast) Lukas Fittl on Postgres Performance</a></span> <a href="#podcast-lukas-fittl-on-postgres-performancehttpswwwse-radionet202309se-radio-583-lukas-fittl-on-postgres-performance">🔗</a></h3>
+<p>by Software Engineering Radio</p>
+<p>We’ve been using Postgres at Boot.dev since the beginning. I’m always interested to hear about the intricacies of database performance optimization. Usually as backend developers we don’t need to be overly concerned with DB speed, we can just slap an index on a column and move on. But sometimes that’s not nearly enough, and this episode goes deep on exactly when it’s not.</p>
+<h3 id="podcast-exploring-the-new-features-of-python-312httpsrealpythoncompodcastsrpp175">
+  <span> <a href="https://realpython.com/podcasts/rpp/175/">(Podcast) Exploring the New Features of Python 3.12</a></span> <a href="#podcast-exploring-the-new-features-of-python-312httpsrealpythoncompodcastsrpp175">🔗</a></h3>
+<p>by The Real Python Podcast</p>
+<p>Every new minor version of Python brings interesting new features to the language. You wouldn’t want to be working without F-strings would you? Python has made giant leaps over the years, and this episode does a great job of covering all the stuff we need to know about the new 3.12 release.</p>
+<h3 id="article-oh-auth---abusing-oauth-to-take-over-millions-of-accountshttpssaltsecurityblogoh-auth-abusing-oauth-to-take-over-millions-of-accounts">
+  <span> <a href="https://salt.security/blog/oh-auth-abusing-oauth-to-take-over-millions-of-accounts">(Article) Oh-Auth - Abusing OAuth to take over millions of accounts</a></span> <a href="#article-oh-auth---abusing-oauth-to-take-over-millions-of-accountshttpssaltsecurityblogoh-auth-abusing-oauth-to-take-over-millions-of-accounts">🔗</a></h3>
+<p>by Aviad Carmel</p>
+<p>OAuth is kinda everywhere. Here on Boot.dev we do sign in with Google, and Sign in with GitHub. OAuth offers a standard protocol for user authorization and authentication, and while its design is inherently secure, integration with web platforms can introduce vulnerabilities. This article goes over some of the, erm, implementation problems that can arise. Thar be foot guns.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

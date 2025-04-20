@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Creating a Custom Tooltip Component in Vue | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/custom-tooltip-component-in-vue/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Creating a Custom Tooltip Component in Vue</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>There are plenty of libraries out there that will have you up and running with a good tooltip solution in minutes. However, if you are like me, you are sick and tired of giant dependency trees that have the distinct possibility of breaking at any time. For that reason, we’re going to build a custom single file tooltip component that you can build yourself and tweak to your heart’s content. It might take 15 minutes instead of 3… sorry about that.</p>
+<p>As it happens, this is also the boilerplate for the tooltip component we use on <a href="https://www.boot.dev/">boot.dev’s coding app.</a></p>
+<h2 id="the-end-goal">
+  <span> The End Goal</span> <a href="#the-end-goal">🔗</a></h2>
+<p>We are building a single file component, as such it will be a single file with the following structure:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>template</span><span>&gt;</span> <span>&lt;/</span><span>template</span><span>&gt;</span>
+</span></span><span><span>
+</span></span><span><span><span>&lt;</span><span>script</span><span>&gt;&lt;/</span><span>script</span><span>&gt;</span>
+</span></span><span><span>
+</span></span><span><span><span>&lt;</span><span>style</span> <span>scoped</span><span>&gt;&lt;/</span><span>style</span><span>&gt;</span>
+</span></span></code></pre></div><p>At the end of this walkthrough we will have a tooltip component that floats above the target element(s), fades in and out, activates on hover, and is reusable across our entire app. Let’s take each section at a time.</p>
+<h2 id="the-html">
+  <span> The HTML</span> <a href="#the-html">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>template</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>div</span> <span>class</span><span>=</span><span>&#34;tooltip-box&#34;</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>slot</span> <span>/&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>div</span> <span>class</span><span>=</span><span>&#34;tooltip&#34;</span><span>&gt;</span>
+</span></span><span><span>      <span>&lt;</span><span>span</span> <span>class</span><span>=</span><span>&#34;text&#34;</span><span>&gt;</span>{{ text }}<span>&lt;/</span><span>span</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>template</span><span>&gt;</span>
+</span></span></code></pre></div><p>Fairly simple setup here. We need:</p>
+<ul>
+<li>An outer <code>tooltip-box</code> to encapsulate the entire component and ensure positioning.</li>
+<li>A slot tag to inject the child component (whatever is hovered over to show the tooltip).</li>
+<li>A <code>span</code> that will house the text of our tooltip.</li>
+</ul>
+<h2 id="the-javascript">
+  <span> The JavaScript</span> <a href="#the-javascript">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>export</span> <span>default</span> <span>{</span>
+</span></span><span><span>  <span>props</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>text</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>type</span><span>:</span> <span>String</span><span>,</span>
+</span></span><span><span>      <span>required</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span><span>};</span>
+</span></span></code></pre></div><p>Pretty straightforward, all we need is a required prop for our users to specify what they want the tooltip to say.</p>
+<h2 id="the-css">
+  <span> The CSS</span> <a href="#the-css">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="css"><span><span><span>.</span><span>tooltip-box</span> <span>{</span>
+</span></span><span><span>  <span>position</span><span>:</span> <span>relative</span><span>;</span>
+</span></span><span><span>  <span>display</span><span>:</span> <span>inline-block</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>tooltip-box</span><span>:</span><span>hover</span> <span>.</span><span>tooltip</span> <span>{</span>
+</span></span><span><span>  <span>opacity</span><span>:</span> <span>1</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>tooltip</span> <span>{</span>
+</span></span><span><span>  <span>color</span><span>:</span> <span>#ffffff</span><span>;</span>
+</span></span><span><span>  <span>text-align</span><span>:</span> <span>center</span><span>;</span>
+</span></span><span><span>  <span>padding</span><span>:</span> <span>5</span><span>px</span> <span>0</span><span>;</span>
+</span></span><span><span>  <span>border-radius</span><span>:</span> <span>2</span><span>px</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>width</span><span>:</span> <span>120</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>bottom</span><span>:</span> <span>100</span><span>%</span><span>;</span>
+</span></span><span><span>  <span>left</span><span>:</span> <span>50</span><span>%</span><span>;</span>
+</span></span><span><span>  <span>margin-left</span><span>:</span> <span>-60</span><span>px</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>opacity</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>  <span>transition</span><span>:</span> <span>opacity</span> <span>1</span><span>s</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>  <span>z-index</span><span>:</span> <span>1</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>background</span><span>:</span> <span>#a782e8</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>text</span><span>::</span><span>after</span> <span>{</span>
+</span></span><span><span>  <span>content</span><span>:</span> <span>&#34; &#34;</span><span>;</span>
+</span></span><span><span>  <span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>  <span>top</span><span>:</span> <span>100</span><span>%</span><span>;</span>
+</span></span><span><span>  <span>left</span><span>:</span> <span>50</span><span>%</span><span>;</span>
+</span></span><span><span>  <span>margin-left</span><span>:</span> <span>-5</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>border-width</span><span>:</span> <span>5</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>border-style</span><span>:</span> <span>solid</span><span>;</span>
+</span></span><span><span>  <span>border-color</span><span>:</span> <span>#a782e8</span> <span>transparent</span> <span>transparent</span> <span>transparent</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The CSS is certainly the most interesting part. A couple key points:</p>
+<ul>
+<li>We need to ensure the top-level element, <code>tooltip-box</code> is positioned relatively so that our absolute positioning works.</li>
+<li>We use an opacity transition to fade the tooltip in and out of view.</li>
+<li>The <code>z-index</code> property ensures that the tooltip is on top of whatever it needs to hover over.</li>
+<li>The <code>.text::after</code> property creates the little triangle pointer at the bottom of the tooltip</li>
+</ul>
+<p>The full component:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>template</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>div</span> <span>class</span><span>=</span><span>&#34;tooltip-box&#34;</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>slot</span> <span>/&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>div</span> <span>class</span><span>=</span><span>&#34;tooltip&#34;</span><span>&gt;</span>
+</span></span><span><span>      <span>&lt;</span><span>span</span> <span>class</span><span>=</span><span>&#34;text&#34;</span><span>&gt;</span>{{ text }}<span>&lt;/</span><span>span</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>template</span><span>&gt;</span>
+</span></span><span><span>
+</span></span><span><span><span>&lt;</span><span>script</span><span>&gt;</span>
+</span></span><span><span>  <span>export</span> <span>default</span> <span>{</span>
+</span></span><span><span>    <span>props</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>text</span><span>:</span> <span>{</span>
+</span></span><span><span>        <span>type</span><span>:</span> <span>String</span><span>,</span>
+</span></span><span><span>        <span>required</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>      <span>},</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>  <span>};</span>
+</span></span><span><span><span>&lt;/</span><span>script</span><span>&gt;</span>
+</span></span><span><span>
+</span></span><span><span><span>&lt;</span><span>style</span> <span>scoped</span><span>&gt;</span>
+</span></span><span><span>  <span>.</span><span>tooltip-box</span> <span>{</span>
+</span></span><span><span>    <span>position</span><span>:</span> <span>relative</span><span>;</span>
+</span></span><span><span>    <span>display</span><span>:</span> <span>inline-block</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>
+</span></span><span><span>  <span>.</span><span>tooltip-box</span><span>:</span><span>hover</span> <span>.</span><span>tooltip</span> <span>{</span>
+</span></span><span><span>    <span>opacity</span><span>:</span> <span>1</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>
+</span></span><span><span>  <span>.</span><span>tooltip</span> <span>{</span>
+</span></span><span><span>    <span>color</span><span>:</span> <span>#ffffff</span><span>;</span>
+</span></span><span><span>    <span>text-align</span><span>:</span> <span>center</span><span>;</span>
+</span></span><span><span>    <span>padding</span><span>:</span> <span>5</span><span>px</span> <span>0</span><span>;</span>
+</span></span><span><span>    <span>border-radius</span><span>:</span> <span>2</span><span>px</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>    <span>width</span><span>:</span> <span>120</span><span>px</span><span>;</span>
+</span></span><span><span>    <span>bottom</span><span>:</span> <span>100</span><span>%</span><span>;</span>
+</span></span><span><span>    <span>left</span><span>:</span> <span>50</span><span>%</span><span>;</span>
+</span></span><span><span>    <span>margin-left</span><span>:</span> <span>-60</span><span>px</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>    <span>opacity</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>    <span>transition</span><span>:</span> <span>opacity</span> <span>1</span><span>s</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>    <span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>    <span>z-index</span><span>:</span> <span>1</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>    <span>background</span><span>:</span> <span>#a782e8</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>
+</span></span><span><span>  <span>.</span><span>text</span><span>::</span><span>after</span> <span>{</span>
+</span></span><span><span>    <span>content</span><span>:</span> <span>&#34; &#34;</span><span>;</span>
+</span></span><span><span>    <span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>    <span>top</span><span>:</span> <span>100</span><span>%</span><span>;</span>
+</span></span><span><span>    <span>left</span><span>:</span> <span>50</span><span>%</span><span>;</span>
+</span></span><span><span>    <span>margin-left</span><span>:</span> <span>-5</span><span>px</span><span>;</span>
+</span></span><span><span>    <span>border-width</span><span>:</span> <span>5</span><span>px</span><span>;</span>
+</span></span><span><span>    <span>border-style</span><span>:</span> <span>solid</span><span>;</span>
+</span></span><span><span>    <span>border-color</span><span>:</span> <span>#a782e8</span> <span>transparent</span> <span>transparent</span> <span>transparent</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>&lt;/</span><span>style</span><span>&gt;</span>
+</span></span></code></pre></div><p>And how to use it:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>Tooltip</span> <span>text</span><span>=</span><span>&#34;Difficulty&#34;</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>span</span><span>&gt;</span> hover over me <span>&lt;/</span><span>span</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>Tooltip</span><span>&gt;</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>If You&#39;re Learning Back-end, Don&#39;t Start with Frameworks | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/backend/dont-start-with-frameworks/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>If You&#39;re Learning Back-end, Don&#39;t Start with Frameworks</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Look, I don’t hate frameworks. I’m not as starry-eyed as some other developers, especially when it comes to <em>back-end</em> frameworks, but I don’t think there’s anything wrong with using tools that make you productive. On the contrary, I’m <em>always</em> trying to find tools that make me as productive as possible.</p>
+<p>That said, I’m adamant that you should not <em>start</em> with frameworks when you’re <a href="https://www.boot.dev">learning back-end development</a>. I’m not saying you shouldn’t use them at all, but I am saying that they are a poor tool for learning.</p>
+<h2 id="frameworks-automate-the-boring-stuff">
+  <span> Frameworks automate the boring stuff</span> <a href="#frameworks-automate-the-boring-stuff">🔗</a></h2>
+<p>Frameworks are <em>great</em> at automating all that boring stuff like boilerplate code, authentication, and <a href="https://blog.boot.dev/clean-code/death-taxes-and-database-migrations/">database migrations</a>. Who wants to invent the wheel over and over again? <em>Not me</em>.</p>
+<p>Trouble is, when you’re just starting, those boring details are <em>exactly</em> the things you need to learn. They’re the building blocks of back-end applications, the foundations of what you need to know. And when you use a framework, you’re missing out on all that good stuff.</p>
+<p>Like any good developer, I use a library and call <code>sha256.Hash(text)</code> when I need to hash some data. I don’t try to write my cryptography from scratch! That said, I’ve taken the time to learn and understand <em>why</em> <a href="https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/">sha256</a> is a good choice in a given scenario, and what security it provides me. Similarly, when you’re learning back-end development, frameworks are just too high-level to be a good starting point.</p>
+<h2 id="frameworks-are-easy-to-learn-thats-the-whole-point">
+  <span> Frameworks are easy to learn, that’s the whole point</span> <a href="#frameworks-are-easy-to-learn-thats-the-whole-point">🔗</a></h2>
+<p>The entire selling point of a framework like Django, Flask, or Rails is that they’re easy to use. They take the repetitive, boring stuff and give you an opinionated way to do it. With just a few CLI commands, you can have a fully-functional web application up and running!</p>
+<p>The problem with starting this way is that you’ll have an entire codebase, with mountains of dependencies, and you’ll understand how almost none of it works under the hood. When you encounter issues (and you will) you’ll be spending hours trying to work backward. The problem is very similar to one of my favorite memes: <em>“Hours of debugging can save you minutes of reading the docs!”</em></p>
+<p><img src="https://pbs.twimg.com/media/E2A3GwaXsAA_GwQ?format=jpg&amp;name=small" alt="hours of debugging"/></p>
+<p>In the long run, it will be a lot faster to learn the basics of back-end servers. You can always learn a framework later, it’s <em>really</em> not hard at that point because you will already understand the pieces that are magically taken care of.</p>
+<h2 id="i-made-the-mistake-of-starting-with-django">
+  <span> I made the mistake of starting with Django</span> <a href="#i-made-the-mistake-of-starting-with-django">🔗</a></h2>
+<p>When I was getting my <a href="https://blog.boot.dev/jobs/is-coding-bootcamp-worth-it/">CS degree</a>, I decided I wanted to build a web app, and up until that point, I hadn’t done much with the web yet. All I had done was write little Python scripts. RESTful servers, HTTP requests, SQL databases – I had no idea what any of that was.</p>
+<p>Anyhow, I heard Django was popular, so I decided to use it to build a website. I followed “hello world” style tutorials and in just a few days I had a working website! I understood how to change variables here and there to make the page display what I wanted, but boy howdy I had <em>no idea</em> what was going on under the hood.</p>
+<p>I stressed for weeks trying to make sure my site was “secure”. Every blog post online kept telling me I had to set this configuration, or that setting, if I wanted to be able to run my Django server in production. I avoided interacting with the database like the plague, instead opting to use Django’s ORM and admin panel to make changes to my data. I’m embarrassed to admit that at the time I didn’t even understand that the database was a separate thing from the web server.</p>
+<p>Anyhow, a year later when I <a href="https://www.boot.dev/courses/learn-golang">learned Go</a> and built an API without any frameworks, <em>everything started to come together for me</em>. I finally understood all the moving parts.</p>
+<p>Since then, I’ve worked with minimalistic Go apps, Django, Flask, Rails and Express servers. I’m no longer stressed when I build a server in Django because I know what tradeoffs are being made. Django and Rails are not bad tools for building web apps, they’re just bad tools to start your learning process with.</p>
+<h2 id="how-far-down-the-rabbit-hole-do-i-need-to-go">
+  <span> How far down the rabbit hole do I need to go?</span> <a href="#how-far-down-the-rabbit-hole-do-i-need-to-go">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/applepie.png.webp" alt="apple pie carl sagan"/></p>
+<blockquote>
+<p>If you wish to make an apple pie from scratch, you must first invent the universe.</p>
+<p>– Carl Sagan</p>
+</blockquote>
+<p>You might be thinking, “Okay, I get it, I shouldn’t start with a framework. But where should I start?”</p>
+<p>It’s a fair question. Following fallacious “slippery slope” logic, we might think something like:</p>
+<ul>
+<li>Before a framework, build a web server from scratch</li>
+<li>Before a web server, build the HTTP protocol from scratch</li>
+<li>Before HTTP, build the operating system from scratch</li>
+<li>etc…</li>
+</ul>
+<p>That’s not what I’m saying. If you want to be a professional in any industry, I think it’s a good rule of thumb to go one layer down the stack from where you plan to do most of your work.</p>
+<ul>
+<li>Want to build operating systems? It will help to understand the kernel.</li>
+<li>Want to write an ORM? It will help to understand databases.</li>
+<li>Want to write Rails apps? It will help to understand web servers.</li>
+</ul>
+<h2 id="lastly-full-stack-and-back-end-development-are-different">
+  <span> Lastly, full-stack and back-end development are different</span> <a href="#lastly-full-stack-and-back-end-development-are-different">🔗</a></h2>
+<p>One last thing I want to point out is that full-stack and back-end are <em>not</em> the same thing. I think many developers who start with <a href="https://blog.boot.dev/backend/frontend-vs-backend-meaning/">front-end</a> get a bit confused about this. They think that the back-end is just the thing that serves the front-end.</p>
+<p>That certainly <em>can</em> be the case in smaller applications, but as a company grows, the back-end tends to become larger and more complex. Frankly, the servers that serve up the front-end might be some of the simplest parts of the stack.</p>
+<p>While I still think it’s best to write a server from scratch at least once, it’s even more important if you want to be a <em>back-end</em> engineer rather than a <em>full-stack</em> engineer. If you’re a back-end engineer, you’ll be spending most of your time working on the back-end, and you’ll be digging into more niche problems where a deeper understanding of server architecture will be more helpful.</p>
+<p>I hope this helps you avoid some of the pain I experienced, and as always, best of luck! If you’re interested in learning back-end development, <a href="https://www.boot.dev">check out Boot.dev</a>, I think it will help.</p>
+<p>After thought-provoking feedback, I’ve since added a <a href="https://blog.boot.dev/backend/wrong-about-abstractions/">follow-up article here</a>.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

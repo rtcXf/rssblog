@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JavaScript With Statement Explained – A Deep Dive | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/javascript-with-statement/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>JavaScript With Statement Explained – A Deep Dive</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>JavaScript’s built-in <code>with</code> statement specifies the default object for the given property and gives us a shorthand for writing long object references. More precisely, it adds the given object to the head of the scope chain.</p>
+<p>Note: Use of the <em>with</em> statement is discouraged. It can lead to strange bugs. That said, it’s important to understand how it works because it may exist in legacy code.</p>
+<h2 id="with-function-syntax">
+  <span> With Function Syntax</span> <a href="#with-function-syntax">🔗</a></h2>
+<h3 id="usage">
+  <span> Usage</span> <a href="#usage">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>with</span> <span>(</span><span>expression</span><span>){</span>
+</span></span><span><span>  <span>statement</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><em>expression</em>: An <a href="https://en.wikipedia.org/wiki/Expression_(computer_science)">expression</a> that evaluates to an object that will become the default object inside its scope.</p>
+<p><em>statement</em>: Code that will run with the evaluated expression as the default object</p>
+<h2 id="example">
+  <span> Example</span> <a href="#example">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>let</span> <span>car</span> <span>=</span> <span>{</span><span>color</span><span>:</span> <span>&#39;red&#39;</span><span>}</span>
+</span></span><span><span><span>with</span><span>(</span><span>car</span><span>){</span>
+</span></span><span><span>  <span>console</span><span>.</span><span>log</span><span>(</span><span>color</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// prints &#39;red&#39;
+</span></span></span></code></pre></div><p>As you can see, the car object becomes the default object in the scope. The object’s properties become available without using the dot (<code>.</code>) operator.</p>
+<p>If the variable already exists in the parent scope, it will be overwritten:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>let</span> <span>color</span> <span>=</span> <span>&#39;blue&#39;</span>
+</span></span><span><span><span>let</span> <span>car</span> <span>=</span> <span>{</span><span>color</span><span>:</span> <span>&#39;red&#39;</span><span>}</span>
+</span></span><span><span><span>with</span><span>(</span><span>car</span><span>){</span>
+</span></span><span><span>  <span>console</span><span>.</span><span>log</span><span>(</span><span>color</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// prints &#39;red&#39;
+</span></span></span></code></pre></div><h2 id="why-shouldnt-i-use-with">
+  <span> Why Shouldn’t I Use ‘With’?</span> <a href="#why-shouldnt-i-use-with">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/photo-1550770203-e14cc04c58fa-1024x680.jpeg" alt="stop sign in bushes"/></p>
+<blockquote>
+<p>Using <code>with</code> is not recommended, and is forbidden in ECMAScript 5 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/Strict_mode">strict mode</a>. The recommended alternative is to assign the object whose properties you want to access to a temporary variable.</p>
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/with">Mozilla</a></p>
+</blockquote>
+<p>While using <code>with</code> can make long pieces of code easier to read due to the removal of long accessor paths, the danger of potential bugs due to ambiguity isn’t worth the convenience.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>with</span><span>(</span><span>car</span><span>.</span><span>make</span><span>.</span><span>model</span><span>){</span>
+</span></span><span><span>  <span>let</span> <span>size</span> <span>=</span> <span>width</span> <span>*</span> <span>height</span> <span>*</span> <span>length</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// vs
+</span></span></span><span><span><span></span>
+</span></span><span><span><span>let</span> <span>size</span> <span>=</span> <span>car</span><span>.</span><span>make</span><span>.</span><span>model</span><span>.</span><span>width</span> <span>*</span> <span>car</span><span>.</span><span>make</span><span>.</span><span>model</span><span>.</span><span>height</span> <span>*</span> <span>car</span><span>.</span><span>make</span><span>.</span><span>model</span><span>.</span><span>length</span><span>;</span>
+</span></span></code></pre></div><p>There’s an argument to be made that code will be smaller and easier to send to the browser by using ‘with’ statements. While true, the gains are negligible, especially when compared to what code minifiers do.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The One Thing I&#39;d Change About Go | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/one-thing-id-change-about-go/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>The One Thing I&#39;d Change About Go</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Go is built for grug brained programmers like me.</p>
+<blockquote>
+<p>grug brain developer not so smart, but grug brain developer program many long year and learn some things although mostly still confused</p>
+<p>apex predator of grug is complexity</p>
+<p>complexity bad</p>
+<p>say again:</p>
+<p>complexity <em>very</em> bad</p>
+<p><em>you</em> say now:</p>
+<p>complexity <em>very, very</em> bad</p>
+<p>given choice between complexity or one on one against t-rex, grug take t-rex: at least grug see t-rex</p>
+<p>– <a href="https://grugbrain.dev/">grugbrain.dev</a></p>
+</blockquote>
+<p>The Go team took <em>many years</em> to add generics to the language. It was a good addition, and many argued that it was an <em>obvious</em> decision that should have been made sooner.</p>
+<p>I disagree.</p>
+<p>The simple truth is that when you’re building applications, especially back-end web applications or CLI apps (which is where Go shines as a language imo) you just don’t need generics all that often. They’re quite nice to have, but far from <em>necessary</em>.</p>
+<p>Are you building a clever library using general-purpose data structures? Sure, generics make your life much easier. But let’s be real, I’m over here parsing JSON and shoveling strings into databases. I don’t need 3 layers of abstraction to get ’er done.</p>
+<p><em>Smol-brain code work gud for application layer.</em></p>
+<h2 id="what-else-is-go-good-for">
+  <span> What else is Go good for?</span> <a href="#what-else-is-go-good-for">🔗</a></h2>
+<p>Before I start shitting on my favorite language, let me point out some of the other reasons I love Go.</p>
+<ol>
+<li>Grug-brained syntax (already mentioned)</li>
+<li>Statically compiled binaries</li>
+<li>A toolchain with built-in formatting, testing and dependency management</li>
+<li>Dependency management built on Git repos (no npmjs.com or crates.io)</li>
+<li>A standard library that cares about the web</li>
+<li>Goroutines and channels (concurrency that doesn’t suck)</li>
+<li>Fast despite a garbage collector</li>
+</ol>
+<h2 id="what-would-i-change-about-go">
+  <span> What would I change about Go?</span> <a href="#what-would-i-change-about-go">🔗</a></h2>
+<p>Not a hard question. It’s sum types! (Or enums, tagged unions, or whatever you want to call them).</p>
+<p>Go currently has a shitty excuse for <a href="https://blog.boot.dev/golang/golang-enum/">enums</a>:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Color</span> <span>int</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>(</span>
+</span></span><span><span>		<span>Red</span> <span>Color</span> <span>=</span> <span>iota</span>
+</span></span><span><span>		<span>Green</span>
+</span></span><span><span>		<span>Blue</span>
+</span></span><span><span><span>)</span>
+</span></span></code></pre></div><p>They’re pretty bad. Go’s “enums” are verbose, error-prone, and don’t ackshually enforce much of anything from a typing perspective. Let me show you what I mean.</p>
+<h3 id="its-just-an-alias">
+  <span> It’s just an alias</span> <a href="#its-just-an-alias">🔗</a></h3>
+<p>This is a type <em>alias</em>. At the end of the day, the new <code>Color</code> type is just an <code>int</code>. It’s not really a new <em>type</em>, it’s just a new <em>name</em> for an existing type. In this world, every integer on God’s green Earth is a valid color.</p>
+<p>That’s crap.</p>
+<p>If I wanted that I would just use an <code>int</code>.</p>
+<p>I want to <em>restrict</em> the set of valid colors to a specific <em>subset</em> of colors, e.g. <code>Red</code>, <code>Green</code>, and <code>Blue</code>.</p>
+<h3 id="iota">
+  <span> iota</span> <a href="#iota">🔗</a></h3>
+<p>The <code>iota</code> keyword in Go is a special feature that allows you to define a sequence of constants that increment by <code>1</code>. Sound useful? <em>It’s not.</em> It’s just cryptic syntactic sugar.</p>
+<p>A smol-brained developer like me might make a few constants like this:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>(</span>
+</span></span><span><span>		<span>Red</span> <span>Color</span> <span>=</span> <span>0</span>
+</span></span><span><span>		<span>Green</span> <span>Color</span> <span>=</span> <span>1</span>
+</span></span><span><span>		<span>Blue</span> <span>Color</span> <span>=</span> <span>2</span>
+</span></span><span><span><span>)</span>
+</span></span></code></pre></div><p>But a big-brained developer might save a few characters by using <code>iota</code>:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>(</span>
+</span></span><span><span>		<span>Red</span> <span>Color</span> <span>=</span> <span>iota</span>
+</span></span><span><span>		<span>Green</span>
+</span></span><span><span>		<span>Blue</span>
+</span></span><span><span><span>)</span>
+</span></span></code></pre></div><p>Here’s the kicker: the <code>iota</code> method uses the <em>same</em> amount of lines of code, but now I need to count on my fingers and toes to figure out the actual <em>value</em> of any of these constants.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>(</span>
+</span></span><span><span>		<span>Red</span> <span>Color</span> <span>=</span> <span>iota</span>
+</span></span><span><span>		<span>Green</span>
+</span></span><span><span>		<span>Blue</span>
+</span></span><span><span>		<span>Grey</span>
+</span></span><span><span>		<span>Black</span>
+</span></span><span><span>		<span>White</span>
+</span></span><span><span>		<span>Yellow</span>
+</span></span><span><span>		<span>Orange</span>
+</span></span><span><span>		<span>Purple</span>
+</span></span><span><span>		<span>Pink</span>
+</span></span><span><span>		<span>Brown</span>
+</span></span><span><span>		<span>Chartreuse</span>
+</span></span><span><span>		<span>Mauve</span>
+</span></span><span><span><span>)</span>
+</span></span></code></pre></div><p><em>What’s the value of <code>Mauve</code>?</em></p>
+<p>Additionally, there isn’t even support to quickly marshal these integers into strings (e.g. for debugging) without writing mountains of boilerplate code.</p>
+<p>Frankly I just pretend <code>iota</code> doesn’t exist and instead define string constants like a peasant:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Color</span> <span>string</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>(</span>
+</span></span><span><span>		<span>Red</span> <span>Color</span> <span>=</span> <span>&#34;Red&#34;</span>
+</span></span><span><span>		<span>Green</span> <span>Color</span> <span>=</span> <span>&#34;Green&#34;</span>
+</span></span><span><span>		<span>Blue</span> <span>Color</span> <span>=</span> <span>&#34;Blue&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span></code></pre></div><h3 id="despite-the-verbosity-nothing-is-safe">
+  <span> Despite the verbosity, nothing is safe</span> <a href="#despite-the-verbosity-nothing-is-safe">🔗</a></h3>
+<p>Believe it or not, I can still do this in Go:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Color</span> <span>string</span>
+</span></span><span><span>
+</span></span><span><span><span>var</span> <span>carColor</span> <span>Color</span> <span>=</span> <span>&#34;clearly not a color&#34;</span>
+</span></span></code></pre></div><p>The compiler don’t care. The <code>Color</code> type we made is just an alias for <code>string</code>. Any <code>string</code> is a valid <code>Color</code>. Sure, I defined some constants, <code>Red</code>, <code>Green</code>, and <code>Blue</code>, but they’re just constants that I <em>hope</em> and <em>pray</em> and <em>beg</em> my team to use.</p>
+<p>I have no way to <em>enforce</em> this stuff at compile time. So now my only choice is to write runtime checks everywhere I use the colors:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>switch</span> <span>color</span> <span>{</span>
+</span></span><span><span><span>case</span> <span>Red</span><span>:</span>
+</span></span><span><span>		<span>// do happy thing
+</span></span></span><span><span><span></span><span>case</span> <span>Green</span><span>:</span>
+</span></span><span><span>		<span>// do other happy thing
+</span></span></span><span><span><span></span><span>case</span> <span>Blue</span><span>:</span>
+</span></span><span><span>		<span>// do other other happy thing
+</span></span></span><span><span><span></span><span>default</span><span>:</span>
+</span></span><span><span>		<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;wHY dIDn&#39;T yOU uSe a vALID cOLoR???&#34;</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Eew, <em>run</em>time.</p>
+<p>If there’s one thing I hate more than indenting with spaces it’s doing <em>literally anything</em> at runtime.</p>
+<h3 id="how-to-make-go-better">
+  <span> How to make Go better</span> <a href="#how-to-make-go-better">🔗</a></h3>
+<p>I can’t believe I’m using TypeScript as an example of a language that does something <em>well</em>, but here we are. In TypeScript, you can define a sum type like this:</p>
+<div><pre tabindex="0"><code data-lang="ts"><span><span><span>type</span> <span>Color</span> <span>=</span> <span>&#34;Red&#34;</span> <span>|</span> <span>&#34;Green&#34;</span> <span>|</span> <span>&#34;Blue&#34;</span><span>;</span>
+</span></span></code></pre></div><p><img src="https://blog.boot.dev/img/800/takemymoney.jpeg.webp" alt="Shut up and take my money"/></p>
+<p>Look at that. It’s simple. It’s elegant. It’s <em>safe</em>.</p>
+<p>Sum types provide <em>more</em> type safety, <em>more</em> expressiveness, are <em>easier</em> to understand, all while being <em>less</em> verbose. It’s a win-win-win-win. If it weren’t for Go’s backward compatibility promise (which I love), I’d even rip out the stupid <code>iota</code> keyword in addition to adding sum types.</p>
+<h2 id="-breaking-typescript-snatches-defeat-from-the-jaws-of-victory-">
+  <span> 🚨🚨 BREAKING: TypeScript snatches defeat from the jaws of victory 🚨🚨</span> <a href="#-breaking-typescript-snatches-defeat-from-the-jaws-of-victory-">🔗</a></h2>
+<p>TypeScript did it. They have beautiful beautiful sum types. They’re called <em>unions</em> in TypeScript, but they’re the same thing.</p>
+<p>Then some galaxy-brained 10x developer decided it also needed an <code>enum</code> keyword so we’d have 2 ways to accomplish the same thing:</p>
+<div><pre tabindex="0"><code data-lang="ts"><span><span><span>enum</span> <span>Direction</span> <span>{</span>
+</span></span><span><span>  <span>Up</span> <span>=</span> <span>&#34;UP&#34;</span><span>,</span>
+</span></span><span><span>  <span>Down</span> <span>=</span> <span>&#34;DOWN&#34;</span><span>,</span>
+</span></span><span><span>  <span>Left</span> <span>=</span> <span>&#34;LEFT&#34;</span><span>,</span>
+</span></span><span><span>  <span>Right</span> <span>=</span> <span>&#34;RIGHT&#34;</span><span>,</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Write Go.</p>
+<p>Be grug.</p>
+<p>Pray for sum types.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Introduction to Asynchronous Flows and Webhooks | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/stories/asynchronous-flows-and-webhooks/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Introduction to Asynchronous Flows and Webhooks</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>In this post, we’ll be talking about coding with a common integration pattern with an external API called a
+<em>webhook</em>. Loosely speaking, there are three main types of communication you’ll see when building an
+application.</p>
+<ol>
+<li>Frontend to Backend.</li>
+<li>Your backend to an external backend (API).</li>
+<li>An external backend to your backend (API).</li>
+</ol>
+<p><img src="https://blog.boot.dev/img/800/asynchronous-flows-and-webhooks-1.png" alt="Backend to External Backend"/></p>
+<p><img src="https://blog.boot.dev/img/800/asynchronous-flows-and-webhooks-2.png" alt="External Backend to Backend (with Webhook)"/></p>
+<p>When first learning to code, we focus largely on the first two. However, in practice, the third type, commonly known as
+a <strong>webhook</strong>, is also prevalent. Before we get started, let’s settle on some terminology.</p>
+<h2 id="what-is-an-asynchronous-flow-and-why-are-they-important">
+  <span> What is an asynchronous flow and why are they important?</span> <a href="#what-is-an-asynchronous-flow-and-why-are-they-important">🔗</a></h2>
+<p>Let’s start first with what you probably already know. When you send an HTTP request to an API and expect an immediate
+response, that is a <strong>synchronous call</strong>. Your code <em>waits</em> for the API to respond, and ties up resources on your
+server while it is servicing that request. The resources tied up differs depending on your language and web framework,
+but typically a thread is tied up, or at the very least CPU time and RAM are consumed while waiting.</p>
+<p>While this is sufficient for most applications, eventually you will come across a scenario where synchronous
+communication does not fit the bill. Some examples:</p>
+<ol>
+<li>The request you sent to the external API is computationally expensive - waiting for a synchronous response will
+result in a timeout, which depending on the platform is typically between 10 and 30 seconds.</li>
+<li>The external API or platform will not have an immediate answer for your request. A common use case here would be a
+workflow requiring a human on the other side to complete a task before responding to you.</li>
+</ol>
+<p>An asynchronous flow is any type of
+communication between two parties that is not immediate. You might send a request to an API and get an immediate
+response, but you will not get any data of good use (don’t worry if this doesn’t seem to make sense now, we’ll explain
+further in the example below).</p>
+<p>This eliminates the need for both parties to be available for your request at the same time, making it ideal for
+applications that involve a human in the loop or are computationally expensive.</p>
+<h3 id="what-is-a-webhook">
+  <span> What is a webhook?</span> <a href="#what-is-a-webhook">🔗</a></h3>
+<p>Now that we know what an asynchronous flow is, what is a webhook? Put simply, a webhook is a call to <strong>your API</strong>
+that is the result of an event that happened in an external system. Webhooks allow applications to communicate in real-time, but asynchronously.</p>
+<p>Rolling with the example provided above, imagine you’re tasked with integrating with a Help Desk company that provides
+agents that reviews documents your users submit.</p>
+<ol>
+<li>You make an API call to the Help Desk company with the location of the document for them to review.</li>
+<li>That API call immediately responds with an <code>agentId</code> representing the agent assigned to the case, a <code>documentId</code>,
+and a status of <code>PENDING_REVIEW</code> for the case.</li>
+<li>When the agent reviews the document, it is ultimately marked as <code>ACCEPTED</code> or <code>DECLINED</code>. At this time, the Help
+Desk company will trigger a <strong>webhook</strong>, call your API, tell you the status, along with the <code>documentId</code>.</li>
+</ol>
+<p>For completeness, I will call out that there are other ways to solve this problem, such as API Polling, but we will
+avoid discussion of API Polling as webhooks are much more efficient.</p>
+<p>Now that we have the terminology settled, let’s run through an example below.</p>
+<p>This code is all available <a href="https://github.com/nickabb/async-flows-and-webhooks">here</a>, so you can either follow along
+commit by commit (I’ll link to the commits throughout), review the Pull Request
+<a href="https://github.com/nickabb/async-flows-and-webhooks/pull/2">here</a>, or start where I am starting at
+<a href="https://github.com/nickabb/async-flows-and-webhooks/commit/92e74a9896d2c4e8254723d58e2c1e8f19530999">this commit</a>.</p>
+<h2 id="prerequisites">
+  <span> Prerequisites</span> <a href="#prerequisites">🔗</a></h2>
+<p>In order to complete this section, you’ll need a few things set up on your machine.</p>
+<ul>
+<li><a href="https://nodejs.org/en/download/">NodeJS</a></li>
+<li><a href="https://docs.npmjs.com/downloading-and-installing-node-js-and-npm">NPM</a></li>
+<li><a href="https://docs.docker.com/get-docker/">Docker &amp; Docker Compose</a></li>
+</ul>
+<h2 id="getting-situated">
+  <span> Getting Situated</span> <a href="#getting-situated">🔗</a></h2>
+<p>First off, we’ll be working in TypeScript and using a framework called <a href="https://adonisjs.com/">AdonisJS</a>
+(don’t be too worried about this, I’ll hold your hand through anything not obvious.)</p>
+<p>In our repository, we have a few different components set up via docker containers. If you’re not familiar with docker,
+there’s a great course on <a href="https://www.boot.dev/courses/learn-docker">docker in the boot.dev curriculum</a>, although it’s not
+required to have any knowledge of docker for this article.</p>
+<p>If you’d like to take a look at our docker containers for this article, all of the components are defined in our
+<code>docker-compose.yml</code> file <a href="https://github.com/nickabb/async-flows-and-webhooks/blob/264749d1f1fbebc0682a61e9be2fd0033f6a1ed1/docker-compose.yml">here</a>.
+Let’s step through what each component is.</p>
+<ol>
+<li>We have the <code>adonis_app</code> which we’ll be using to call our external API.</li>
+<li>We also have an <code>external_api</code>, which is somewhat self-explanatory. This is the “Help Desk” API that we’ll be
+calling that we can expect a webhook from at a later time.</li>
+<li>In addition, there’s a <code>postgres</code> container, as we’ll need to store some data along the way.</li>
+<li>There’s also a <code>redis</code> container, but we won’t be touching it, it’s solely to facilitate our artificial webhook
+delay.</li>
+</ol>
+<p>You can find the routes in <code>api/routes/start.ts</code>, which is where we’ll be doing our implementation, and also in
+<code>external/routes/start.ts</code> for the external API (these are already implemented for you).</p>
+<p>Alright, what will we be building? Sticking with the example above in our explanation of webhooks, we’ll be calling a
+POST endpoint to request a review for a document:</p>
+<pre tabindex="0"><code>POST /document
+
+Expected Request Body:
+{
+   documentUrl: string
+}
+
+Expected Response Body:
+{
+   agentId: string,
+   documentId: string
+}
+</code></pre><p>As you can see, while we want to know if the document has been <code>ACCEPTED</code> or <code>DECLINED</code>, in our help desk world, we need
+to wait for a human to review it (the external API will artifically simulate a human review in this case by just waiting 2-5 seconds
+before triggering our webhook - you can see this code in <code>external/routes/start.ts</code>)</p>
+<p>With that said, here’s the structure of the payload we can expect to receive in our own API, via webhook.</p>
+<pre tabindex="0"><code>POST /document/update
+
+Expected Request Body:
+{
+   agentId: string,
+   documentId: string,
+   documentStatus: &#39;ACCEPTED&#39; | &#39;DECLINED&#39;
+}
+</code></pre><p>Notice how I didn’t note the Expected Response Body? That’s because most webhooks don’t really take much care
+to what you respond - as long as you return a 200, 201, or 202 status code, they’ll treat the call as a success and
+move on.</p>
+<h2 id="implementation">
+  <span> Implementation</span> <a href="#implementation">🔗</a></h2>
+<p>Before we do anything in this section, you’ll want to pull down the git repository found
+<a href="https://github.com/nickabb/async-flows-and-webhooks/tree/main">here</a>, run <code>git checkout 292dff8f29a75eb7bb70e337ed32116bd9db68d4</code> and then <code>git checkout -b webhook-tutorial</code> to navigate to the proper starting
+point.</p>
+<p>Once that’s done, run <code>docker compose up</code> from the root of the repository to bring up all of the containers needed for this
+next section.</p>
+<h3 id="the-help-desk-api-call">
+  <span> The Help Desk API Call</span> <a href="#the-help-desk-api-call">🔗</a></h3>
+<p>Let’s start developing. First, let’s navigate to the <code>api</code> folder in our terminal and install Axios, a library that
+allows you to make HTTP calls with little effort.</p>
+<p>Our current project uses NPM, so let’s add Axios as a dependency:
+<code>npm install axios</code>. Resulting commit
+<a href="https://github.com/nickabb/async-flows-and-webhooks/pull/2/commits/92e74a9896d2c4e8254723d58e2c1e8f19530999">here</a>.</p>
+<p>A quick rule of thumb here to note if you’re new to Javascript or Typescript projects, if you see a <code>package-lock.json</code>,
+you should use NPM, if you see a <code>yarn.lock</code> in the root instead, you should use Yarn.</p>
+<p>Now with Axios installed, let’s call the external API. We’re going to set things up so whenever you make a <code>GET</code>
+call by visiting a page in the browser, the external API will be called (and subsequently triggering a webhook
+afterwards.)</p>
+<p>In our <code>api</code> folder, modify <code>routes/start.ts</code> to have the following logic for our base path (right around where you see
+<code>return { hello: &#39;world&#39; }</code>).</p>
+<div><pre tabindex="0"><code data-lang="typescript"><span><span><span>import</span> <span>axios</span> <span>from</span> <span>&#34;axios&#34;</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>OUR_API</span> <span>=</span> <span>&#34;http://adonis_app:3333&#34;</span><span>;</span>
+</span></span><span><span><span>const</span> <span>HELP_DESK_API</span> <span>=</span> <span>&#34;http://external_api:8080&#34;</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span><span>Route</span><span>.</span><span>get</span><span>(</span><span>&#34;/&#34;</span><span>,</span> <span>async</span> <span>()</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>await</span> <span>axios</span><span>.</span><span>post</span><span>(</span>
+</span></span><span><span>    <span>`</span><span>${</span><span>HELP_DESK_API</span><span>}</span><span>/document`</span><span>,</span>
+</span></span><span><span>    <span>{</span> <span>documentUrl</span><span>:</span> <span>&#34;https://www.boot.dev/community/&#34;</span> <span>},</span>
+</span></span><span><span>    <span>{</span> <span>headers</span><span>:</span> <span>{</span> <span>&#34;X-Callback-Url&#34;</span><span>:</span> <span>`</span><span>${</span><span>OUR_API</span><span>}</span><span>/document/update`</span> <span>}</span> <span>}</span>
+</span></span><span><span>  <span>);</span>
+</span></span><span><span><span>});</span>
+</span></span></code></pre></div><p>A couple of things to note in the commit
+<a href="https://github.com/nickabb/async-flows-and-webhooks/pull/2/commits/2ef39c4afa7bf3138c990cf7673fad79f3299a4b">here</a>.</p>
+<ol>
+<li>In a real, live system, you’d probably want to define <code>OUR_API</code> and <code>EXTERNAL_API</code> in an environment file. For the
+simplicity of this tutorial, we’ve hard coded them.</li>
+<li>The first parameter to <code>axios.post</code> is the endpoint you want to hit on the external API. Rolling with our example
+of a Help Desk API, we’re requesting a document review of <code>https://www.boot.dev/community/</code>, which is the second parameter,
+the body of the request.</li>
+<li>The third parameter defines “options” for the request. In this case, we define an <code>X-Callback-Url</code> header, telling
+the Help Desk API where we want to receive our webhook when the data is ready for us. The name of this tends to vary
+depending on the platform you’re integrating with - sometimes it’s also defined as <code>X-Webhook-Url</code> or is defined
+manually in an admin panel.</li>
+</ol>
+<p>If you’re interested how webhooks might vary depending on the platform you’re integrating with, you can check out this
+<a href="https://nickabbene.com/developer-experience-local-webhook-routing">blog post</a> which touches upon different types of
+webhooks and how to improve your developer experience around them when developing in local environments.</p>
+<h3 id="the-webhook">
+  <span> The Webhook</span> <a href="#the-webhook">🔗</a></h3>
+<p>With all of this confiugured, let’s get to the meat and potatoes of it all, so we can see the webhook working. We’ll want
+to do a few things.</p>
+<ol>
+<li>Set up a database table, we’ll want to store the <code>agentId</code> and <code>documentId</code> from the original response, so we know
+what request the webhook belongs to later when we receive it.</li>
+<li>Implement the <strong>API Contract</strong>, we’ll need to actually receive the webhook</li>
+<li>Test things, and make sure they’re working as we expect.</li>
+</ol>
+<h4 id="setting-up-the-database">
+  <span> Setting up the Database</span> <a href="#setting-up-the-database">🔗</a></h4>
+<p>Setting up the database table is relatively straight forward in AdonisJS, from your terminal, run
+<code>npm run ace make:model document_review</code> and then <code>npm run ace make:migration document_review</code></p>
+<p>This will create the model in AdonisJS, as well as the migration that sets up the database table. You can see the
+resulting commit
+<a href="https://github.com/nickabb/async-flows-and-webhooks/commit/696a65ad9756f3c3c8e5884de003a027ae84c149">here</a>.</p>
+<p>Now, let’s modify the structure of the model and the table to store the variables we’ll need.</p>
+<p>In the <code>DocumentReview.ts</code> model file:</p>
+<div><pre tabindex="0"><code data-lang="typescript"><span><span><span>export</span> <span>default</span> <span>class</span> <span>DocumentReview</span> <span>extends</span> <span>BaseModel</span> <span>{</span>
+</span></span><span><span>  <span>@column</span><span>({</span> <span>isPrimary</span>: <span>true</span> <span>})</span>
+</span></span><span><span>  <span>public</span> <span>id</span>: <span>number</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>@column</span><span>()</span>
+</span></span><span><span>  <span>public</span> <span>documentUrl</span>: <span>string</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>@column</span><span>()</span>
+</span></span><span><span>  <span>public</span> <span>agentId</span>: <span>string</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>@column</span><span>()</span>
+</span></span><span><span>  <span>public</span> <span>documentId</span>: <span>string</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>@column</span><span>()</span>
+</span></span><span><span>  <span>public</span> <span>documentStatus</span>: <span>string</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>@column</span><span>.</span><span>dateTime</span><span>({</span> <span>autoCreate</span>: <span>true</span> <span>})</span>
+</span></span><span><span>  <span>public</span> <span>createdAt</span>: <span>DateTime</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>@column</span><span>.</span><span>dateTime</span><span>({</span> <span>autoCreate</span>: <span>true</span><span>,</span> <span>autoUpdate</span>: <span>true</span> <span>})</span>
+</span></span><span><span>  <span>public</span> <span>updatedAt</span>: <span>DateTime</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>And in your migration file:</p>
+<div><pre tabindex="0"><code data-lang="typescript"><span><span><span>public</span> <span>async</span> <span>up() {</span>
+</span></span><span><span>    <span>this</span><span>.</span><span>schema</span><span>.</span><span>createTable</span><span>(</span><span>this</span><span>.</span><span>tableName</span><span>,</span> <span>(</span><span>table</span><span>)</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>      <span>table</span><span>.</span><span>increments</span><span>(</span><span>&#39;id&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>      <span>table</span><span>.</span><span>string</span><span>(</span><span>&#39;document_url&#39;</span><span>)</span>
+</span></span><span><span>      <span>table</span><span>.</span><span>string</span><span>(</span><span>&#39;agent_id&#39;</span><span>)</span>
+</span></span><span><span>      <span>table</span><span>.</span><span>string</span><span>(</span><span>&#39;document_id&#39;</span><span>)</span>
+</span></span><span><span>      <span>table</span><span>.</span><span>string</span><span>(</span><span>&#39;document_status&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>      <span>table</span><span>.</span><span>timestamp</span><span>(</span><span>&#39;created_at&#39;</span><span>,</span> <span>{</span> <span>useTz</span>: <span>true</span> <span>})</span>
+</span></span><span><span>      <span>table</span><span>.</span><span>timestamp</span><span>(</span><span>&#39;updated_at&#39;</span><span>,</span> <span>{</span> <span>useTz</span>: <span>true</span> <span>})</span>
+</span></span><span><span>    <span>})</span>
+</span></span><span><span>  <span>}</span>
+</span></span></code></pre></div><p>The commit for this can be found
+<a href="https://github.com/nickabb/async-flows-and-webhooks/commit/7b23702af011d769e1d520c7efcd5774a75f165f">here</a>.</p>
+<p>Since we updated these files, we’ll need to actually run the migration, telling AdonisJS to update our database to have
+the columns that we need. <code>npm run ace migration:run</code> runs all migrations files that have not been run against our
+database yet, so let’s go ahead and run it. You should see something similar to the following:</p>
+<div><pre tabindex="0"><code data-lang="shell"><span><span>&gt; <a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="0f697b6a6c674f3e213f213f">[email protected]</a> ace
+</span></span><span><span>&gt; docker <span>exec</span> -it adonis_app node ace migration:run
+</span></span><span><span>
+</span></span><span><span>❯ migrated database/migrations/1678285144402_document_reviews
+</span></span></code></pre></div><p>Since we now have a table to store this data, we can go back and
+<a href="https://github.com/nickabb/async-flows-and-webhooks/commit/ac3007e401d28c7ddfced2ccd3c6c34197eaf5ad">update our API call</a>
+to the Help Desk to store some of these variables.</p>
+<div><pre tabindex="0"><code data-lang="typescript"><span><span><span>import</span> <span>DocumentReview</span> <span>from</span> <span>&#39;App/Models/DocumentReview&#39;</span>
+</span></span><span><span>
+</span></span><span><span><span>...</span> <span>Other</span> <span>code</span> <span>here</span>
+</span></span><span><span>
+</span></span><span><span><span>Route</span><span>.</span><span>get</span><span>(</span><span>&#39;/&#39;</span><span>,</span> <span>async</span> <span>()</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>   <span>const</span> <span>documentToReview</span> <span>=</span> <span>&#39;https://www.boot.dev/community&#39;</span>
+</span></span><span><span>   <span>const</span> <span>response</span> <span>=</span> <span>await</span> <span>axios</span><span>.</span><span>post</span><span>(</span>
+</span></span><span><span>           <span>`</span><span>${</span><span>HELP_DESK_API</span><span>}</span><span>/document`</span><span>,</span>
+</span></span><span><span>           <span>{</span> <span>documentUrl</span>: <span>documentToReview</span> <span>},</span>
+</span></span><span><span>           <span>{</span> <span>headers</span><span>:</span> <span>{</span> <span>&#39;X-Callback-Url&#39;</span><span>:</span> <span>`</span><span>${</span><span>OUR_API</span><span>}</span><span>/document/update`</span> <span>}</span> <span>}</span>
+</span></span><span><span>   <span>)</span>
+</span></span><span><span>
+</span></span><span><span>   <span>await</span> <span>DocumentReview</span><span>.</span><span>create</span><span>({</span>
+</span></span><span><span>      <span>documentUrl</span>: <span>documentToReview</span><span>,</span>
+</span></span><span><span>      <span>agentId</span>: <span>response.data.agentId</span><span>,</span>
+</span></span><span><span>      <span>documentId</span>: <span>response.data.documentId</span><span>,</span>
+</span></span><span><span>      <span>documentStatus</span><span>:</span> <span>&#39;PENDING_REVIEW&#39;</span><span>,</span>
+</span></span><span><span>   <span>})</span>
+</span></span><span><span><span>})</span>
+</span></span></code></pre></div><p>With this, we’re ready to implement the API on our side.</p>
+<h4 id="implementing-the-api-contract">
+  <span> Implementing the API Contract</span> <a href="#implementing-the-api-contract">🔗</a></h4>
+<p>As we noted above, we can expect the following payload back from the Help Desk API:</p>
+<pre tabindex="0"><code>POST /document/update
+
+Expected Request Body:
+{
+   agentId: string,
+   documentId: string,
+   documentStatus: &#39;ACCEPTED&#39; | &#39;DECLINED&#39;
+}
+</code></pre><p>Thus, we need to actually create the endpoint on our side. In <code>start/routes.ts</code>,
+<a href="https://github.com/nickabb/async-flows-and-webhooks/commit/0caeffec9efb244d9c77bd00e82da23197dc3a5d">let’s implement the logic</a>
+to receive the API call, as well as update the database with the result of the review based on the documentId.</p>
+<div><pre tabindex="0"><code data-lang="typescript"><span><span><span>Route</span><span>.</span><span>post</span><span>(</span><span>&#34;/document/update&#34;</span><span>,</span> <span>async</span> <span>({</span> <span>request</span> <span>})</span> <span>=&gt;</span> <span>{</span>
+</span></span><span><span>  <span>const</span> <span>{</span> <span>agentId</span><span>,</span> <span>documentId</span><span>,</span> <span>documentStatus</span> <span>}</span> <span>=</span> <span>request</span><span>.</span><span>body</span><span>();</span>
+</span></span><span><span>
+</span></span><span><span>  <span>await</span> <span>DocumentReview</span><span>.</span><span>query</span><span>()</span>
+</span></span><span><span>    <span>.</span><span>where</span><span>(</span><span>&#34;documentId&#34;</span><span>,</span> <span>documentId</span><span>)</span>
+</span></span><span><span>    <span>.</span><span>update</span><span>({</span> <span>agentId</span>: <span>agentId</span><span>,</span> <span>documentStatus</span>: <span>documentStatus</span> <span>});</span>
+</span></span><span><span><span>});</span>
+</span></span></code></pre></div><p>We’re now ready to test!</p>
+<h4 id="testing">
+  <span> Testing</span> <a href="#testing">🔗</a></h4>
+<p>Since we already ran <code>docker compose up</code> earlier, all of your containers should be running already. In a web browser,
+navigate to <code>http://localhost:3333/</code>.</p>
+<p>If you don’t get any response, you’ll have to run <code>docker compose up</code>, and keep your containers up in the background.</p>
+<p>A blank page should load. In order, the following happens.</p>
+<ol>
+<li>The <code>/</code> route on <code>api/start/routes.ts</code> reaches out to the Help Desk API and stores the variables from the response.</li>
+<li>There’s a delay of approximately 2-5 seconds (if you’re curious how this works, check out <code>external/start/routes.ts</code>
+and <code>external/start/document-subscriber.ts</code>)</li>
+<li>The external API calls back to your <code>/document/update</code> endpoint in <code>api/start/routes.ts</code>, updating the
+<code>documentStatus</code> field.</li>
+</ol>
+<p>If you’re not convinced, I’ve created a utility script under <code>api</code> that allows you to get into your database.</p>
+<p>From your terminal, run <code>./local_db.sh</code>. You’ll see a prompt for <code>psql</code>, the command line utility for Postgres.</p>
+<div><pre tabindex="0"><code data-lang="shell"><span><span>psql <span>(</span>13.10 <span>(</span>Debian 13.10-1.pgdg110+1<span>))</span>
+</span></span><span><span>Type <span>&#34;help&#34;</span> <span>for</span> help.
+</span></span><span><span>
+</span></span><span><span><span>adonis_app</span><span>=</span>&gt;
+</span></span></code></pre></div><p><code>\dt</code> and enter should display the current tables. You should see your <code>document_reviews</code> table.</p>
+<p>Now, you can execute the following to see the table contents, feel free to run it in quick succession, to see the
+values in the database both before and after the webhook hits your API.</p>
+<div><pre tabindex="0"><code data-lang="sql"><span><span><span>SELECT</span><span> </span><span>*</span><span> </span><span>FROM</span><span> </span><span>document_reviews</span><span>;</span><span>
+</span></span></span></code></pre></div><p><code>\q</code> will exit the psql prompt.</p>
+<p>We’re done here!</p>
+<h3 id="going-further">
+  <span> Going Further</span> <a href="#going-further">🔗</a></h3>
+<p>Want to go further and learn more about webhooks? Here are some features you would typically see implemented in a live
+environment if you’re interested in doing some more digging.</p>
+<h4 id="retries">
+  <span> Retries</span> <a href="#retries">🔗</a></h4>
+<p>When a webhook call fails, you’ll need to retry it at a later time. Most <strong>retry policies</strong> have an <a href="https://medium.com/gympass/handling-failed-webhooks-with-exponential-backoff-72d2e01017d7">exponential
+backoff</a>. In our example,
+this would be implemented in the <code>external</code> API.</p>
+<h4 id="refactor-logic-into-a-controller">
+  <span> Refactor logic into a controller</span> <a href="#refactor-logic-into-a-controller">🔗</a></h4>
+<p>Our implementation currently has all the logic in the <code>routes.ts</code> file. Consider refactoring the logic into a
+controller. You can see an example of this with the <code>AuthorizationsController</code>.</p>
+<h4 id="write-some-tests">
+  <span> Write some tests</span> <a href="#write-some-tests">🔗</a></h4>
+<p>No pull request is complete without tests! Feel free to write some.</p>
+<h4 id="implement-idempotency">
+  <span> Implement idempotency</span> <a href="#implement-idempotency">🔗</a></h4>
+<p><a href="https://nickabbene.com/idempotency-to-prevent-duplicates">Learn about idempotency</a>, and implement a middleware for idempotent requests.</p>
+<h4 id="validate-the-payload-of-the-request">
+  <span> Validate the payload of the request</span> <a href="#validate-the-payload-of-the-request">🔗</a></h4>
+<p>What happens if we hit our webhook without the variables we expect? Can we handle it more gracefully?</p>
+<h4 id="optimize-your-database-add-indiceshttpswwwcodecademycomarticlesql-indexes">
+  <span> Optimize your database, <a href="https://www.codecademy.com/article/sql-indexes">add indices</a></span> <a href="#optimize-your-database-add-indiceshttpswwwcodecademycomarticlesql-indexes">🔗</a></h4>
+<p>Our webhook queries the database on the <code>documentId</code> field, which is not an index. If we had many items in the database, the query would be slow.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

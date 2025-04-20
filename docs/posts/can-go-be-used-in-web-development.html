@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Can Go Be Used in Web Development? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/can-go-used-web-development/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Can Go Be Used in Web Development?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Recently I saw an interesting post on Reddit: “I would like to be more full-stack,” user <a href="https://www.reddit.com/r/golang/comments/ksdofe/what_do_you_guys_think_about_web_development_with/"><u>Fenugurod</u></a> said. “I was studying Tailwindcsss and I’m pretty sure I can create really nice UIs with it. But what do you guys think about web development with Go? Most of my friends simply say to embrace the JS ecosystem with Nuxt or Next and use Go simply as an API.”</p>
+<p>Here at Boot.dev, I’m biased. I love Go for nearly anything. It has so many great points – its concurrency, the goroutines, the compilation speed. But I also believe in using the right tool for the right job. The web development Go combo may be <em>workable</em>, but is it <em>ideal</em>?</p>
+<p>The developers of Go certainly think so, seeing as they’ve <a href="https://go.dev/solutions/webdev"><u>published a whole blog post</u></a> on the Web development Go combo. In their words, “Go delivers speed, security, and developer-friendly tools for Web Applications.”</p>
+<h2 id="brief-definitions">
+  <span> Brief definitions:</span> <a href="#brief-definitions">🔗</a></h2>
+<p>When I say <strong>web development</strong>, I’m referring to the process of creating and maintaining websites and web applications that are accessible through the internet. It involves a combination of programming, design, and technical skills to build functional and visually appealing websites that cater to the needs of users.</p>
+<p><strong>Go</strong>, also informally known as Golang, is a statically typed, compiled language designed at Google by Robert Griesemer, Rob Pike, and Ken Thompson. It’s beloved by programmers for its simplicity, efficiency, and strong support for concurrent programming.</p>
+<h2 id="web-dev-in-go-a-short-answer">
+  <span> Web Dev in Go? A short answer</span> <a href="#web-dev-in-go-a-short-answer">🔗</a></h2>
+<p>All those things sound great for web development, right? So here’s my short answer: Web development with Go is not only possible but actually offers some advantages over the typical Python/JavaScript combo, for example. Go’s standard library provides a robust set of tools for building web servers and handling HTTP requests. Frameworks like Gin, Echo, and Buffalo have emerged to simplify the process even further, offering a range of features from routing to middleware support.</p>
+<p>As I mentioned, Go is not the usual suspect. JavaScript and its vast number of frameworks (React, Vue, Angular, etc.) dominate this space. If you’re not ready to go full-Go, you can use Go in conjunction with JavaScript and its many framework children. For instance, you can build a <a href="https://blog.boot.dev/backend/backend-for-react/#golang"><u>Go backend that serves a React frontend</u></a>, combining the strengths of both ecosystems.</p>
+<p>There are also projects like WASM (WebAssembly) that allow Go to run in your browser, bridging the gap between Go and traditional front-end technologies. It’s worth mentioning that WASM, <a href="https://en.wikipedia.org/wiki/WebAssembly"><u>released</u></a> for the first time in March 2017, is still in its early stages and might not be suitable for all projects.</p>
+<p>In conclusion, if you want to become a full-stack developer with Go, it’s totally possible. Go can power your backend, and with the right tools and frameworks, you can also integrate it with popular front-end technologies.</p>
+<p>If you’re in for the longer answer, let’s ride on down.</p>
+<h2 id="background-of-go">
+  <span> Background of Go</span> <a href="#background-of-go">🔗</a></h2>
+<p>First, let’s <em>go</em> back a bit to understand the background of Go. Basically, its simplicity, efficiency, and robust standard library provide developers with the tools you need to build scalable and maintainable web applications, along with enough safety tools for the British Government to use it. (““In particular, Go’s concurrency model makes it absurdly easy to build performant I/O-bound applications.” – <a href="https://go.dev/solutions/webdev#featured-users"><u>Gov.uk’s web developers</u></a>).</p>
+<p>Go, often referred to as Golang, was conceived in September 2007 by Robert Griesemer, Rob Pike, and Ken Thompson, all at Google, and was released to an eager public in November 2009. These men were shooting for a language without the unnecessary complexities of languages like C++ while maintaining their strengths. They wanted a system programming language that was modern, concise, and fast both in execution and compilation.</p>
+<p>Go was designed with two core principles in mind: simplicity and productivity. Its syntax is clean, which makes it easy to read and write. This simplicity also reduces the room for errors, leading to more robust code. With features like a rich standard library and a straightforward approach to concurrency, Go makes developers more productive. The language’s design also reduces the need for extensive debugging, which as any developer will tell you, also increases productivity.</p>
+<p>What makes Go so good? Five key features separate it from the pack:</p>
+<ul>
+<li><strong>Concurrency</strong>: Goroutines (lightweight threads managed by the Go runtime) and channels (a mechanism to safely communicate between goroutines) let developers write efficient, readable concurrent code.</li>
+<li><strong>Garbage Collection</strong>: An automatic garbage collector reclaims memory used by data structures that are no longer accessible.</li>
+<li><strong>Strong Typing</strong>: Go is a statically-typed language. The data type of a variable is checked at compile-time. This feature helps catch potential errors early in the development process.</li>
+<li><strong>Compilation Speed</strong>: Go is known for its fast compilation times. This rapid feedback loop allows for quicker iterations and testing.</li>
+<li><strong>Built-in HTML templating and HTTP routing in the stdlib</strong>: Go’s standard library comes with built-in packages for HTML templating (html/template) and HTTP routing (net/http). This makes it relatively straightforward to set up web servers and render dynamic content without relying on third-party libraries.</li>
+</ul>
+<h2 id="go-in-web-development">
+  <span> Go in Web Development</span> <a href="#go-in-web-development">🔗</a></h2>
+<p>How does that all tie into web development? Let’s look over those features with an eye for Web development specifically.</p>
+<h2 id="building-web-servers">
+  <span> Building web servers</span> <a href="#building-web-servers">🔗</a></h2>
+<p>One of Go’s strengths is its rich standard library, which I mentioned earlier. One package in particular is suitable for web dev: the net/http package. This package gives you a set of robust tools to quickly build HTTP servers. With just a few lines of code, you can set up servers, define routes, and handle requests. For simpler applications, you might not even need an external web framework.</p>
+<p>Another strength is that concurrency I keep harping on about. Web servers often need to handle multiple requests simultaneously – for example, a user might be uploading a file while another is querying data, and yet another is logging in. In many traditional languages, handling these simultaneous tasks can be cumbersome, often requiring multi-threading or complex asynchronous programming models.</p>
+<p>Go, however, was designed with this exact problem in mind. Its concurrency model is built around goroutines, which are much lighter than traditional threads and can be spawned in the thousands or even millions without significant overhead.</p>
+<p>And then you can look beyond the vanilla packages for a golang framework or a third-party package that further simplifies web development or web application development:</p>
+<ul>
+<li>Gin: Offers a martini-like API but with much better performance. It’s known for its speed and small memory footprint. Comes with middleware support, routing, and error handling. (This one was most commonly mentioned in the /golang subreddit)</li>
+<li>Echo: Another high-performance, extensible framework. Echo focuses on performance and provides features like middleware support and data binding. Its API is designed to be simple and straightforward.</li>
+<li>Buffalo: An ecosystem for rapidly developing web applications in Go. It aims to be a one-stop-shop for Go web development.</li>
+<li>Gorilla Mux: While not a full-fledged framework, Gorilla Mux is a powerful URL router and dispatcher. It’s a part of the Gorilla web toolkit, which provides a range of tools and libraries for building web applications.</li>
+</ul>
+<p>These Golang web frameworks are functional and simple.</p>
+<h2 id="what-about-the-other-possibilities">
+  <span> What about the other possibilities?</span> <a href="#what-about-the-other-possibilities">🔗</a></h2>
+<p>There are so many great programming language alternatives that can be used for web development. How does Go stack up against Python and JavaScript (Node.js specifically)?</p>
+<p>Go is a statically-typed, compiled programming language, which generally means superior performance in terms of raw execution speed compared to interpreted languages like Python. Its concurrency further boosts its performance in scenarios like web servers where handling multiple simultaneous connections is crucial.</p>
+<p>Python wins the award for beginners at the “hello world” stage. It is beloved for its simplicity and readability. But it is often slower than Go, especially in CPU-bound tasks. However, with frameworks like Django and FastAPI, Python remains a popular choice for web development, especially for applications where development speed is more critical than raw performance.</p>
+<p>JavaScript, when run on the server-side using platforms like Node.js, offers event-driven, non-blocking I/O, making it suitable for I/O-bound tasks. Individual tasks might run slower than in Go, but Node.js can handle many tasks concurrently thanks to its event-driven architecture. But I would argue that Go’s goroutines often provide a more straightforward approach to concurrency than Node.js’s callback model.</p>
+<h2 id="pros-of-doing-golang-web-development">
+  <span> Pros of Doing Golang Web Development</span> <a href="#pros-of-doing-golang-web-development">🔗</a></h2>
+<p>Let’s break down the pros. The main pros? Speed, concurrency, and built-in HTML templating. I won’t spend too long since we’ve covered these above, bar the HTML section.</p>
+<ul>
+<li><strong>Speed</strong>: Go’s speed and efficiency contribute to faster development cycles and high-performance web applications.</li>
+<li><strong>Concurrency</strong>: Go’s concurrency model benefits web development, especially for handling multiple requests simultaneously</li>
+</ul>
+<p>Go’s <strong>built in HTML templating, speed, and HTTP routing</strong> makes it a perfect match if you’re interested in new web development tools like <a href="https://htmx.org/"><u>HTMX</u></a>. Plus, Go’s standard library includes the html/template package, which lets you easily render dynamic HTML content without needing any third-party libraries. It also automatically handles common security issues like cross-site scripting (XSS) by safely escaping strings by default.</p>
+<p>It’s also worth highlighting that, no surprise, <strong>Go plays well with the Google suite of products and services</strong>, which are prevalent in the development space. For instance, the App Engine is a fully managed platform on Google Cloud that allows you to deploy applications without managing the underlying infrastructure. The standard environment is optimized for applications with fluctuating traffic. It has built-in support for Go. You can write your Go web application, define your web app’s configuration in an app.yaml file, and deploy it directly to App Engine. Automatic scaling, versioning, and zero server management for your web application, all effortless.</p>
+<p>There’s one final reason it makes sense to use a backend language like Go for full-stack web development: <strong>an overall simpler ecosystem</strong>. I loved how Reddit user Markuswustenberg put it in their answer to Fenugurod’s question above:</p>
+<p>“I’ve really embraced writing classic server-side-rendered UIs again. The simplicity is refreshing, and especially on smaller projects, where there’s no dedicated backend and frontend team, it’s nice to be able to just work on one codebase (in Go) and not write all the API glue code, handle network error cases, etc. Also, there’s no context switch, and you don’t have to keep up with the whole JS ecosystem, which I think is nice.”</p>
+<p>In short, Go is great for server-side rendering in small projects due to its simplicity. It offers a unified codebase, reducing complexities and stops you from having to keep up with what can sometimes feel like JavaScript’s Framework Of The Week.</p>
+<h2 id="cons-of-go-for-web-dev">
+  <span> Cons of Go for Web Dev</span> <a href="#cons-of-go-for-web-dev">🔗</a></h2>
+<p>Now let’s cover a few of the most common obstacles in Go for web development.</p>
+<p>Some folks might say that <strong>Go is tough to pick up</strong>. This might be true for novices, or for folks who are new to static typing because they’ve come from Python, which uses dynamic typing. But it’s an incredibly simple language. Personally, I’ll add that even if you’re new to it, the documentation is clear and easy to comprehend, and the community of Gophers is always happy to lend a helping hand to a newbie.</p>
+<p>It is worth highlighting that Go has a <strong>smaller ecosystem</strong> compared to JavaScript and Python. These languages have been around for longer and have a vast array of libraries, frameworks, and tools tailored for web development. For almost any feature or functionality you can think of, there’s probably a library or tool in JavaScript or Python that can help. It’s especially low on UI-specific libraries compared to JavaScript. There’s also no “official” Golang IDE, though there are several IDEs and editors that support Go development.</p>
+<p>And finally, there are limitations of using Go for developing user interfaces in web applications. Go is designed for server-side tasks, not front-end development. And while Go’s use with WebAssembly helps mitigate some of that, it’s still maturing and lacks the robustness of traditional JavaScript frameworks.</p>
+<h2 id="its-your-choice">
+  <span> It’s your choice</span> <a href="#its-your-choice">🔗</a></h2>
+<p>In sum, Go is a great pick for you if you’re a web developer, at least in my eyes. It’s fast, it’s efficient, it’s concurrent, and it has a lot of useful, built-in functionality. If you’re a Golang developer already, it’s totally feasible to use it for full-stack development. And if not, there are still enough benefits to using Go for web development that it might be worth a try regardless.</p>
+<p>The only time I would recommend <em>not</em> using Go for web development would be if you’re working on a project that heavily relies on the vast ecosystem of a specific language or framework, or if your team is deeply entrenched in another language and the switch would be too disruptive. Ultimately, the best tool depends on the project’s needs and the team’s expertise.</p>
+<p>Otherwise? You’ve got nothing to lose from learning how to do web development with Go. Have fun!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

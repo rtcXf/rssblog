@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AES-256 Cipher – Python Cryptography Examples | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/aes-256-cipher-python-cryptography-examples/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>AES-256 Cipher – Python Cryptography Examples</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Want to encrypt text with a password or private key in Python? AES-256 is a solid symmetric cipher that is commonly used to encrypt data for oneself. In other words, the same person who encrypts the data also decrypts it, the way personal password managers work.</p>
+<h2 id="dependencies">
+  <span> Dependencies</span> <a href="#dependencies">🔗</a></h2>
+<p>For this tutorial, we’ll be using Python 3, so make sure you install <a href="https://www.pycryptodome.org/en/latest/src/introduction.html">pycryptodome</a>, which will give us access to an implementation of AES-256:</p>
+<pre tabindex="0"><code>pip3 install pycryptodomex
+</code></pre><h2 id="padding---handled-by-gcm">
+  <span> Padding - Handled by GCM</span> <a href="#padding---handled-by-gcm">🔗</a></h2>
+<p>AES-256 typically requires that the data to be encrypted be delivered in 16-byte blocks, and you may have seen this on other sites or tutorials. However, AES-256 in GCM mode does <em>not</em> require any special padding that we have to do manually.</p>
+<h2 id="encrypting">
+  <span> Encrypting</span> <a href="#encrypting">🔗</a></h2>
+<p>Now we create a simple <em>encrypt(plain_text, password)</em> function. This function uses the password to encrypt the plain text. Therefore, anyone with access to the encrypted text and the password will be able to decrypt it.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>encrypt</span><span>(</span><span>plain_text</span><span>,</span> <span>password</span><span>):</span>
+</span></span><span><span>    <span># generate a random salt</span>
+</span></span><span><span>    <span>salt</span> <span>=</span> <span>get_random_bytes</span><span>(</span><span>AES</span><span>.</span><span>block_size</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># use the Scrypt KDF to get a private key from the password</span>
+</span></span><span><span>    <span>private_key</span> <span>=</span> <span>hashlib</span><span>.</span><span>scrypt</span><span>(</span>
+</span></span><span><span>        <span>password</span><span>.</span><span>encode</span><span>(),</span> <span>salt</span><span>=</span><span>salt</span><span>,</span> <span>n</span><span>=</span><span>2</span><span>**</span><span>14</span><span>,</span> <span>r</span><span>=</span><span>8</span><span>,</span> <span>p</span><span>=</span><span>1</span><span>,</span> <span>dklen</span><span>=</span><span>32</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># create cipher config</span>
+</span></span><span><span>    <span>cipher_config</span> <span>=</span> <span>AES</span><span>.</span><span>new</span><span>(</span><span>private_key</span><span>,</span> <span>AES</span><span>.</span><span>MODE_GCM</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># return a dictionary with the encrypted text</span>
+</span></span><span><span>    <span>cipher_text</span><span>,</span> <span>tag</span> <span>=</span> <span>cipher_config</span><span>.</span><span>encrypt_and_digest</span><span>(</span><span>bytes</span><span>(</span><span>plain_text</span><span>,</span> <span>&#39;utf-8&#39;</span><span>))</span>
+</span></span><span><span>    <span>return</span> <span>{</span>
+</span></span><span><span>        <span>&#39;cipher_text&#39;</span><span>:</span> <span>b64encode</span><span>(</span><span>cipher_text</span><span>)</span><span>.</span><span>decode</span><span>(</span><span>&#39;utf-8&#39;</span><span>),</span>
+</span></span><span><span>        <span>&#39;salt&#39;</span><span>:</span> <span>b64encode</span><span>(</span><span>salt</span><span>)</span><span>.</span><span>decode</span><span>(</span><span>&#39;utf-8&#39;</span><span>),</span>
+</span></span><span><span>        <span>&#39;nonce&#39;</span><span>:</span> <span>b64encode</span><span>(</span><span>cipher_config</span><span>.</span><span>nonce</span><span>)</span><span>.</span><span>decode</span><span>(</span><span>&#39;utf-8&#39;</span><span>),</span>
+</span></span><span><span>        <span>&#39;tag&#39;</span><span>:</span> <span>b64encode</span><span>(</span><span>tag</span><span>)</span><span>.</span><span>decode</span><span>(</span><span>&#39;utf-8&#39;</span><span>)</span>
+</span></span><span><span>    <span>}</span>
+</span></span></code></pre></div><h2 id="notes-on-encrypt-function">
+  <span> Notes on encrypt() function</span> <a href="#notes-on-encrypt-function">🔗</a></h2>
+<ol>
+<li><a href="https://en.wikipedia.org/wiki/Cryptographic_nonce">Nonce</a>: A random nonce (arbitrary value) must be a random and unique value for each time our encryption function is used with the same key. Think of it as a random salt for a cipher. The library supplies us with a secure nonce.</li>
+<li><a href="https://blog.boot.dev/cryptography/very-basic-intro-to-the-scrypt-hash/">Scrypt</a>: Scrypt is used to generate a secure private key from the password. This will make it harder for an attacker to brute-force our encryption.</li>
+<li><a href="https://en.wikipedia.org/wiki/Salt_(cryptography)">Salt</a>: A new random salt is used for each run of our encryption. This makes it impossible for an attacker to use precomputed hashes in an attempt to crack the cipher. (see <a href="https://en.wikipedia.org/wiki/Rainbow_table">rainbow table</a>)</li>
+<li>Scrypt <a href="https://docs.python.org/3/library/hashlib.html#hashlib.scrypt">parameters</a>:
+<ol>
+<li>N is the cost factor. It must be a power of two, and the higher it is the more secure the key, but the more resources it requires to run.</li>
+<li>R is the block size.</li>
+<li>P is the parallelization factor, useful for running on multiple cores.</li>
+</ol>
+</li>
+<li><a href="https://blog.boot.dev/bitcoin/base64-vs-base58-encoding/">Base64</a>: We encode all of our bytes-type data into base64 a convenient string representation</li>
+<li><a href="https://blog.boot.dev/cryptography/hmac-and-macs-in-jwts/">Tag (MAC)</a>: The tag is used to authenticate the data when using AES in GCM mode. This ensures no one can change our data without us knowing about it when we decrypt.</li>
+</ol>
+<h2 id="decrypting">
+  <span> Decrypting</span> <a href="#decrypting">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>def</span> <span>decrypt</span><span>(</span><span>enc_dict</span><span>,</span> <span>password</span><span>):</span>
+</span></span><span><span>    <span># decode the dictionary entries from base64</span>
+</span></span><span><span>    <span>salt</span> <span>=</span> <span>b64decode</span><span>(</span><span>enc_dict</span><span>[</span><span>&#39;salt&#39;</span><span>])</span>
+</span></span><span><span>    <span>cipher_text</span> <span>=</span> <span>b64decode</span><span>(</span><span>enc_dict</span><span>[</span><span>&#39;cipher_text&#39;</span><span>])</span>
+</span></span><span><span>    <span>nonce</span> <span>=</span> <span>b64decode</span><span>(</span><span>enc_dict</span><span>[</span><span>&#39;nonce&#39;</span><span>])</span>
+</span></span><span><span>    <span>tag</span> <span>=</span> <span>b64decode</span><span>(</span><span>enc_dict</span><span>[</span><span>&#39;tag&#39;</span><span>])</span>
+</span></span><span><span>    
+</span></span><span><span>
+</span></span><span><span>    <span># generate the private key from the password and salt</span>
+</span></span><span><span>    <span>private_key</span> <span>=</span> <span>hashlib</span><span>.</span><span>scrypt</span><span>(</span>
+</span></span><span><span>        <span>password</span><span>.</span><span>encode</span><span>(),</span> <span>salt</span><span>=</span><span>salt</span><span>,</span> <span>n</span><span>=</span><span>2</span><span>**</span><span>14</span><span>,</span> <span>r</span><span>=</span><span>8</span><span>,</span> <span>p</span><span>=</span><span>1</span><span>,</span> <span>dklen</span><span>=</span><span>32</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># create the cipher config</span>
+</span></span><span><span>    <span>cipher</span> <span>=</span> <span>AES</span><span>.</span><span>new</span><span>(</span><span>private_key</span><span>,</span> <span>AES</span><span>.</span><span>MODE_GCM</span><span>,</span> <span>nonce</span><span>=</span><span>nonce</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># decrypt the cipher text</span>
+</span></span><span><span>    <span>decrypted</span> <span>=</span> <span>cipher</span><span>.</span><span>decrypt_and_verify</span><span>(</span><span>cipher_text</span><span>,</span> <span>tag</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span>return</span> <span>decrypted</span>
+</span></span></code></pre></div><h2 id="notes-on-decrypt-function">
+  <span> Notes on decrypt() function</span> <a href="#notes-on-decrypt-function">🔗</a></h2>
+<ol>
+<li>The decrypt() function needs the same salt, nonce, and tag that we used for encryption. We used a dictionary for convenience in parsing, but if we instead wanted one string of ciphertext we could have used a scheme like <code>salt.nonce.tag.cipher_text</code></li>
+<li>The configuration parameters on the Scrypt and AES functions need to be the same as the encrypt function.</li>
+</ol>
+<h2 id="give-me-the-full-code">
+  <span> Give Me The Full Code!</span> <a href="#give-me-the-full-code">🔗</a></h2>
+<p>You probably want to see it all work in an example script. Look no further!</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span># AES 256 encryption/decryption using pycryptodome library</span>
+</span></span><span><span>
+</span></span><span><span><span>from</span> <span>base64</span> <span>import</span> <span>b64encode</span><span>,</span> <span>b64decode</span>
+</span></span><span><span><span>import</span> <span>hashlib</span>
+</span></span><span><span><span>from</span> <span>Cryptodome.Cipher</span> <span>import</span> <span>AES</span>
+</span></span><span><span><span>import</span> <span>os</span>
+</span></span><span><span><span>from</span> <span>Cryptodome.Random</span> <span>import</span> <span>get_random_bytes</span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>encrypt</span><span>(</span><span>plain_text</span><span>,</span> <span>password</span><span>):</span>
+</span></span><span><span>    <span># generate a random salt</span>
+</span></span><span><span>    <span>salt</span> <span>=</span> <span>get_random_bytes</span><span>(</span><span>AES</span><span>.</span><span>block_size</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># use the Scrypt KDF to get a private key from the password</span>
+</span></span><span><span>    <span>private_key</span> <span>=</span> <span>hashlib</span><span>.</span><span>scrypt</span><span>(</span>
+</span></span><span><span>        <span>password</span><span>.</span><span>encode</span><span>(),</span> <span>salt</span><span>=</span><span>salt</span><span>,</span> <span>n</span><span>=</span><span>2</span><span>**</span><span>14</span><span>,</span> <span>r</span><span>=</span><span>8</span><span>,</span> <span>p</span><span>=</span><span>1</span><span>,</span> <span>dklen</span><span>=</span><span>32</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># create cipher config</span>
+</span></span><span><span>    <span>cipher_config</span> <span>=</span> <span>AES</span><span>.</span><span>new</span><span>(</span><span>private_key</span><span>,</span> <span>AES</span><span>.</span><span>MODE_GCM</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># return a dictionary with the encrypted text</span>
+</span></span><span><span>    <span>cipher_text</span><span>,</span> <span>tag</span> <span>=</span> <span>cipher_config</span><span>.</span><span>encrypt_and_digest</span><span>(</span><span>bytes</span><span>(</span><span>plain_text</span><span>,</span> <span>&#39;utf-8&#39;</span><span>))</span>
+</span></span><span><span>    <span>return</span> <span>{</span>
+</span></span><span><span>        <span>&#39;cipher_text&#39;</span><span>:</span> <span>b64encode</span><span>(</span><span>cipher_text</span><span>)</span><span>.</span><span>decode</span><span>(</span><span>&#39;utf-8&#39;</span><span>),</span>
+</span></span><span><span>        <span>&#39;salt&#39;</span><span>:</span> <span>b64encode</span><span>(</span><span>salt</span><span>)</span><span>.</span><span>decode</span><span>(</span><span>&#39;utf-8&#39;</span><span>),</span>
+</span></span><span><span>        <span>&#39;nonce&#39;</span><span>:</span> <span>b64encode</span><span>(</span><span>cipher_config</span><span>.</span><span>nonce</span><span>)</span><span>.</span><span>decode</span><span>(</span><span>&#39;utf-8&#39;</span><span>),</span>
+</span></span><span><span>        <span>&#39;tag&#39;</span><span>:</span> <span>b64encode</span><span>(</span><span>tag</span><span>)</span><span>.</span><span>decode</span><span>(</span><span>&#39;utf-8&#39;</span><span>)</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>decrypt</span><span>(</span><span>enc_dict</span><span>,</span> <span>password</span><span>):</span>
+</span></span><span><span>    <span># decode the dictionary entries from base64</span>
+</span></span><span><span>    <span>salt</span> <span>=</span> <span>b64decode</span><span>(</span><span>enc_dict</span><span>[</span><span>&#39;salt&#39;</span><span>])</span>
+</span></span><span><span>    <span>cipher_text</span> <span>=</span> <span>b64decode</span><span>(</span><span>enc_dict</span><span>[</span><span>&#39;cipher_text&#39;</span><span>])</span>
+</span></span><span><span>    <span>nonce</span> <span>=</span> <span>b64decode</span><span>(</span><span>enc_dict</span><span>[</span><span>&#39;nonce&#39;</span><span>])</span>
+</span></span><span><span>    <span>tag</span> <span>=</span> <span>b64decode</span><span>(</span><span>enc_dict</span><span>[</span><span>&#39;tag&#39;</span><span>])</span>
+</span></span><span><span>    
+</span></span><span><span>
+</span></span><span><span>    <span># generate the private key from the password and salt</span>
+</span></span><span><span>    <span>private_key</span> <span>=</span> <span>hashlib</span><span>.</span><span>scrypt</span><span>(</span>
+</span></span><span><span>        <span>password</span><span>.</span><span>encode</span><span>(),</span> <span>salt</span><span>=</span><span>salt</span><span>,</span> <span>n</span><span>=</span><span>2</span><span>**</span><span>14</span><span>,</span> <span>r</span><span>=</span><span>8</span><span>,</span> <span>p</span><span>=</span><span>1</span><span>,</span> <span>dklen</span><span>=</span><span>32</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># create the cipher config</span>
+</span></span><span><span>    <span>cipher</span> <span>=</span> <span>AES</span><span>.</span><span>new</span><span>(</span><span>private_key</span><span>,</span> <span>AES</span><span>.</span><span>MODE_GCM</span><span>,</span> <span>nonce</span><span>=</span><span>nonce</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># decrypt the cipher text</span>
+</span></span><span><span>    <span>decrypted</span> <span>=</span> <span>cipher</span><span>.</span><span>decrypt_and_verify</span><span>(</span><span>cipher_text</span><span>,</span> <span>tag</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span>return</span> <span>decrypted</span>
+</span></span><span><span>
+</span></span><span><span>
+</span></span><span><span><span>def</span> <span>main</span><span>():</span>
+</span></span><span><span>    <span>password</span> <span>=</span> <span>input</span><span>(</span><span>&#34;Password: &#34;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># First let us encrypt secret message</span>
+</span></span><span><span>    <span>encrypted</span> <span>=</span> <span>encrypt</span><span>(</span><span>&#34;The secretest message here&#34;</span><span>,</span> <span>password</span><span>)</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>encrypted</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span># Let us decrypt using our original password</span>
+</span></span><span><span>    <span>decrypted</span> <span>=</span> <span>decrypt</span><span>(</span><span>encrypted</span><span>,</span> <span>password</span><span>)</span>
+</span></span><span><span>    <span>print</span><span>(</span><span>bytes</span><span>.</span><span>decode</span><span>(</span><span>decrypted</span><span>))</span>
+</span></span><span><span>
+</span></span><span><span><span>main</span><span>()</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

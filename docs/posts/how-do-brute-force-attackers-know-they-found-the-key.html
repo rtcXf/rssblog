@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How Do Brute-Force Attackers Know They Found The Key? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/security/how-do-brute-force-attackers-know-they-found-the-key/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How Do Brute-Force Attackers Know They Found The Key?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>To “Brute Force” something (when talking about computers) means to systematically try every possible combination until you find the right answer.</p>
+<p>Brute force attackers guess passwords, passphrases, and private keys in an attempt to eventually get the right answer and crack the security of a system. They systematically guess every combination. For example, if they were guessing telephone numbers in the US, they would start with <code>000-0000</code> and end with <code>999-9999</code>:</p>
+<pre tabindex="0"><code>(000) 000-0000
+(000) 000-0001
+(000) 000-0002
+(000) 000-0003
+...
+(999) 999-9996
+(999) 999-9997
+(999) 999-9998
+(999) 999-9999
+</code></pre><p>The question is, <em>how do they know when they have the right key?</em> Well, it depends on the system.</p>
+<p>Let’s answer the question three times, one for three different common systems.</p>
+<h2 id="cipher-text-with-authentication">
+  <span> Cipher Text With Authentication</span> <a href="#cipher-text-with-authentication">🔗</a></h2>
+<p>In this case, let’s assume we have direct access to an encrypted hard drive (like that of a MacBook) that has been ciphered using <a href="https://blog.boot.dev/cryptography/aes-256-cipher/">AES-256-GCM</a>. Because we have access to the raw encrypted data, we can’t be locked out for too many failed attempts. 😈</p>
+<p>Since we are free to guess as hard and as fast as we can, all we need to know is when to stop deciphering. This is easy if the encryption was done using an authentication tag as required by <a href="https://en.wikipedia.org/wiki/Galois/Counter_Mode">GCM mode</a>. When we get the correct password, the authentication tag will check out.</p>
+<h2 id="web-application">
+  <span> Web Application</span> <a href="#web-application">🔗</a></h2>
+<p>Brute forcing your way through the front door of a web application will prove difficult if not impossible. The cryptosystem lives on a server you don’t have control over. Due to this, they can lock you out after a number of failed guesses.</p>
+<p>However, if the server doesn’t have these kinds of protections in place, then it is easy to tell when you have the right password because you will likely be given an HTTP 200 response OK, and perhaps some form of login token.</p>
+<h2 id="public-private-key-encryption">
+  <span> Public-Private Key Encryption</span> <a href="#public-private-key-encryption">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/1_Th9nPlIhYveMMsG9RvqQsQ-1024x621.png" alt="encryption chart"/></p>
+<p>Symmetric Cipher vs Asymmetric Public Key Encryption</p>
+<p>We can encrypt any message using the public key that we have, and we can decrypt using the private key if we can find it. Then, we can man-in-the-middle attack other users and decrypt their messages that were meant for the server.</p>
+<p><em>Ignoring the fact that it is practically impossible to brute force a 256-bit key, let’s pretend that we have an infinite amount of resources and are able to eventually get the correct answer.</em></p>
+<p>How do we know when we have the right answer?</p>
+<p>Well, it depends a bit on the algorithm that was used to create the key pair. If we know the algorithm, then we can generate random private keys and check to see if the public key that we have is a valid match using the known algorithm.</p>
+<p>If this isn’t feasible because we don’t have all the algorithm information, then we are likely stuck with encrypting a random string of text with the public key, generating private keys, and trying to decrypt with each private key until the decryption is successful.</p>
+<p><em>Again, this would never work in practicality, the search space is 2^256</em></p>
+<h2 id="brute-force-attacks-explained">
+  <span> Brute-Force Attacks Explained</span> <a href="#brute-force-attacks-explained">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/maxresdefault-1024x576.jpg" alt="Sig Curtis"/></p>
+<p><a href="https://en.wikipedia.org/wiki/Brute-force_attack">A brute-force attack</a> in <a href="https://blog.boot.dev/cryptography/what-is-cryptography/">cryptography</a> is when an attacker guesses many passwords in succession hoping to <em>eventually</em> get one right.</p>
+<p>For example, the most naive form of brute force attack would be to try every permutation of characters from length 0 to length n.</p>
+<blockquote>
+<p>a, b, c …</p>
+<p>aa, ab, ac, … ba, bb, bc</p>
+<p>aaa, aab, aac, … aba, abb, abc… bba, bbb, bbc…</p>
+</blockquote>
+<p>Assuming 26 lowercase letters, 26 uppercase letters, 10 digits, and 10 special characters, it would take 72^10 (~3,740,000,000,000,000,000) guesses just to try all the combinations of exactly length 10. Assuming a modest 200 guesses per second, it would take ~593,592,440 years to crack the password.</p>
+<h2 id="so-im-safe-right">
+  <span> So I’m Safe Right?</span> <a href="#so-im-safe-right">🔗</a></h2>
+<p>Based on the math above, it certainly seems like 10 digit passwords are impervious to brute force attacks. While that may be true of the most naive attacks, there are other things to watch out for.</p>
+<p>Instead of the attacker guess every single combination, instead, they may try every word in the English dictionary, with every three-digit combination appended to the end.</p>
+<ul>
+<li>apple001, apple002, apple003…</li>
+<li>baby001, baby002, baby003…</li>
+</ul>
+<p>Assuming 50,000 words in the English dictionary, there are only 50,000,000 combinations! Again, assuming 200 guesses per second, it would take ~2.9 <strong>days</strong> to crack the password… that isn’t very long. It is also trivial for the attacker to throw in special characters for corresponding letters. For example, <code>@pp1e001</code></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

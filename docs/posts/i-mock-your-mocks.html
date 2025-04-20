@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>I Mock Your Mocks | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/writing-good-unit-tests-dont-mock-database-connections/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>I Mock Your Mocks</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Several years ago I started my first job as a “senior” Go developer. You see, after a modest 3 years in the industry, my arcane ability to use the Go standard library’s <code>strings.Contains()</code> function managed to leave a powerful impression on the hiring team.</p>
+<p>Yup, as a senior developer only a few years out of college with no kids and a 6 figure salary, life was looking pretty easy. Well, it <em>would</em> have been easy. It would have been easy if the mind-numbing, gelatinous, corporate goo known as <em>Java</em> (it runs on billions of devices btw) hadn’t chipped away at the once great minds of my new colleagues.</p>
+<p>We’re going to talk about my struggles with unit tests at this new company. And mocks. And heroine injections. Erm, I mean dependency injections. <em>(but tbh both are just as bad for you)</em></p>
+<p><img src="https://blog.boot.dev/img/800/heroinedeps.png.webp" alt="pam with heroine injections dependency injection"/></p>
+<p><strong>BUT…</strong> before we do that, let me tell a quick story to give you some context about this new job.</p>
+<h2 id="fixing-go">
+  <span> “Fixing” Go</span> <a href="#fixing-go">🔗</a></h2>
+<p>I’m not thirty minutes into my new job (still <code>brew install</code>ing a bunch of nonsense), when a coworker (let’s call him “Bill”) spins around and says:</p>
+<blockquote>
+<p>Bill: “You’re the new Go guy right?”</p>
+</blockquote>
+<blockquote>
+<p>Me: “Yup!”</p>
+</blockquote>
+<blockquote>
+<p>Bill: “Ugh, Go is the worst. Luckily for you, I fixed Go’s biggest problem!”</p>
+</blockquote>
+<blockquote>
+<p>Me: <em>(puckers for safety)</em></p>
+</blockquote>
+<blockquote>
+<p>Bill: “I’ve re-added try/catch to the language! No more <code>if err != nil</code>!”</p>
+</blockquote>
+<p>Take a look at the elegance of Bill’s new language feature:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>tryCatch</span><span>(</span>
+</span></span><span><span>		<span>func</span><span>()</span> <span>{</span>
+</span></span><span><span>			<span>panic</span><span>(</span><span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;I&#39;m scared&#34;</span><span>))</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>		<span>func</span><span>(</span><span>err</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>			<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;Caught:&#34;</span><span>,</span> <span>err</span><span>)</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>	<span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Wondering how Bill achieved this level of syntactic sugar? <em>Super easy. Barely an inconvenience.</em> Just bastardize the <code>panic</code>, <code>recover</code>, and <code>defer</code> keywords.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>tryCatch</span><span>(</span><span>fn</span> <span>func</span><span>(),</span> <span>catch</span> <span>func</span><span>(</span><span>err</span> <span>error</span><span>))</span> <span>(</span><span>err</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>defer</span> <span>func</span><span>()</span> <span>{</span>
+</span></span><span><span>		<span>if</span> <span>r</span> <span>:=</span> <span>recover</span><span>();</span> <span>r</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>			<span>err</span> <span>=</span> <span>r</span><span>.(</span><span>error</span><span>)</span>
+</span></span><span><span>			<span>catch</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>	<span>}()</span>
+</span></span><span><span>	<span>fn</span><span>()</span>
+</span></span><span><span>	<span>return</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="running-some-tests">
+  <span> Running some tests</span> <a href="#running-some-tests">🔗</a></h2>
+<p>After a riveting discussion with Bill about the virtues of “errors as values”, I was able to dive into my first (sigh) <em>Jira</em> ticket.</p>
+<p><img src="https://blog.boot.dev/img/800/jiraisslow.jpg.webp" alt="jira is slow meme"/></p>
+<p>I needed to implement a new feature on an existing backend Go service. I ran a few commands to get up and running:</p>
+<p>Got the code.</p>
+<p>Good, the <code>main</code> branch compiles.</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>$ go <span>test</span>
+</span></span><span><span>
+</span></span><span><span>--- FAIL: TestDatabaseConnection <span>(</span>0.00s<span>)</span>
+</span></span><span><span>    database_test.go:23: dial tcp <span>[</span>::1<span>]</span>:5432: connect: connection refused
+</span></span></code></pre></div><p>Darn, the tests failed. That’s odd, someone must have committed some broken code. Wait…</p>
+<p><em>Why are my unit tests trying to connect to a database server???</em></p>
+<blockquote>
+<p>Me: “Hey Bill, do I need to set up a local Postgres server to run the tests?”</p>
+</blockquote>
+<blockquote>
+<p>Bill: “Yeah, I didn’t have time to write mocks for the database layer, so we just use a real database.”</p>
+</blockquote>
+<h2 id="have-some-spice">
+  <span> Have some spice</span> <a href="#have-some-spice">🔗</a></h2>
+<p>The time has come to introduce you to my philosophy on unit tests. Well, at least inasmuch as unit tests relate to databases.</p>
+<p><em>We are backend developers.</em> 50 percent of the code we write takes data from an HTTP request, fiddles with it a bit, and then saves it in a database. The other 50 percent of our code takes data <em>from</em> the database, does some fiddling, and sends it back to the client in an HTTP response. You know, give or take a few percenties.</p>
+<p>Here’s my hot take:</p>
+<blockquote>
+<p>The “fiddling” bit is the only part worth unit testing</p>
+</blockquote>
+<p>Here’s where I <em>really</em> disagree with Bill: I actually <em>prefer</em> his tests that run while connected to a real database. Though I’d <em>more</em> prefer <em>integration</em> tests that run separately from the unit tests… At least with a real database I’m testing code that actually <em>runs in production</em>.</p>
+<p><strong>Mocks are perhaps one of the worst things to happen to backend development.</strong> And don’t forget, we allowed JavaScript to run server side.</p>
+<p>I hate mocks because they:</p>
+<ul>
+<li>Don’t test code that actually runs in production (which means they don’t…test…anything?)</li>
+<li>Give a delightfully false sense of security (management loves this)</li>
+</ul>
+<h2 id="okay-smartass-how-do-i-test-my-http-handlers">
+  <span> Okay smartass, how do I test my HTTP handlers?</span> <a href="#okay-smartass-how-do-i-test-my-http-handlers">🔗</a></h2>
+<p>Sorry to say it, but… <em>have you tried writing better code</em>? That sounds rude, and it is. But these articles are only fun to write if I make them snarky. I’m nice irl I promise.</p>
+<p>Take a look at the following function:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>saveUser</span><span>(</span><span>db</span> <span>*</span><span>sql</span><span>.</span><span>DB</span><span>,</span> <span>user</span> <span>User</span><span>)</span> <span>error</span> <span>{</span>
+</span></span><span><span>	<span>if</span> <span>user</span><span>.</span><span>EmailAddress</span> <span>==</span> <span>&#34;&#34;</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;user requires an email&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>if</span> <span>len</span><span>(</span><span>user</span><span>.</span><span>Password</span><span>)</span> <span>&lt;</span> <span>8</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;user password requires at least 8 characters&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>hashedPassword</span><span>,</span> <span>err</span> <span>=</span> <span>hash</span><span>(</span><span>user</span><span>.</span><span>Password</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>_</span><span>,</span> <span>err</span> <span>:=</span> <span>db</span><span>.</span><span>Exec</span><span>(</span><span>`
+</span></span></span><span><span><span>		INSERT INTO users (password, email_address, created)
+</span></span></span><span><span><span>		VALUES ($1, $2, $3);`</span><span>,</span>
+</span></span><span><span>		<span>hashedPassword</span><span>,</span> <span>user</span><span>.</span><span>EmailAddress</span><span>,</span> <span>time</span><span>.</span><span>Now</span><span>(),</span>
+</span></span><span><span>	<span>)</span>
+</span></span><span><span>	<span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>There’s no way to test this function without a database connection available at the time of testing. I can practically hear Bill <code>brew install</code>ing Postgres as I type.</p>
+<p>My humble argument is that the <em>database</em> logic, this part:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>hashedPassword</span><span>,</span> <span>err</span> <span>=</span> <span>hash</span><span>(</span><span>user</span><span>.</span><span>Password</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>_</span><span>,</span> <span>err</span> <span>:=</span> <span>db</span><span>.</span><span>Exec</span><span>(</span><span>`
+</span></span></span><span><span><span>	INSERT INTO users (password, email_address, created)
+</span></span></span><span><span><span>	VALUES ($1, $2, $3);`</span><span>,</span>
+</span></span><span><span>	<span>hashedPassword</span><span>,</span> <span>user</span><span>.</span><span>EmailAddress</span><span>,</span> <span>time</span><span>.</span><span>Now</span><span>(),</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span><span>return</span> <span>err</span>
+</span></span></code></pre></div><p>Should be tested in an <em>integration</em> test. (or, _ gasp _ <em>manually</em>). However, this <em>validation</em> logic can easily be tested in a unit test. You know, this part:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>if</span> <span>user</span><span>.</span><span>EmailAddress</span> <span>==</span> <span>&#34;&#34;</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;user requires an email&#34;</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>if</span> <span>len</span><span>(</span><span>user</span><span>.</span><span>Password</span><span>)</span> <span>&lt;</span> <span>8</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;user password requires at least 8 characters&#34;</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>It’s critical to remember one of the key tenants of software engineering:</p>
+<blockquote>
+<p>Your code is ass</p>
+</blockquote>
+<p>And because your code is ass, you shouldn’t be scared to make some changes! Sure, this function will “require” a database connection to be tested:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>saveUser</span><span>(</span><span>db</span> <span>*</span><span>sql</span><span>.</span><span>DB</span><span>,</span> <span>user</span> <span>User</span><span>)</span> <span>error</span> <span>{</span>
+</span></span><span><span>	<span>if</span> <span>user</span><span>.</span><span>EmailAddress</span> <span>==</span> <span>&#34;&#34;</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;user requires an email&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>if</span> <span>len</span><span>(</span><span>user</span><span>.</span><span>Password</span><span>)</span> <span>&lt;</span> <span>8</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;user password requires at least 8 characters&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>hashedPassword</span><span>,</span> <span>err</span> <span>=</span> <span>hash</span><span>(</span><span>user</span><span>.</span><span>Password</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>_</span><span>,</span> <span>err</span> <span>:=</span> <span>db</span><span>.</span><span>Exec</span><span>(</span><span>`
+</span></span></span><span><span><span>		INSERT INTO users (password, email_address, created)
+</span></span></span><span><span><span>		VALUES ($1, $2, $3);`</span><span>,</span>
+</span></span><span><span>		<span>hashedPassword</span><span>,</span> <span>user</span><span>.</span><span>EmailAddress</span><span>,</span> <span>time</span><span>.</span><span>Now</span><span>(),</span>
+</span></span><span><span>	<span>)</span>
+</span></span><span><span>	<span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>But what if we break it down into… mhhmmmm what should we call them… “units”?</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>validateUser</span><span>(</span><span>user</span> <span>User</span><span>)</span> <span>error</span> <span>{</span>
+</span></span><span><span>	<span>if</span> <span>user</span><span>.</span><span>EmailAddress</span> <span>==</span> <span>&#34;&#34;</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;user requires an email&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>if</span> <span>len</span><span>(</span><span>user</span><span>.</span><span>Password</span><span>)</span> <span>&lt;</span> <span>8</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;user password requires at least 8 characters&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>return</span> <span>nil</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>saveUserInDB</span><span>(</span><span>db</span> <span>*</span><span>sql</span><span>.</span><span>DB</span><span>,</span> <span>user</span> <span>User</span><span>)</span> <span>error</span> <span>{</span>
+</span></span><span><span>	<span>hashedPassword</span><span>,</span> <span>err</span> <span>=</span> <span>hash</span><span>(</span><span>user</span><span>.</span><span>Password</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>err</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>_</span><span>,</span> <span>err</span> <span>:=</span> <span>db</span><span>.</span><span>Exec</span><span>(</span><span>`
+</span></span></span><span><span><span>		INSERT INTO users (password, email_address, created)
+</span></span></span><span><span><span>		VALUES ($1, $2, $3);`</span><span>,</span>
+</span></span><span><span>		<span>hashedPassword</span><span>,</span> <span>user</span><span>.</span><span>EmailAddress</span><span>,</span> <span>time</span><span>.</span><span>Now</span><span>(),</span>
+</span></span><span><span>	<span>)</span>
+</span></span><span><span>	<span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Aha! Now we write a neat little test:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>TestValidateUser</span><span>(</span><span>t</span> <span>*</span><span>testing</span><span>.</span><span>T</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>err</span> <span>:=</span> <span>validateUser</span><span>(</span><span>&amp;</span><span>User</span><span>{})</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>==</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>t</span><span>.</span><span>Error</span><span>(</span><span>&#34;expected an error&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>err</span> <span>:=</span> <span>validateUser</span><span>(</span><span>&amp;</span><span>User</span><span>{</span>
+</span></span><span><span>		<span>Email</span><span>:</span> <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="6e1a0b1d1a2e1a0b1d1a400d0103">[email protected]</a>&#34;</span><span>,</span>
+</span></span><span><span>		<span>Password</span><span>:</span> <span>&#34;thisIsALongEnoughPassword&#34;</span>
+</span></span><span><span>	<span>})</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>t</span><span>.</span><span>Error</span><span>(</span><span>&#34;should have passed&#34;</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>We’ve tested all the validation logic that we <em>would</em> have tested in the original function with a mock, and now we don’t need to, you know, write a stupid mock.</p>
+<blockquote>
+<p>Mocks cause blocks</p>
+<p>Blocks cause talks</p>
+<p>Talks about mocks with devs are cocks</p>
+<p>Bugs with shrugs come</p>
+<p>Bugs with lugs come</p>
+<p>Lugs writing bugs with mighty shrugs come</p>
+<p>Look here. Look here. Mister dev dear</p>
+<p>Let’s stop the mocks that cause the blocks here</p>
+<p>We can test, and we can nest here</p>
+<p>But we don’t need to mock the rest here</p>
+</blockquote>
+<p>PS: I have a <a href="https://www.boot.dev/courses/learn-golang">new Go course</a> that you should check out. It’s pretty alright. I promise.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

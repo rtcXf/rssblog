@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your Architecture is Bad, So Make It Easy to Change | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/make-architecture-easy-to-change/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Your Architecture is Bad, So Make It Easy to Change</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Have you ever started a new software development job and thought:</p>
+<blockquote>
+<p>“Wow, what a beautifully architected system! I wouldn’t change anything here.”</p>
+</blockquote>
+<p>Unless it’s a brand-new project, I’m guessing not. Most of us are dreadfully aware of the dashes of technical debt we sprinkle into our codebases every day, all in the name of getting the job done.</p>
+<p>Don’t get me wrong, I’m a clean architecture <em>nerd</em>. I love talking about monoliths, microservices, containers, clusters, PaaS, caching, message queues, and everything else under the sun. I do everything I can to make sure that my code is easy to debug, easy to scale, and easy to add features to.</p>
+<p>Here’s the thing: <em>I also know that my architecture is terrible, and yours is too.</em></p>
+<h2 id="why-is-your-architecture-so-bad">
+  <span> Why is your architecture so bad?</span> <a href="#why-is-your-architecture-so-bad">🔗</a></h2>
+<p>Well, maybe it’s not. Your architecture may be pretty good <em>at the moment</em>. You might be using a popular design pattern, you may have services that can scale up to handle 10x the load that you’re currently seeing, and all the engineers on your team might understand the codebase.</p>
+<p>Unfortunately, your architecture <em>is</em> bad three years from now. It’s bad when your team goes from 10 to 100 engineers. It’s bad when your company pivots from a B2B SaaS product to a B2C mobile app. It’s bad when you onboard a new enterprise client that requires you to store all their data in a different country.</p>
+<p>Assuming you have good engineers, your architecture is probably bad due to <em>business</em> decisions, not technical ones. It is often a <em>good</em> business decision to accrue technical debt if the payoff is worth it, and a savvy engineer will know when to make that tradeoff.</p>
+<h2 id="is-there-no-hope">
+  <span> Is there no hope?</span> <a href="#is-there-no-hope">🔗</a></h2>
+<p>It’s sometimes a good decision to take on technical debt, but we need to acknowledge that the debt must <em>eventually</em> be paid back.</p>
+<p>You <em>can</em> know what a good architecture for your <em>current</em> business needs is, so build that! There’s no sense in planning for 1,000,000 users when you only have 500. Avoid planning too far ahead, but also understand that your future needs could be <em>wildly</em> different from your current ones.</p>
+<p>To put this idea simply:</p>
+<blockquote>
+<p>Build your systems for the present, but anticipate a very different future</p>
+</blockquote>
+<h2 id="wait-for-more-information-before-locking-in-your-architecture">
+  <span> Wait for more information before locking in your architecture</span> <a href="#wait-for-more-information-before-locking-in-your-architecture">🔗</a></h2>
+<p>The best architectural decision you can make is to often <em>not make one</em>. Here’s an example. Let’s pretend you’re building a web app that displays temperature data from various weather sources. You’re already using a PostgreSQL database for authentication and user information and need to decide where to store the weather data, but you know that your temperature aggregations queries won’t scale well in a monolithic database like Postgres.</p>
+<p>However, you only have a few data sources and a few users, so scalability isn’t a problem. I’d argue that you should just shove that data in Postgres, with a loose plan to move to a more domain-specific solution later.</p>
+<p>But wait!!! Here’s where most engineers go wrong.</p>
+<p><em>You should be engineering around the fact that you don’t like your current solution.</em></p>
+<p>Instead of locking yourself into Postgres by using advanced Postgres features and implementing <code>JOIN</code>s to your other tables, try to keep your data as flat and as simple as you can. When you do inevitably need to move your data somewhere else, you can do so with minimal effort.</p>
+<p>When you’re building software for a fast-growing company, a “clean” architecture isn’t an <em>optimized</em> one, but a <em>modular</em> one that can be changed easily.</p>
+<h2 id="so-i-should-just-procrastinate">
+  <span> So I should just procrastinate?</span> <a href="#so-i-should-just-procrastinate">🔗</a></h2>
+<p>It’s not about procrastinating architectural decisions, it’s about being able to make smarter decisions once the real data comes in. As an engineer, it’s impossible to predict every pivot the business will make, every requirement a customer will have, and every technology that will be released in the future. Your goal is to engineer a system that does its job while delaying decisions you don’t <em>need</em> to make until you have more information.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The googlebot monopoly | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://danluu.com/googlebot-monopoly/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>The googlebot monopoly</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div> <p>TIL that Bell Labs and a whole lot of other websites block archive.org, not to mention most search engines. Turns out I have <a href="https://github.com/danluu/debugging-stories/issues/3">a broken website link</a> in a GitHub repo, caused by the deletion of an old webpage. When I tried to pull the original from archive.org, I found that it&#39;s not available because Bell Labs blocks the archive.org crawler in their robots.txt:</p>  <pre><code>User-agent: Googlebot
+User-agent: msnbot
+User-agent: LSgsa-crawler
+Disallow: /RealAudio/
+Disallow: /bl-traces/
+Disallow: /fast-os/
+Disallow: /hidden/
+Disallow: /historic/
+Disallow: /incoming/
+Disallow: /inferno/
+Disallow: /magic/
+Disallow: /netlib.depend/
+Disallow: /netlib/
+Disallow: /p9trace/
+Disallow: /plan9/sources/
+Disallow: /sources/
+Disallow: /tmp/
+Disallow: /tripwire/
+Visit-time: 0700-1200
+Request-rate: 1/5
+Crawl-delay: 5
+
+User-agent: *
+Disallow: /
+</code></pre> <p>In fact, Bell Labs not only blocks the Internet Archiver bot, it blocks all bots except for Googlebot, msnbot, and their own corporate bot. And msnbot was superseded by bingbot <a href="http://en.wikipedia.org/wiki/Msnbot">five years ago</a>!</p> <p>A quick search using a term that&#39;s only found at Bell Labs, e.g., “This is a start at making available some of the material from the Tenth Edition Research Unix manual.”, reveals that bing indexes the page; either bingbot follows some msnbot rules, or that msnbot still runs independently and indexes sites like Bell Labs, which ban bingbot but not msnbot. Luckily, in this case, a lot of search engines (like Yahoo and DDG) use Bing results, so Bell Labs hasn&#39;t disappeared from the non-Google internet, but you&#39;re out of luck <a href="http://en.wikipedia.org/wiki/Yandex#cite_note-13">if you&#39;re one of the 55% of Russians who use yandex</a>.</p> <p>And all that is a relatively good case, where one non-Google crawler is allowed to operate. It&#39;s not uncommon to see robots.txt files that ban everything but Googlebot. Running <a href="http://blog.nullspace.io/building-search-engines.html">a competing search engine</a> and preventing a Google monopoly is hard enough without having sites ban non-Google bots. We don&#39;t need to make it even harder, nor do we need to accidentally ban the Internet Archive bot.</p> <p><small> P.S. While you&#39;re checking that your robots.txt doesn&#39;t ban everyone but Google, consider looking at your CPUID checks to make sure that you&#39;re using feature flags <a href="https://twitter.com/danluu/status/1203450367515615233">instead of banning everyone but Intel and AMD</a>.</small></p> <p>BTW, I do think there can be legitimate reasons to block crawlers, including archive.org, but I don&#39;t think that the common default many web devs have, of blocking everything but googlebot, is really intended to block competing search engines as well as archive.org. </p> <p>2021 Update: since this post was first published, archive.org started ignoring being blocked in robots.txt and archives posts where they are blocked in robots.txt. I&#39;ve heard that some competing search engines do the same thing, so this mis-use of robots.txt, where sites ban everything but googlebot, is slowly making robots.txt effectively useless, much like browsers identify themselves as every browser in user-agent strings to work around sites that incorrectly block browsers they don&#39;t think are compatible.</p> <p>A related thing is that sites will sometimes ban competing search engines, like Bing, in a fit of pique, which they wouldn&#39;t do to Google since Google provides too much traffic for them to be able get away with that, e.g., <a href="https://twitter.com/danluu/status/981992814824378369">Discourse banned Bing because they were upset that Bing was crawling discourse at 0.46 QPS</a>.</p>  </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

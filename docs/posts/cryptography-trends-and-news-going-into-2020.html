@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cryptography Trends And News Going Into 2020 | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/cryptography-trends-and-news-going-into-2020/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Cryptography Trends And News Going Into 2020</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <h2 id="quantum-computing">
+  <span> Quantum Computing</span> <a href="#quantum-computing">🔗</a></h2>
+<p>Quantum computing may not be coming quite as fast as some in the field had certainly feared (or perhaps hoped). Google did, however, solve an impressive problem this year.</p>
+<p>They published a paper in <a href="https://www.nature.com/articles/s41586-019-1666-5">Nature</a>. It stated that their quantum processor solved a problem that, in contrast, a digital computer would take 10,000 years to solve. The problem that was solved deals with generating certifiably random numbers. Their processor, ‘Sycamore’, uses 53 qubits, which corresponds to a search space of 1016.</p>
+<h2 id="lattice-based-cryptographycryptographyvery-basic-intro-to-lattices-in-cryptography">
+  <span> <a href="https://blog.boot.dev/cryptography/very-basic-intro-to-lattices-in-cryptography/">Lattice-Based Cryptography</a></span> <a href="#lattice-based-cryptographycryptographyvery-basic-intro-to-lattices-in-cryptography">🔗</a></h2>
+<p>Lattice-based Cryptography (LBC) is one of our best bets for secure “Post Quantum Cryptography”. Therefore, almost half of the second round of <a href="https://csrc.nist.gov/CSRC/media/Presentations/Round-2-of-the-NIST-PQC-Competition-What-was-NIST/images-media/pqcrypto-may2019-moody.pdf">NIST’s PQC contest</a> is based on lattice math.</p>
+<p>Lattice crypto is often based on the <a href="https://en.wikipedia.org/wiki/Lattice_problem">shortest vector problem</a>. A problem where, given a basis of a <a href="https://en.wikipedia.org/wiki/Vector_space">vector space</a> and a <a href="https://en.wikipedia.org/wiki/Norm_(mathematics)">norm</a>, the goal is to find the shortest non-zero vector.</p>
+<p>In addition, Matthew Dozer has a great introductory video:</p>
+
+
+    
+    <p>
+      <iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="allowfullscreen" loading="eager" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/37Ri1jpl5p8?autoplay=0&amp;controls=1&amp;end=0&amp;loop=0&amp;mute=0&amp;start=0" title="YouTube video"></iframe>
+    </p>
+
+<p><a href="https://eprint.iacr.org/2019/681.pdf">Lattice-Based Crypto for IOT (Khalid, McCarthy, O’Neill)</a></p>
+<p><a href="https://en.wikipedia.org/wiki/Lattice-based_cryptography">Lattice Based Cryptography - Wikipedia</a></p>
+<h2 id="bitcoin---schnorr-signatures">
+  <span> Bitcoin - Schnorr Signatures</span> <a href="#bitcoin---schnorr-signatures">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/5a521fa72f93c7a8d5137fcf.png" alt="bitcoin logo"/></p>
+<p>Instead of the current <a href="https://blog.boot.dev/cryptography/elliptic-curve-cryptography/">ECDSA</a> implementation, Bitcoin might be switching to <a href="https://en.bitcoin.it/wiki/Schnorr">Schnorr signatures</a> to get more efficiency when signing transactions. Instead of signing each transaction separately, with Schnorr, we can generate a single signature to validate many transactions at once. This allows Bitcoin to scale by requiring less data to be broadcast on the network when grouping transactions.</p>
+<h2 id="more-rigorous-testing-of-hash-functions">
+  <span> More Rigorous Testing of Hash Functions</span> <a href="#more-rigorous-testing-of-hash-functions">🔗</a></h2>
+<p>Also, Nicky Mouha <a href="https://eprint.iacr.org/2019/1421.pdf">published a paper</a> exposing a vulnerability in Apple’s CoreCrypto Library. This affects 11 out of 12 implemented hashes. However, MD2 is the only function to remain secure. As a result, a new test is founded which can help detect similar problems moving forward.</p>
+<p><a href="https://www.nist.gov/publications/extending-nists-cavp-testing-cryptographic-hash-function-implementations">Read more on NIST’s testing here</a></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

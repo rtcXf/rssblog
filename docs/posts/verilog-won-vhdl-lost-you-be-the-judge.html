@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verilog Won &amp; VHDL Lost? — You Be The Judge! | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://danluu.com/verilog-vs-vhdl/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Verilog Won &amp; VHDL Lost? — You Be The Judge!</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+
+
+<p><i>This is an archived USENET post from John Cooley on a competitive comparison between VHDL and Verilog that was done in 1997.</i></p>
+
+<p>I knew I hit a nerve. Usually when I publish a candid review of a particular conference or EDA product I typically see around 85 replies in my e-mail &#34;in&#34; box. Buried in my review of the recent Synopsys Users Group meeting, I very tersely reported that 8 out of the 9 Verilog designers managed to complete the conference&#39;s design contest yet <em>none</em> of the 5 VHDL designers could. I apologized for the terseness and promised to do a detailed report on the design contest at a later date. Since publishing this, my e-mail &#34;in&#34; box has become a veritable Verilog/VHDL Beirut filling up with 169 replies! Once word leaked that the detailed contest write-up was going to be published in the DAC issue of &#34;Integrated System Design&#34; (formerly &#34;ASIC &amp; EDA&#34; magazine), I started getting phone calls from the chairman of VHDL International, Mahendra Jain, and from the president of Open Verilog International, Bill Fuchs. A small army of hired gun spin doctors (otherwise know as PR agents) followed with more phone calls. I went ballistic when VHDL columnist Larry Saunders had approached the Editor-in-Chief of ISD for an advanced copy of my design contest report. He felt I was &#34;going to do a hatchet job on VHDL&#34; and wanted to write a rebuttal that would follow my article... and all this was happening before I had even written <em>one</em> damned word of the article!</p>
+
+<p>Because I&#39;m an independent consultant who makes his living training and working <em>both</em> HDL&#39;s, I&#39;d rather not go through a VHDL Salem witch trial where I&#39;m publically accused of being secretly in league with the Devil to promote Verilog, thank you. Instead I&#39;m going present <em>everything</em> that happened at the Design Contest, warts and all, and let <em>you</em> judge! At the end of court evidence, I&#39;ll ask you, the jury, to write an e-mail reply which I can publish in my column in the follow-up &#34;Integrated System Design&#34;.</p>
+
+<h4 id="the-unexpected-results">The Unexpected Results</h4>
+
+<p>Contestants were given 90 minutes using either Verilog or VHDL to create a gate netlist for the fastest fully synchronous loadable 9-bit increment-by-3 decrement-by-5 up/down counter that generated even parity, carry and borrow.</p>
+
+<p>Of the 9 Verilog designers in the contest, only 1 didn&#39;t get to a final gate level netlist because he tried to code a look-ahead parity generator. Of the 8 remaining, 3 had netlists that missed on functional test vectors. The 5 Verilog designers who got fully functional gate-level designs were:</p>
+
+<pre>   Larry Fiedler     NVidea               3.90 nsec     1147 gates
+   Steve Golson      Trilobyte Systems    4.30 nsec     1909 gates
+   Howard Landman    HaL Computer         5.49 nsec     1495 gates
+   Mark Papamarcos   EDA Associates       5.97 nsec     1180 gates
+   Ed Paluch         Paluch &amp; Assoc.      7.85 nsec     1514 gates
+</pre>
+
+<p>The surprize was that, during the same time, <em>none</em> of 5 VHDL designers in the contest managed to produce any gate level designs.</p>
+
+<h4 id="not-vhdl-newbies-vs-verilog-pros">Not VHDL Newbies vs. Verilog Pros</h4>
+
+<p>The first reaction I get from the VHDL bigots (who weren&#39;t at the competition) is: &#34;Well, this is obviously a case where Verilog veterans whipped some VHDL newbies. Big deal.&#34; Well, they&#39;re partially right. Many of those Verilog designers are damned good at what they do — but so are the VHDL designers!</p>
+
+<p>I&#39;ve known Prasad Paranjpe of LSI Logic for years. He has taught and still teaches VHDL with synthesis classes at U.C. Santa Cruz University Extention in the heart of Silicon Valley. He was VP of the Silicon Valley VHDL Local Users Group. He&#39;s been a full time ASIC designer since 1987 and has designed <em>real</em> ASIC&#39;s since 1990 using VHDL &amp; Synopsys since rev 1.3c. Prasad&#39;s home e-mail address is &#34;vhdl@ix.netcom.com&#34; and his home phone is (XXX) XXX-VHDL. ASIC designer Jan Decaluwe has a history of contributing insightful VHDL and synthesis posts to ESNUG while at Alcatel and later as a founder of Easics, a European ASIC design house. (Their company motto: &#34;Easics - The VHDL Design Company&#34;.) Another LSI Logic/VHDL contestant, Vikram Shrivastava, has used the VHDL/Synopsys design approach since 1992. These guys aren&#39;t newbies!</p>
+
+<h4 id="creating-the-contest">Creating The Contest</h4>
+
+<p>I followed a double blind approach to putting together this design contest. That is, not only did I have Larry Saunders (a well known VHDL columnist) and Yatin Trivedi (a well known Verilog columnist), both of Seva Technologies comment on the design contest — unknown to them I had Ken Nelsen (a VHDL oriented Methodology Manager from Synopsys) and Jeff Flieder (a Verilog based designer from Ford Microelectronics) also help check the design contest for any conceptual or implementation flaws.</p>
+
+<p>My initial concern in creating the contest was to not have a situation where the Synopsys Design Compiler could quickly complete the design by just placing down a DesignWare part. Yet, I didn&#39;t want to have contestants trying (and failing) to design some fruity, off-the-wall thingy that no one truely understood. Hence, I was restricted to &#34;standard&#34; designs that all engineers knew — but with odd parameters thrown in to keep DesignWare out of the picture. Instead of a simple up/down counter, I asked for an up-by-3 and down-by-5 counter. Instead of 8 bits, everything was 9 bits.</p>
+
+<pre>                                  recycled COUNT_OUT [8:0]
+                     o---------------&lt;---------------&lt;-------------------o
+                     |                                                   |
+                     V                                                   |
+               -------------                     --------                |
+  DATA_IN --&gt;-|   up-by-3   |-&gt;-----carry-----&gt;-| D    Q |-&gt;- CARRY_OUT  |
+   [8:0]      |  down-by-5  |-&gt;-----borrow----&gt;-| D    Q |-&gt;- BORROW_OUT |
+              |             |                   |        |               |
+       UP --&gt;-|    logic    |                   |        |               |
+     DOWN --&gt;-|             |-o-------&gt;---------| D[8:0] |               |
+               -------------  | new_count [8:0] | Q[8:0] |-&gt;-o----&gt;------o
+                              |                 |        |   |
+                 o------&lt;-----o        CLOCK ---|&gt;       |   o-&gt;- COUNT_OUT
+                 |                               --------           [8:0]
+ new_count [8:0] |     -----------
+                 |    |   even    |              --------
+                 o--&gt;-|  parity   |-&gt;-parity--&gt;-| D    Q |-&gt;- PARITY_OUT
+                      | generator |   (1 bit)   |        |
+                       -----------           o--|&gt;       |
+                                             |   --------
+                                   CLOCK ----o
+
+
+Fig.1) Basic block diagram outlining design&#39;s functionality
+</pre>
+
+<p>The even PARITY, CARRY and BORROW requirements were thrown in to give the contestants some space to make significant architectural trade-offs that could mean the difference between winning and losing.</p>
+
+<p>The counter loaded when the UP and DOWN were both &#34;low&#34;, and held its state when UP and DOWN were &#34;high&#34; — exactly opposite to what 99% of the world&#39;s loadable counters traditionally do.</p>
+
+<pre>                  UP  DOWN   DATA_IN    |    COUNT_OUT    
+                 -----------------------------------------
+                   0    0     valid     |   load DATA_IN
+                   0    1   don&#39;t care  |     (Q - 5)
+                   1    0   don&#39;t care  |     (Q + 3)
+                   1    1   don&#39;t care  |   Q unchanged
+
+
+Fig. 2) Loading and up/down counting specifications.  All I/O events
+happen on the rising edge of CLOCK.
+</pre>
+
+<p>To spice things up a bit further, I chose to use the LSI Logic 300K ASIC library because wire loading &amp; wire delay is a significant factor in this technology. Having the &#34;home library&#34; advantage, one saavy VHDL designer, Prasad Paranjpe of LSI Logic, cleverly asked if the default wire loading model was required (he wanted to use a zero wire load model to save in timing!) I replied: &#34;Nice try. Yes, the default wire model is required.&#34;</p>
+
+<p>To let the focus be on design and not verification, contestants were given equivalent Verilog and VHDL testbenches provided by Yatin Trivedi &amp; Larry Saunder&#39;s Seva Technologies. These testbenches threw the same 18 vectors at the Verilog/VHDL source code the contestants were creating and if it passed, for contest purposes, their design was judged &#34;functionally correct.&#34;</p>
+
+<p>For VHDL, contestants had their choice of Synopsys VSS 3.2b and/or Cadence Leapfrog VHDL 2.1.4; for Verilog, contestants had their choice of Cadence Verilog-XL 2.1.2 or Chronologic VCS 2.3.2 plus their respective Verilog/VHDL design environments. (The CEO of Model Technology Inc., Bob Hunter, was too paranoid about the possiblity of Synopsys employees seeing his VHDL to allow it in the contest.) LCB 300K rev 3.1A.1.1.101 was the LSI Logic library.</p>
+
+<p>I had a concern that some designers might not know that an XOR reduction tree is how one generates parity — but Larry, Yatin, Ken &amp; Jeff all agreed that any engineer not knowing this shouldn&#39;t be helped to win a design contest. As a last minute hint, I put in every contestant&#39;s directory an &#34;xor.readme&#34; file that named the two XOR gates available in LSI 300K library (EO and EO3) plus their drive strengths and port lists.</p>
+
+<p>To be friendly synthesis-wise, I let the designers keep the unrealistic Synopsys default setting of all inputs having infinite input drive strength and all outputs were driving zero loads.</p>
+
+<p>The contest took place in three sessions over the same day. To keep things equal, my guiding philosophy throughout these sessions was to conscientiously <em>not</em> fix/improve <em>anything</em> between sessions — no matter how frustrating!</p>
+
+<p>After all that was said &amp; done, Larry &amp; Yatin thought that the design contest would be too easy while Ken &amp; Jeff thought it would have just about the right amount of complexity. I asked all four if they saw any Verilog or VHDL specific &#34;gotchas&#34; with the contest; all four categorically said &#34;no.&#34;</p>
+
+<h4 id="murphy-s-law">Murphy&#39;s Law</h4>
+
+<p>Once the contest began, Murphy&#39;s Law — &#34;that which can go wrong, will go wrong&#34; — prevailed. Because we couldn&#39;t get the SUN and HP workstations until a terrifying 3 days before the contest, I lived through a nightmare domino effect on getting all the Verilog, VHDL, Synopsys and LSI libraries in and installed. Nobody could cut keys for the software until the machine ID&#39;s were known — and this wasn&#39;t until 2 days before the contest! (As it was, I had to drop the HP machines because most of the EDA vendors couldn&#39;t cut software keys for HP machines as fast as they could for SUN workstations.)</p>
+
+<p>The LSI 300K Libraries didn&#39;t arrive until an hour before the contest began. The Seva guys found and fixed a bug in the Verilog testbench (that didn&#39;t exist in the VHDL testbench) some 15 minutes before the constest began.</p>
+
+<p>Some 50 minutes into the first design session, one engineer&#39;s machine crashed — which also happened to be the licence server for all the Verilog simulation software! (Luckily, by this time all the Verilog designers were deep into the synthesis stage.) Unfortunately, the poor designer who had his machine crash couldn&#39;t be allowed to redo the contest in a following session because of his prior knowlege of the design problem. This machine was rebooted and used solely as a licence server for the rest of the contest.</p>
+
+<p>The logistics nightmare once again reared its ugly head when two designers innocently asked: &#34;John, where are your Synopsys manuals?&#34; Inside I screamed to myself: &#34;OhMyGod! OhMyGod! OhMyGod!&#34;; outside I calmly replied: &#34;There are no manuals for any software here. You have to use the online docs available.&#34;</p>
+
+<p>More little gremlins danced in my head when I realized that six of the eight data books that the LSI lib person brought weren&#39;t for the <em>exact</em> LCB 300K library we were using — these data books would be critical for anyone trying to hand build an XOR reduction tree — and one Verilog contestant had just spent ten precious minutes reading a misleading data book! (There were two LCB 300K, one LCA 300K and five LEA 300K databooks.) Verilog designer Howard Landman of HaL Computer noted: &#34;I probably wasted 15 minutes trying to work through this before giving up and just coding functional parity — although I used parentheses in hopes of Synopsys using 3-input XOR gates.&#34;</p>
+
+<p>Then, just as things couldn&#39;t get worst, everyone got to discover that when Synopsys&#39;s Design Compiler runs for the first time in a new account — it takes a good 10 to 15 minutes to build your very own personal DesignWare cache. Verilog contestant Ed Paluch, a consultant, noted: &#34;I thought that first synthesis run building [expletive deleted] DesignWare caches would <em>never</em> end! It felt like days!&#34;</p>
+
+<p>Although, in my opinion, none of these headaches compromised the integrity of the contest, at the time I had to continually remind myself: &#34;To keep things equal, I can <em>not</em> fix nor improve <em>anything</em> no matter how frustrating.&#34;</p>
+
+<h3 id="judging-the-results">Judging The Results</h3>
+
+<p>Because I didn&#39;t want to be in the business of judging source code <em>intent</em>, all judging was based solely on whether the gate level passed the previously described 18 test vectors. Once done, the design was read into the Synopsys Design Compiler and all constraints were removed. Then I applied the command &#34;clocks_at 0, 6, 12 clock&#34; and then took the longest path as determined by &#34;report_timing -path full -delay max -max_paths 12&#34; as the final basis for comparing designs — determining that Verilog designer Larry Fiedler of NVidia won with a 1147 gate design timed at 3.90 nsec.</p>
+
+<pre>      reg [9:0] cnt_up, cnt_dn;   reg [8:0] count_nxt;
+
+      always @(posedge clock)
+      begin
+        cnt_dn = count_out - 3&#39;b 101;  // synopsys label add_dn
+        cnt_up = count_out + 2&#39;b 11;   // synopsys label add_up
+
+        case ({up,down})
+           2&#39;b 00 : count_nxt = data_in;
+           2&#39;b 01 : count_nxt = cnt_dn;
+           2&#39;b 10 : count_nxt = cnt_up;
+           2&#39;b 11 : count_nxt = 9&#39;bX;  // SPEC NOT MET HERE!!!
+          default : count_nxt = 9&#39;bX;  // avoiding ambiguity traps
+        endcase
+
+        parity_out  &lt;= ^count_nxt;
+        carry_out   &lt;= up &amp; cnt_up[9];
+        borrow_out  &lt;= down &amp; cnt_dn[9];
+        count_out   &lt;= count_nxt;
+      end
+
+
+Fig. 3) The winning Verilog source code.  (Note that it failed to meet
+the spec of holding its state when UP and DOWN were both high.)
+</pre>
+
+<p>Since judging was open to any and all who wanted to be there, Kurt Baty, a Verilog contestant and well respected design consultant, registered a vocal double surprize because he knew his design was of comparable speed but had failed to pass the 18 test vectors. (Kurt&#39;s a good friend — I really enjoyed harassing him over this discovery — especially since he had bragged to so many people on how he was going to win this contest!) An on the spot investigation yielded that Kurt had accidently saved the wrong design in the final minute of the contest. Even further investigation then also yielded that the 18 test vectors didn&#39;t cover exactly all the counter&#39;s specified conditions. Larry&#39;s &#34;winning&#34; gate level Verilog based design had failed to meet the spec of holding its state when UP and DOWN were high — even though his design had successfully passed the 18 test vectors!</p>
+
+<p>If human visual inspection of the Verilog/VHDL source code to subjectively check for places where the test vectors might have missed was part of the judging criteria, Verilog designer Steve Golson would have won. Once again, I had to reiterate that all designs which passed the testbench vectors were considered &#34;functionally correct&#34; by definition.</p>
+
+<h4 id="what-the-contestants-thought">What The Contestants Thought</h4>
+
+<p>Despite NASA VHDL designer Jeff Solomon&#39;s &#34;I didn&#39;t like the idea of taking the traditional concept of counters and warping it to make a contest design problem&#34;, the remaining twelve contestants really liked the architectural flexiblity of the up-by-3/down-by-5, 9 bit, loadable, synchronous counter with even party, carry and borrow. Verilog designer Mark Papamarcos summed up the majority opinion with: &#34;I think that the problem was pretty well devised. There was a potential resource sharing problem, some opportunities to schedule some logic to evaluate concurrently with other logic, etc. When I first saw it, I thought it would be very easy to implement and I would have lots of time to tune. I also noticed the 2 and 3-input XOR&#39;s in the top-level directory, figured that it might be somehow relevant, but quickly dismissed any clever ideas when I ran into problems getting the vectors to match.&#34;</p>
+
+<p>Eleven of contestants were tempted by the apparent correlation between known parity and the adding/subtracting of odd numbers. Only one Verilog designer, Oren Rubinstein of Hewlett-Packard Canada, committed to this strategy but ran way out of time. Once home, Kurt Baty helped Oren conceptually finish his design while Prasad Paranjpe helped with the final synthesis. It took about 7 hours brain time and 8 hours coding/sim/synth time (15 hours total) to get a final design of 3.05 nsec &amp; 1988 gates. Observing it took 10x the original estimated 1.5 hours to get a 22% improvement in speed, Oren commented: &#34;Like real life, it&#39;s impossible to create accurate engineering design schedules.&#34;</p>
+
+<p>Two of the VHDL designers, Prasad Paranjpe of LSI Logic and Jan Decaluwe of Easics, both complained of having to deal with type conversions in VHDL. Prasad confessed: &#34;I can&#39;t believe I got caught on a simple typing error. I used IEEE std_logic_arith, which requires use of unsigned &amp; signed subtypes, instead of std_logic_unsigned.&#34; Jan agreed and added: &#34;I ran into a problem with VHDL or VSS (I&#39;m still not sure.) This case statement doesn&#39;t analyze: &#34;subtype two_bits is unsigned(1 downto 0); case two_bits&#39;(up &amp; down)...&#34; But what worked was: &#34;case two_bits&#39;(up, down)...&#34; Finally I solved this problem by assigning the concatenation first to a auxiliary variable.&#34;</p>
+
+<p>Verilog competitor Steve Golson outlined the first-get-a-working-design-and- then-tweak-it-in-synthesis strategy that most of the Verilog contestants pursued with: &#34;As I recall I had some stupid typos which held me up; also I had difficulty with parity and carry/borrow. Once I had a correctly functioning baseline design, I began modifying it for optimal synthesis. My basic idea was to split the design into four separate modules: the adder, the 4:1 MUXes, the XOR logic (parity and carry/borrow), and the top counter module which contains only the flops and instances of the other three modules. My strategy was to first compile the three (purely combinational) submodules individually. I used a simple &#34;max_delay 0 all_outputs()&#34; constraint on each of them. The top-level module got the proper clock constraint. Then &#34;dont_touch&#34; these designs, and compile the top counter module (this just builds the flops). Then to clean up I did an &#34;ungroup -all&#34; followed by a &#34;compile -incremental&#34; (which shaved almost 1 nsec off my critical path.)&#34;</p>
+
+<p>Typos and panic hurt the performance of a lot of contestants. Verilog designer Daryoosh Khalilollahi of National Semiconductor said: &#34;I thought I would not be able to finish it on time, but I just made it. I lost some time because I would get a Verilog syntax error that turned up because I had one extra file in my Verilog &#34;include&#34; file (verilog -f include) which was not needed.&#34; Also, Verilog designer Howard Landman of Hal Computers never realized he had put both a complete behavioral <em>and</em> a complete hand instanced parity tree in his source Verilog. (Synopsys Design Compiler just optimized one of Howard&#39;s dual parity trees away!)</p>
+
+<p>On average, each Verilog designer managed to get two to five synthesis runs completed before running out of time. Only two VHDL designers, Jeff Solomon and Jan Decaluwe, managed to start (but not complete) one synthesis run. In both cases I disqualified them from the contest for not making the deadline but let their synthesis runs attempt to finish. Jan arrived a little late so we gave Jan&#39;s run some added time before disqualifying him. His unfinished run had to be killed after 21 minutes because another group of contestants were arriving. (Incidently, I had accidently given the third session an extra 6 design minutes because of a goof on my part. No Verilog designers were in this session but VHDL designers Jeff Solomon, Prasad Paranjpe, Vikram Shrivastava plus Ravi Srinivasan of Texus Instruments all benefited from this mistake.) Since Jeff was in the last session, I gave him all the time needed for his run to complete. After an additional 17 minutes (total) he produced a gate level design that timed out to 15.52 nsec. After a total of 28 more minutes he got the timing down to 4.46 nsec but his design didn&#39;t pass functional vectors. He had an error somewhere in his VHDL source code.</p>
+
+<p>Failed Verilog designer Kurt Baty closed with: &#34;John, I look forward to next year&#39;s design contest in whatever form or flavor it takes, and a chance to redeem my honor.&#34;</p>
+
+<h4 id="closing-arguments-to-the-jury">Closing Arguments To The Jury</h4>
+
+<p>Closing aurguments the VHDL bigots may make in this trial might be: &#34;What 14 engineers do isn&#39;t statistically significant. Even the guy who ran this design contest admitted all sorts of last minute goofs with it. You had a workstation crash, no manuals &amp; misleading LSI databooks. The test vectors were incomplete. One key VHDL designer ran into a Synopsys VHDL simulator bug after arriving late to his session. The Verilog design which won this contest didn&#39;t even meet the spec completely! In addition, this contest wasn&#39;t put together to be a referendum on whether Verilog or VHDL is the better language to design in — hence it may miss some major issues.&#34;</p>
+
+<p>The Verilog bigots might close with: &#34;No engineers work under the contrived conditions one may want for an ideal comparision of Verilog &amp; VHDL. Fourteen engineers may or may not be statistally significant, but where there&#39;s smoke, there&#39;s fire. I saw all the classical problems engineers encounter in day to day designing here. We&#39;ve all dealt with workstation crashes, bad revision control, bugs in tools, poor planning and incomplete testing. It&#39;s because of these realities I think this design contest was <em>perfect</em> to determine how each HDL measures up in real life. And Verilog won hands down!&#34;</p>
+
+<p>The jury&#39;s veridict will be seen in the next &#34;Integrated System Design&#34;.</p>
+
+<h4 id="you-the-jury">You The Jury...</h4>
+
+<p>You the jury are now asked to please take ten minutes to think about what you have just read and, in 150 words or less, send your thoughts to me at &#34;jcooley@world.std.com&#34;. Please don&#39;t send me &#34;VHDL sucks.&#34; or &#34;Verilog must die!!!&#34; — but personal experiences and/or observations that add to the discussion. It&#39;s OK to have strong/violent opinions, just back them with something more than hot air. (Since I don&#39;t want to be in the business of chasing down permissions, my default setting is <em>whatever</em> you send me is completely publishable. If you wish to send me letters with a mix of publishable and non-publishable material CLEARLY indicate which is which.) I will not only be reprinting replied letters, I&#39;ll also be publishing stats on how many people had reported each type of specific opinion/experience.</p>
+
+<p><i>John Cooley</i></p>
+
+<p>P.S. In replying, please indicate your job, your company, whether you use Verilog or VHDL, why, and for how long. Also, please DO NOT copy this article back to me — I know why you&#39;re replying! :^)</p>
+
+</div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

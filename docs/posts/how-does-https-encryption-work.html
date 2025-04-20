@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How does HTTPS encryption work? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/how-does-https-work/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How does HTTPS encryption work?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Hypertext Transfer Protocol <em>Secure</em> or <a href="https://developer.mozilla.org/en-US/docs/Glossary/https">HTTPS</a> is an extension of the <a href="https://boot.dev/courses/learn-http">HTTP protocol</a>. HTTPS secures the data transfer between client and server by <a href="https://developer.mozilla.org/en-US/docs/Glossary/Encryption">encrypting</a> all of the information communicated.</p>
+<p>HTTPS allows a client to safely share sensitive information with a server through an HTTP request. HTTPS is critically important when it comes to sending sensitive data such as credit card information, passwords, or bank account numbers.</p>
+<h2 id="how-does-https-work-video">
+  <span> How does HTTPs work? (video)</span> <a href="#how-does-https-work-video">🔗</a></h2>
+
+<p>
+  <iframe src="https://www.youtube.com/embed/0kwLpf6ms94" allowfullscreen="" title="YouTube Video"></iframe>
+</p>
+
+
+
+<h3 id="too-long-didnt-watch">
+  <span> Too long, didn’t watch</span> <a href="#too-long-didnt-watch">🔗</a></h3>
+<p>In short, HTTPS works like this:</p>
+<ol>
+<li>The client contacts the server and requests a secure connection</li>
+<li>The server sends the client its <a href="https://en.wikipedia.org/wiki/Public-key_cryptography">public key</a></li>
+<li>The client and the server use asymmetric encryption (like <a href="https://en.wikipedia.org/wiki/RSA_(cryptosystem)">RSA</a>) to negotiate a shared private key</li>
+<li>The shared private key is used by the client to encrypt the HTTP request (using <a href="https://en.wikipedia.org/wiki/Symmetric-key_algorithm">symmetric encryption</a> like <a href="https://blog.boot.dev/cryptography/aes-256-cipher/">AES</a>)</li>
+<li>The server uses the shared private key to decrypt the HTTP request</li>
+<li>The server uses the shared private key to send the client an encrypted response</li>
+<li>The client uses the shared private key to decrypt the response</li>
+</ol>
+
+<p><img src="https://i.imgur.com/iOkQUdG.png" alt="HTTPS"/></p>
+<p>HTTPS requires that the client use <a href="https://developer.mozilla.org/en-US/docs/Glossary/SSL">SSL</a> or <a href="https://developer.mozilla.org/en-US/docs/Glossary/TLS">TLS</a> to protect requests and traffic by encrypting the information in the request.</p>
+<h2 id="when-should-i-use-https">
+  <span> When should I use HTTPs?</span> <a href="#when-should-i-use-https">🔗</a></h2>
+<p>While HTTPS is only <em>critically</em> important when it comes to sensitive data, it’s a good idea to just use HTTPS for <em>all</em> of your web traffic. If you browse a website that doesn’t use HTTPS, your browser will actually give you an ugly little warning to let you know that the site is not as secure as it should be.</p>
+<p><img src="https://blog.boot.dev/img/800/no-https.png.webp" alt="no http browser"/></p>
+<p><em>If you develop websites, use HTTPS.</em></p>
+<h2 id="careful-https-is-not-necessarily-private">
+  <span> Careful! HTTPS is not necessarily private</span> <a href="#careful-https-is-not-necessarily-private">🔗</a></h2>
+<p>Just because a website uses HTTPS doesn’t mean that your communication with them is <em>private</em>.</p>
+<h3 id="https-keeps-your-messages-private-but-not-your-identity">
+  <span> HTTPS keeps your messages private, but not your identity</span> <a href="#https-keeps-your-messages-private-but-not-your-identity">🔗</a></h3>
+<p>It’s important to note that while HTTPS encrypts <em>what you are saying</em>, it doesn’t necessarily protect <em>who you are</em>. Tools like <a href="https://nordvpn.com/what-is-a-vpn/">VPNs (virtual private networks)</a> are needed for remaining anonymous online.</p>
+<p>If you use a VPN, the company that runs the VPN is responsible for keeping your identity private. There is another option for privacy called a <a href="https://www.torproject.org/">TOR</a> network, which is a network of computers that are all connected. The TOR network, which you can use via a Tor browser, is designed to keep your identity <em>anonymous</em>, but it effectively adds another layer of privacy. You can use a VPN <em>and</em> a Tor browser if you’re really concerned about your privacy.</p>
+<p>In short, HTTPS keeps your messages private, but not your identity or the identity of the server you’re communicating with. VPNs and TOR networks can help with that.</p>
+<h3 id="https-ensures-that-youre-talking-to-the-right-person-or-server">
+  <span> HTTPS ensures that you’re talking to the right person (or server)</span> <a href="#https-ensures-that-youre-talking-to-the-right-person-or-server">🔗</a></h3>
+<p>In addition to encrypting the information within a request, HTTPS uses <a href="https://en.wikipedia.org/wiki/Digital_signature">digital signatures</a> to prove that you’re communicating with the server that you think you are. If a hacker were to intercept an HTTPS request by tapping into a network cable, they wouldn’t be able to successfully pretend they are your bank’s web server.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

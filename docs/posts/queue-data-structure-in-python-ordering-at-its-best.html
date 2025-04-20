@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Queue Data Structure in Python: Ordering at Its Best | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/python/queue-data-structure-python/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Queue Data Structure in Python: Ordering at Its Best</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>A <strong>queue</strong> is an efficient collection of ordered items. New items can be added to one side, and removed from the other side.</p>
+<p><img src="https://i.imgur.com/axhYf8C.png" alt="Queue Image"/></p>
+<p>A queue is like a line at the grocery store; the first person to get in line will be the first to be checked out. The fundamental principle behind a queue is <code>FIFO</code> (first in, first out), meaning the first element added to the queue will be the first one to get removed (as opposed to a <a href="https://blog.boot.dev/python/stack-data-structure-python/">stack</a>, which is <code>LIFO</code>).</p>
+<p>Queues are commonly used in computer science for algorithms, data buffer handling, and in everyday applications where tasks or data are lined up in order.</p>
+
+<p>
+  <iframe src="https://www.youtube.com/embed/CH6yLUtMZ28" allowfullscreen="" title="YouTube Video"></iframe>
+</p>
+
+
+
+<h2 id="basic-queue-operations">
+  <span> Basic Queue Operations:</span> <a href="#basic-queue-operations">🔗</a></h2>
+<ul>
+<li><strong>Enqueue</strong>: <code>queue.push(item)</code> - Adds an item to the back of the queue</li>
+<li><strong>Dequeue</strong>: <code>queue.pop()</code> - Removes the front item from the queue</li>
+<li><strong>Front</strong>: <code>queue.peek()</code> - Returns the front item without removing it</li>
+<li><strong>Size</strong>: <code>queue.size()</code> - Returns the number of items in the queue</li>
+</ul>
+<h2 id="real-life-scenarios-for-using-a-queue">
+  <span> Real-life scenarios for using a queue:</span> <a href="#real-life-scenarios-for-using-a-queue">🔗</a></h2>
+<p>Take, for instance, a printer queue. If multiple documents are sent to the printer at nearly the same time, they’re lined up in the order they were received. As each document finishes printing, the next in line starts. A queue-based data structure is perfect for this use case.</p>
+<h2 id="two-approaches-to-implementing-a-queue">
+  <span> Two Approaches to Implementing a Queue:</span> <a href="#two-approaches-to-implementing-a-queue">🔗</a></h2>
+<h3 id="1-list-based-queue">
+  <span> 1. <strong>List-Based Queue</strong></span> <a href="#1-list-based-queue">🔗</a></h3>
+<p>In Python, lists are versatile data structures, and they can be easily adapted to implement a queue. Here’s a simple list-based queue:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>class</span> <span>Queue</span><span>:</span>
+</span></span><span><span>    <span>def</span> <span>__init__</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>items</span> <span>=</span> <span>[]</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>push</span><span>(</span><span>self</span><span>,</span> <span>item</span><span>):</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>items</span><span>.</span><span>insert</span><span>(</span><span>0</span><span>,</span> <span>item</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>pop</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>if</span> <span>len</span><span>(</span><span>self</span><span>.</span><span>items</span><span>)</span> <span>==</span> <span>0</span><span>:</span>
+</span></span><span><span>            <span>return</span> <span>None</span>
+</span></span><span><span>        <span>return</span> <span>self</span><span>.</span><span>items</span><span>.</span><span>pop</span><span>()</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>peek</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>if</span> <span>len</span><span>(</span><span>self</span><span>.</span><span>items</span><span>)</span> <span>==</span> <span>0</span><span>:</span>
+</span></span><span><span>            <span>return</span> <span>None</span>
+</span></span><span><span>        <span>return</span> <span>self</span><span>.</span><span>items</span><span>[</span><span>-</span><span>1</span><span>]</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>size</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>return</span> <span>len</span><span>(</span><span>self</span><span>.</span><span>items</span><span>)</span>
+</span></span></code></pre></div><p>With this structure, enqueuing an item inserts it at the beginning, and dequeuing fetches from the end, ensuring a FIFO order. While this implementation is nice and <em>simple</em>, it’s not the most efficient.</p>
+<p>The trouble is that every time an item is enqueued, all the other elements in the list must be shifted one position to the right. This pesky line right here is causing all the trouble:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>self</span><span>.</span><span>items</span><span>.</span><span>insert</span><span>(</span><span>0</span><span>,</span> <span>item</span><span>)</span>
+</span></span></code></pre></div><p>Under the hood, this isn’t just adding an item to the front of the lift, it’s actually iterating over every single item in the list and moving it one position to the right. That gets really slow when the list gets big. In Big-O notation, it’s an <code>O(n)</code> operation, while all the other operations are <code>O(1)</code>: constant time.</p>
+<h3 id="2-linked-list-based-queue">
+  <span> 2. <strong>Linked List-Based Queue</strong></span> <a href="#2-linked-list-based-queue">🔗</a></h3>
+<p>The trouble with the list based implementation is that no matter how you design it, either the enqueue or the dequeue operation will be slow: <code>O(n)</code>. At some point, you’ll need to shift all the elements in the list to the right or left.</p>
+<p>If we use a linked list instead of a normal list, we can avoid this problem completely. With a linked list, we can enqueue and dequeue in <code>O(1)</code> time. Here’s a simple linked list-based queue:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>class</span> <span>LLQueue</span><span>:</span>
+</span></span><span><span>    <span>def</span> <span>remove_from_head</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>if</span> <span>self</span><span>.</span><span>head</span> <span>is</span> <span>None</span><span>:</span>
+</span></span><span><span>            <span>return</span> <span>None</span>
+</span></span><span><span>        <span>temp</span> <span>=</span> <span>self</span><span>.</span><span>head</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>head</span> <span>=</span> <span>self</span><span>.</span><span>head</span><span>.</span><span>next</span>
+</span></span><span><span>        <span>return</span> <span>temp</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>add_to_tail</span><span>(</span><span>self</span><span>,</span> <span>node</span><span>):</span>
+</span></span><span><span>        <span>if</span> <span>self</span><span>.</span><span>head</span> <span>is</span> <span>None</span><span>:</span>
+</span></span><span><span>            <span>self</span><span>.</span><span>head</span> <span>=</span> <span>node</span>
+</span></span><span><span>            <span>self</span><span>.</span><span>tail</span> <span>=</span> <span>node</span>
+</span></span><span><span>            <span>return</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>tail</span><span>.</span><span>next</span> <span>=</span> <span>node</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>tail</span> <span>=</span> <span>node</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>__init__</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>tail</span> <span>=</span> <span>None</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>head</span> <span>=</span> <span>None</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>__iter__</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>node</span> <span>=</span> <span>self</span><span>.</span><span>head</span>
+</span></span><span><span>        <span>while</span> <span>node</span> <span>is</span> <span>not</span> <span>None</span><span>:</span>
+</span></span><span><span>            <span>yield</span> <span>node</span>
+</span></span><span><span>            <span>node</span> <span>=</span> <span>node</span><span>.</span><span>next</span>
+</span></span><span><span>
+</span></span><span><span>    <span>def</span> <span>__repr__</span><span>(</span><span>self</span><span>):</span>
+</span></span><span><span>        <span>nodes</span> <span>=</span> <span>[]</span>
+</span></span><span><span>        <span>for</span> <span>node</span> <span>in</span> <span>self</span><span>:</span>
+</span></span><span><span>            <span>nodes</span><span>.</span><span>append</span><span>(</span><span>node</span><span>.</span><span>val</span><span>)</span>
+</span></span><span><span>        <span>return</span> <span>&#34; &lt;- &#34;</span><span>.</span><span>join</span><span>(</span><span>nodes</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>class</span> <span>Node</span><span>:</span>
+</span></span><span><span>    <span>def</span> <span>__init__</span><span>(</span><span>self</span><span>,</span> <span>val</span><span>):</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>val</span> <span>=</span> <span>val</span>
+</span></span><span><span>        <span>self</span><span>.</span><span>next</span> <span>=</span> <span>None</span>
+</span></span></code></pre></div><p>While both implementations effectively model the queue behavior, the linked list approach generally provides better performance for enqueuing since it avoids the potential overhead of shifting elements in a list.</p>
+<p>However, when considering which implementation to use, it’s essential to factor in the specific requirements and constraints of the problem at hand.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

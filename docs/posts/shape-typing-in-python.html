@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shape typing in Python | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://jameshfisher.com/2024/04/12/shape-typing-in-python/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Shape typing in Python</h1>
+        <section>
+            
+            <p>While I was looking the other way,
+Python got advanced static types!
+Here’s matrix multiplication,
+describing the input shapes and its output shape:</p>
+<pre class="language-python"><code class="language-python"><span class="token keyword">def</span> mat_mul<span class="token punctuation">[</span>
+    N<span class="token punctuation">,</span> K<span class="token punctuation">,</span> M
+<span class="token punctuation">]</span><span class="token punctuation">(</span>
+  m1<span class="token punctuation">:</span> Mat<span class="token punctuation">[</span>N<span class="token punctuation">,</span> M<span class="token punctuation">]</span><span class="token punctuation">,</span>
+  m2<span class="token punctuation">:</span> Mat<span class="token punctuation">[</span>M<span class="token punctuation">,</span> K<span class="token punctuation">]</span><span class="token punctuation">,</span>
+<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> Mat<span class="token punctuation">[</span>N<span class="token punctuation">,</span> K<span class="token punctuation">]</span><span class="token punctuation">:</span>
+    <span class="token keyword">return</span> m1 @ m2</code></pre>
+<p>There’s a lot going on here!
+In traditional Python, we’d write:</p>
+<pre class="language-python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">mat_mul</span><span class="token punctuation">(</span>m1<span class="token punctuation">,</span> m2<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">return</span> m1 @ m2</code></pre>
+<p>Then if we used the wrong shapes,
+we’d get a runtime error,
+like this:</p>
+<pre><code>&gt;&gt;&gt; m1 @ m2
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+ValueError: matmul: Input operand 1 has a mismatch
+  in its core dimension 0, with gufunc signature
+  (n?,k),(k,m?)-&gt;(n?,m?) (size 2 is different from 3)</code></pre>
+<p>Our type-safe wrapper <code>mat_mul</code> uses a type <code>Mat[N, M]</code>,
+which I defined as:</p>
+<pre class="language-python"><code class="language-python"><span class="token builtin">type</span> Mat<span class="token punctuation">[</span>N<span class="token punctuation">,</span> M<span class="token punctuation">]</span> <span class="token operator">=</span> np<span class="token punctuation">.</span>ndarray<span class="token punctuation">[</span>
+    <span class="token builtin">tuple</span><span class="token punctuation">[</span>N<span class="token punctuation">,</span> M<span class="token punctuation">]</span><span class="token punctuation">,</span>
+    np<span class="token punctuation">.</span>dtype<span class="token punctuation">[</span>np<span class="token punctuation">.</span>float64<span class="token punctuation">]</span><span class="token punctuation">,</span>
+<span class="token punctuation">]</span></code></pre>
+<p>If we try to multiply matrices of the wrong shape,
+<a href="https://github.com/microsoft/pyright">Pyright</a> gives a type error.</p>
+<p>This uses Numpy’s <code>np.ndarray</code> type,
+which takes two arguments
+that describe the shape and dtype.
+For example, we can describe a 2x3 matrix of integers as:</p>
+<pre class="language-python"><code class="language-python">mat2x3<span class="token punctuation">:</span> np<span class="token punctuation">.</span>ndarray<span class="token punctuation">[</span>
+    <span class="token builtin">tuple</span><span class="token punctuation">[</span>Literal<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">,</span> Literal<span class="token punctuation">[</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+    np<span class="token punctuation">.</span>dtype<span class="token punctuation">[</span>np<span class="token punctuation">.</span>int64<span class="token punctuation">]</span><span class="token punctuation">,</span>
+<span class="token punctuation">]</span> <span class="token operator">=</span> np<span class="token punctuation">.</span>array<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">,</span><span class="token punctuation">[</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">)</span></code></pre>
+<p>At the moment, most of the numpy API does not use these type parameters.
+For example, <code>np.array(...)</code> just gives you an <code>np.ndarray[Any, Any]</code>.
+So we have to make our own type-safe wrappers.</p>
+        </section>
+    </article>
+</main>
+</body>
+</html>

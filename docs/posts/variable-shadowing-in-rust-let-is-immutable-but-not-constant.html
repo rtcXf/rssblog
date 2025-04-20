@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Variable Shadowing In Rust - &#34;Let&#34; Is Immutable But Not Constant | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/rust/variable-shadowing-in-rust/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Variable Shadowing In Rust - &#34;Let&#34; Is Immutable But Not Constant</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Let’s take a look at some of the common pitfalls with the keywords <em>let</em> and <em>mut</em><strong>.</strong> Then, we will learn how <strong>immutable != constant</strong> by using <em>variable shadowing</em>.</p>
+<p>Getting started with Rust can be daunting. Rust is well-known for being a <a href="https://doc.rust-lang.org/nomicon/meet-safe-and-unsafe.html">safe</a> language. One of the ways in which Rust is safe is through type-safety. Rust is strongly typed and defaults to immutable values.</p>
+<h2 id="the-let-keyword">
+  <span> The “let” Keyword</span> <a href="#the-let-keyword">🔗</a></h2>
+<p>The simplest way to create a new variable in Rust is by using the “let” keyword:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>5</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p><a href="https://doc.rust-lang.org/std/keyword.let.html">let</a> introduces a new variable into the current scope. By default, new variables are immutable, which means they can’t be reassigned. For example:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>5</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>my_num</span><span> </span><span>=</span><span> </span><span>6</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>which fails to compile with the error: <code>cannot assign twice to immutable variable</code>.</p>
+<h2 id="variable-shadowing---the-dark-side-of-let">
+  <span> Variable Shadowing - The Dark Side of “let”</span> <a href="#variable-shadowing---the-dark-side-of-let">🔗</a></h2>
+<p>As we can see above, Rust’s immutability offered by the <em>let</em> keyword allows the compiler to ensure that a given variable can’t be changed… kind of. The following does <strong>not</strong> fail to compile:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>5</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>6</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>We <strong>are</strong> <strong>allowed</strong> to declare a new <a href="https://blog.boot.dev/clean-code/naming-variables/">variable with the same name</a>, even all in the same scope. This doesn’t mutate <code>my_num</code>, it creates a new variable with a new spot in memory. The name <code>my_num</code> now refers to the new variable, and the old variable is no longer accessible by its name.</p>
+<p>Variable shadowing also works in an inner scope. In the outer scope it is in a way the original variable remains “unshadowed”:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>5</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>// start new scope
+</span></span></span><span><span><span></span><span>    </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>let</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>6</span><span>;</span><span>
+</span></span></span><span><span><span>        </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>prints:</p>
+<pre tabindex="0"><code>6
+5
+</code></pre><p>Notice how the pointer to the new variable is completely different:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>5</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;my_num pointer address: </span><span>{:p}</span><span>&#34;</span><span>,</span><span> </span><span>&amp;</span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>6</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;my_num pointer address: </span><span>{:p}</span><span>&#34;</span><span>,</span><span> </span><span>&amp;</span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>prints:</p>
+<pre tabindex="0"><code>my_num pointer address: 0x7ffeee0ad6f4
+my_num pointer address: 0x7ffeee0ad74c
+</code></pre><p>I’m personally not yet a fan of variable shadowing. My first impression is that it ruins the absolute safety that could have been provided. That said, I’ve heard compelling arguments for why it should exist. Namely that creating a new variable with the same name is terribly convenient.</p>
+<p>tl;dr: Even though variables declared with “let” are immutable, the name of the variable can easily point to an entirely new variable. Don’t count on it being a true constant.</p>
+<h2 id="mut---a-normal-mutable-variable">
+  <span> Mut - A “Normal” Mutable Variable</span> <a href="#mut---a-normal-mutable-variable">🔗</a></h2>
+<p>Variables declared with “let” can optionally be declared mutable using the “<a href="https://doc.rust-lang.org/stable/rust-by-example/scope/borrow/mut.html">mut</a>” keyword:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>mut</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>5</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>my_num</span><span> </span><span>=</span><span> </span><span>6</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>Prints <strong>6</strong></p>
+<p>Mutable variables are just that - mutable. The value changes but the underlying address in memory is the same:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>mut</span><span> </span><span>my_num</span><span> </span><span>=</span><span> </span><span>5</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;my_num pointer address: </span><span>{:p}</span><span>&#34;</span><span>,</span><span> </span><span>&amp;</span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span>    </span><span>my_num</span><span> </span><span>=</span><span> </span><span>6</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;my_num pointer address: </span><span>{:p}</span><span>&#34;</span><span>,</span><span> </span><span>&amp;</span><span>my_num</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>prints:</p>
+<pre tabindex="0"><code>my_num pointer address: 0x7ffee5d6e6fc
+my_num pointer address: 0x7ffee5d6e6fc
+</code></pre><p>There are other interesting keywords to explore as well like <a href="https://doc.rust-lang.org/std/keyword.const.html">const</a> and <a href="https://doc.rust-lang.org/1.29.2/book/first-edition/const-and-static.html">static</a>, but we’ll save those for another article.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

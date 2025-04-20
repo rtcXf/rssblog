@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>I Didn&#39;t Explain Clearly, but Still Don&#39;t Learn Frameworks First | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/backend/wrong-about-abstractions/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>I Didn&#39;t Explain Clearly, but Still Don&#39;t Learn Frameworks First</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I wrote an article about <a href="https://blog.boot.dev/backend/dont-start-with-frameworks/">not starting with frameworks</a> that got some attention from <a href="https://www.reddit.com/r/programming/">/r/programming</a> on <a href="https://www.reddit.com/r/programming/comments/10dhhc4/if_youre_learning_backend_dont_start_with/">Reddit yesterday</a>. While a good number of people must have enjoyed the article (some people upvoted? idk) I was rightfully blasted with <em>a lot</em> of criticism. Here are some of my favorite comments:</p>
+<blockquote>
+<p>If you’re learning plumbing, don’t start with sink taps. Start with mining ore to make pipes.</p>
+</blockquote>
+<blockquote>
+<p>Is it bad advice Monday already?</p>
+</blockquote>
+<p>The sad thing is that I agree with a lot of the commenters, which means I did a terrible job of communicating my point. I’m going to try to do better in this post. Not only do I want to clarify my thoughts, but I do think I was outright wrong about what needs to be <em>emphasized</em> to new developers.</p>
+<h2 id="correction-top-down-why-then-bottom-up-how">
+  <span> Correction: Top-Down “Why” then Bottom-Up “How”</span> <a href="#correction-top-down-why-then-bottom-up-how">🔗</a></h2>
+<p>In my last article, I make a case for learning “bottom-up”. Paraphrasing myself, I said:</p>
+<blockquote>
+<p>I think it’s a good rule of thumb to go one layer down the stack from where you plan to do most of your work. Learn how that works, and move up the abstraction layers from there.</p>
+</blockquote>
+<p>This skips a <em>crucial</em> step that many Redditors pointed out. When I teach a new concept on <a href="https://www.boot.dev">Boot.dev</a> I start by zooming out and talking about the “why”. For example, let’s say you’re learning about storing user data on a back-end server.</p>
+<h3 id="1-start-at-a-high-level">
+  <span> 1. Start at a high-level</span> <a href="#1-start-at-a-high-level">🔗</a></h3>
+<ul>
+<li>Why do we store data on the server?</li>
+<li>When can we get away with storing data on the client?</li>
+<li>What’s the difference between variables in my program and persistent storage?</li>
+</ul>
+<p>In this example, I’d want the student to take a look at a simple architectural diagram: just simple boxes and lines. Here’s where data lives, here’s where we send it, etc.</p>
+<h3 id="2-build-the-simplest-version-focused-on-the-core-of-what-youre-learning">
+  <span> 2. Build the simplest version, focused on the core of what you’re learning</span> <a href="#2-build-the-simplest-version-focused-on-the-core-of-what-youre-learning">🔗</a></h3>
+<p>Again, I did a poor job explaining my thoughts here. It’s not about building a production web server from <em>scratch</em>, it’s about building a <em>simple version</em> of the thing you’re trying to learn without too many abstractions. If your goal is to learn about storing user data, your first application should just save a user’s name and email address to a text or JSON file on disk.</p>
+<h3 id="3-add-abstraction-layers-as-appropriate">
+  <span> 3. Add abstraction layers as appropriate</span> <a href="#3-add-abstraction-layers-as-appropriate">🔗</a></h3>
+<p>Once you’ve got a minimal HTTP server that saves information to the filesystem, install SQLite or Postgres and learn about the benefits database software provides, namely speed and reliability. Once you’ve played with that, install an ORM and see how easily the <code>.save()</code> method can be used to store a record in a database.</p>
+<p>Contrast this approach with my own experience. Without understanding the difference between a <code>GET</code> and a <code>POST</code> request I spun up a Django server and copy/pasted code from Stack Overflow. Most of the time I was terrified that a small change that a friendly internet stranger suggested could break the whole thing.</p>
+<h2 id="note-its-not-about-learning-the-right-way">
+  <span> Note: It’s not about “learning the right way”</span> <a href="#note-its-not-about-learning-the-right-way">🔗</a></h2>
+<p>If you learn to code you’ve won. There is no “wrong way” to learn. If you didn’t take the approach I’m suggesting (I didn’t) that doesn’t mean you’re not a real engineerᵗᵐ. If it worked for you, that’s fantastic, I’ve just found that this approach speeds up the process for <em>a lot</em> of people.</p>
+<h2 id="some-people-need-more-practical-knowledge-some-need-more-theory">
+  <span> Some people need more practical knowledge, some need more theory</span> <a href="#some-people-need-more-practical-knowledge-some-need-more-theory">🔗</a></h2>
+<p>One of the <a href="https://blog.boot.dev/about/">reasons I decided to start Boot.dev</a> was that I saw two prevailing approaches for learning back-end development:</p>
+<ul>
+<li>A 4-year CS degree packed with theory</li>
+<li>An n-month bootcamp rushing through new technologies and frameworks</li>
+</ul>
+<p><strong>As a general rule, bootcamps are too fast and degrees are too slow.</strong> Bootcamps skip theory almost completely while degrees take years to get you to the point where you can build something useful. I think there’s a better middle-ground approach: A curriculum that teaches all the career-relevant theory while constantly putting it into practice by building real-world projects.</p>
+<h2 id="different-people-need-different-advice">
+  <span> Different people need different advice</span> <a href="#different-people-need-different-advice">🔗</a></h2>
+<p>I talk to a lot of students. Some have a more academic background, and after getting a feel for their situation I often try to push them into building more projects and worrying less about inverting binary trees.</p>
+<p>Other students I’ve worked with are bootcamp graduates or have been self-teaching online. With them, I’m often pointing them to resources that explain the fundamentals of the stuff they’re still fuzzy on. Things like my hands-on <a href="https://www.boot.dev/courses/learn-http-clients-golang">HTTP</a>, <a href="https://www.boot.dev/courses/learn-algorithms-python">Algorithms</a>, or <a href="https://www.boot.dev/courses/learn-sql">SQL</a> courses.</p>
+<p>At the end of the day, it just depends. If you’re actively learning to code I hope this helps you figure out what kinds of things you should study <em>next</em> to keep moving forward. Good luck!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

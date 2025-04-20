@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Build a Web Server in Go [Deprecated] | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/tutorials/learn-http-servers-golang-deprecated/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Build a Web Server in Go [Deprecated]</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+          
+          <h2>Table of Contents</h2>
+          
+           <p>Let’s build a fully-fledged HTTP server from scratch in Go. This course assumes you already have a solid understanding of Go. If you don’t, take a step back and take our <a href="https://www.boot.dev/courses/learn-golang">Go course</a>.</p>
+<p><strong>Caveat</strong>: There is a more updated version of this course that’s more interactive over on <a href="https://www.boot.dev/courses/learn-http-servers-golang">Boot.dev here</a>. If you’re looking for a more interactive experience, I recommend checking it out!</p>
+<p><strong>Goals of this course</strong></p>
+<ul>
+<li>Understand what web servers are and how they power real-world web applications</li>
+<li>Build an actual web server in Go, without the use of a framework</li>
+<li>Learn what makes Go a great language for building fast web servers</li>
+<li>We’ll use production-ready tools for everything in this course <em>except the database</em>. We’ll use flat files because we want to drive home the point that a database is just a fancy way to store data on disk. We’ll cover DBs later.</li>
+</ul>
+<h2 id="servers">
+  <span> Servers</span> <a href="#servers">🔗</a></h2>
+<p><strong>What is a server?</strong></p>
+<p>A web <a href="https://en.wikipedia.org/wiki/Server_%28computing%29">server</a> is just a computer that serves data over a network, typically the Internet. Servers run software that listens for incoming requests from clients. When a request is received, the server responds with the requested data.</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/nUzP2kg.png" alt="client server model"/></p>
+<p>Any server worth its salt can handle <em>many</em> requests at the same time. In Go, we use a new <a href="https://go.dev/tour/concurrency">goroutine</a> for each request to handle them concurrently. Let’s start by practicing with goroutines.</p>
+<p><strong>Assignment</strong></p>
+<p>In this course, we’ll be working on a product called “Chirpy”. Chirpy is a social network similar to Twitter.</p>
+<p>One of Chirpy’s servers is processing requests <em>unbelievably</em> slowly. Use a goroutine to fix the bug in the <code>handleRequests</code> (not <code>handleRequest</code>) function. The server should be able to process all the requests within the time limit.</p>
+<p><strong>Goroutines in servers</strong></p>
+<p>In Go, <em>goroutines</em> are used to serve <em>many</em> requests at the same time, but not all servers are quite so performant.</p>
+<p>Go was built by Google, and one of the purposes of its creation was to power Google’s massive web infrastructure. Go’s goroutines are a great fit for web servers because they’re lighter weight than operating system threads, but still take advantage of multiple cores. Let’s compare a Go web server’s concurrency model to other popular languages and frameworks.</p>
+<p><strong>Node.js / Express.js</strong></p>
+<p>In JavaScript land, servers are typically single-threaded. A <a href="https://nodejs.org/en/">Node.js</a> server (often using the <a href="https://expressjs.com/">Express</a> framework) only uses one CPU core at a time. It can still handle many requests at once by using an <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Event_loop">async event loop</a>. That just means whenever a request has to wait on I/O (like to a database), the server puts it on pause and does something else for a bit.</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/bmsOkiQ.png" alt="Node.js Server"/></p>
+<p>This might sound <em>horribly</em> inefficient, but it’s not <em>too</em> bad. Node servers do just fine with the I/O workloads associated with most CRUD apps (Where processing is offloaded to the Database). You only start to run into trouble with this model when you need your server to do CPU-intensive work.</p>
+<p><strong>Python / Django / Flask</strong></p>
+<p><a href="https://www.djangoproject.com/">Django</a> and <a href="https://flask.palletsprojects.com/en/2.2.x/">Flask</a> are two of the most popular back-end Python frameworks. They’re both built on top of the <a href="https://wsgi.readthedocs.io/en/latest/what.html">WSGI</a> standard, which is a specification for how web servers and web applications should communicate.</p>
+<p>Generally speaking, Python application code only processes a single request at a time. This means that if a request is being processed, the application won’t do <em>anything else</em> until it’s finished.</p>
+<p>The only reason this isn’t completely debilitating is there is a separate WSGI process (for example <a href="https://uwsgi-docs.readthedocs.io/en/latest/">uwsgi</a>) that handles the concurrency of the application code. It can spawn multiple processes of the Python application to handle different requests at once.</p>
+<p>In other words, <code>uwsgi + Flask</code> or <code>uwsgi + Django</code> are both needed to handle the same things that a single Node.js or Go server does <em>alone</em>.</p>
+<p><strong>Takeaways</strong></p>
+<ul>
+<li>Go servers are great for performance whether the workload is I/O <em>or</em> CPU-bound</li>
+<li>Node.js and Express work well for I/O-bound tasks, but struggle with CPU-bound tasks</li>
+<li>Python and Django/Flask do just fine with I/O bound tasks, but frankly, no one picks Python for its performance</li>
+</ul>
+<p>I’m not saying Go is always “better” than Python or JavaScript when it comes to back-end development, but it generally outperforms them when it comes to speed.</p>
+<p>@<a href="https://www.youtube.com/watch?v=Z-fBpdwy5aA">youtube</a></p>
+<p><strong>Server and Setup</strong></p>
+<p><em>Starting now, this course is going to be very different than what you’re used to on Boot.dev!</em></p>
+<p>We’re building a fully-fledged web server from scratch <em>on your local machine</em>. You’ll notice that the code to the right is <em>not</em> editable! That’s because that’s just the test suite that will make HTTP requests to your local server over <a href="https://www.hostinger.com/tutorials/what-is-localhost">localhost</a>.</p>
+<p><strong>Tools you’ll need</strong></p>
+<ol>
+<li>A code editor. I use <a href="https://code.visualstudio.com/">VS code</a>, but you can use whatever you’re comfortable with.</li>
+<li>A command line. I work on Mac OS/Linux, so my instructions will be in Bash. I recommend <a href="https://docs.microsoft.com/en-us/windows/wsl/install">WSL 2</a> if you’re on Windows so you can still use Linux commands.</li>
+<li>The <a href="https://golang.org/doc/install">Go toolchain</a> with version <code>1.22+</code>.</li>
+<li>The <a href="https://github.com/bootdotdev/bootdev">Boot.dev CLI</a> to run the tests. Go ahead and install it following the instructions in the README, then run <code>bootdev login</code> to authenticate.</li>
+</ol>
+<p>The lessons in this course <em>require</em> at least version <code>1.22</code> of Go. If you’re using an older version, you’ll run into some frustrating issues!</p>
+<p><strong>Set up your project</strong></p>
+<p>Create a new GitHub/GitLab repository for your Chirpy project, and clone it down onto your local machine. Use <code>go mod init</code> to create a new Go module for the project, and add a <code>main.go</code> file. That’s where you’ll be writing your code for each assignment.</p>
+<p><em>Do not delete your work after each assignment</em>! Each lesson will build upon the previous ones so we’ll be reusing a lot of code.</p>
+<p><strong>Assignment</strong></p>
+<p>The Go standard library makes it easy to build a simple server. Your task is to build and run a server that binds to <code>localhost:8080</code> and always responds with a <code>404 Not Found</code> response.</p>
+<p><strong>Steps</strong></p>
+<ol>
+<li> Create a <a href="https://pkg.go.dev/net/http#NewServeMux">new http.ServeMux</a></li>
+<li> Create a new <a href="https://pkg.go.dev/net/http#Server">http.Server</a> struct.
+<ul>
+<li>Use the new “ServeMux” as the server’s handler</li>
+<li>Set the <code>.Addr</code> field to “:8080”</li>
+</ul>
+</li>
+<li> Use the server’s <a href="https://pkg.go.dev/net/http#Server.ListenAndServe">ListenAndServe</a> method to start the server</li>
+<li> Build and run your server (e.g. <code>go build -o out &amp;&amp; ./out</code>)</li>
+<li> Open <code>http://localhost:8080</code> in your browser. You should see a <code>404</code> error because we haven’t connected any handler logic yet. Don’t worry, that’s what is expected for the tests to pass for now.</li>
+<li> <strong>While your server is still running</strong>, run and submit the HTTP tests using the <a href="https://github.com/bootdotdev/bootdev">Boot.dev CLI tool</a> in another terminal window.</li>
+</ol>
+<p><strong>Tips</strong></p>
+<ul>
+<li>Use <code>go mod init</code> to create a Go module for your project</li>
+<li>Each time you change your code you’ll need to rebuild and restart your server</li>
+<li>Use Git to save your work as you go</li>
+</ul>
+<p><strong>Fileservers</strong></p>
+<p>A <em>fileserver</em> is a kind of simple web server that serves static files from the host machine. Fileservers are often used to serve static assets for a website, things like:</p>
+<ul>
+<li>HTML</li>
+<li>CSS</li>
+<li>JavaScript</li>
+<li>Images</li>
+</ul>
+<p><strong>Assignment</strong></p>
+<p>The Go standard library makes it super easy to build a simple fileserver. Build and run a fileserver that serves a file called <code>index.html</code> from its root at <code>http://localhost:8080</code>. That file should contain this HTML:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>html</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>body</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>h1</span><span>&gt;</span>Welcome to Chirpy<span>&lt;/</span><span>h1</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;/</span><span>body</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>html</span><span>&gt;</span>
+</span></span></code></pre></div><p><strong>Steps</strong></p>
+<ol>
+<li> Add the HTML code above to a file called <code>index.html</code> in the same root directory as your server</li>
+<li> Use the <a href="https://pkg.go.dev/net/http#NewServeMux">http.NewServeMux</a>’s <a href="https://pkg.go.dev/net/http#ServeMux.Handle">.Handle()</a> method to add a handler for the root path (<code>/</code>).</li>
+<li> Use a standard <a href="https://pkg.go.dev/net/http#FileServer">http.FileServer</a> as the handler</li>
+<li> Use <a href="https://pkg.go.dev/net/http#Dir">http.Dir</a> to convert a filepath (in our case a dot: <code>.</code> which indicates the current directory) to a directory for the <code>http.FileServer</code>.</li>
+<li> Re-build and run your server</li>
+<li> Test your server by visiting <code>http://localhost:8080</code> in your browser</li>
+<li> Run the tests using the CLI</li>
+</ol>
+<p><strong>Fileserver quiz</strong></p>
+<p>Let’s go over some of the code that we used for our simple fileserver and make sure we understand the nuts and bolts.</p>
+<p>Consider this code from the <code>main()</code> function and answer the questions:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>srv</span> <span>:=</span> <span>&amp;</span><span>http</span><span>.</span><span>Server</span><span>{</span>
+</span></span><span><span>    <span>Addr</span><span>:</span>    <span>&#34;:&#34;</span> <span>+</span> <span>port</span><span>,</span>
+</span></span><span><span>    <span>Handler</span><span>:</span> <span>mux</span><span>,</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>log</span><span>.</span><span>Printf</span><span>(</span><span>&#34;Serving files from %s on port: %s\n&#34;</span><span>,</span> <span>filepathRoot</span><span>,</span> <span>port</span><span>)</span>
+</span></span><span><span><span>log</span><span>.</span><span>Fatal</span><span>(</span><span>srv</span><span>.</span><span>ListenAndServe</span><span>())</span>
+</span></span></code></pre></div><p><strong>Serving Images</strong></p>
+<p>You may be wondering how the fileserver knew to serve the <code>index.html</code> file to the root of the server. It’s <em>such</em> a common convention on the web to use a file called <code>index.html</code> to serve the webpage for a given path, that the Go standard library’s <a href="https://pkg.go.dev/net/http#FileServer">FileServer</a> does it automatically.</p>
+<p>When using a standard fileserver, the path to a file on disk is the same as its URL path. An exception is that <code>index.html</code> is served from <code>/</code> instead of <code>/index.html</code>.</p>
+<p><strong>Try it out</strong></p>
+<p>Run your chirpy server again, and open <code>http://localhost:8080/index.html</code> in a new browser tab. You’ll notice that you’re redirected to <code>http://localhost:8080/</code>.</p>
+<p>This works for all directories, not just the root!</p>
+<p>For example:</p>
+<ul>
+<li><code>/index.html</code> will be served from <code>/</code></li>
+<li><code>/pages/index.html</code> will be served from <code>/pages</code></li>
+<li><code>/pages/about/index.html</code> will be served from <code>/pages/about</code></li>
+</ul>
+<p>Alternatively, try opening a URL that doesn’t exist, like <code>http://localhost:8080/doesntexist.html</code>. You’ll see that the fileserver returns a 404 error.</p>
+<p><strong>Assignment</strong></p>
+<p>Let’s serve another type of file from our server: an image. Chirpy has a slick logo, and we need to serve it so that our users can load it in their browsers and mobile apps.</p>
+<p>Download the Chirpy logo from below and add it to your project directory.</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/2CofkLc.png" alt="Chirpy logo"/></p>
+<p>Configure its filepath so that it’s accessible from this URL:</p>
+<pre tabindex="0"><code>http://localhost:8080/assets/logo.png
+</code></pre><p><strong>Workflow tips</strong></p>
+<p>Servers are interesting because they’re <em>always running.</em> A lot of the code we’ve written in Boot.dev up to this point has acted more like a command line tool: it runs, does its thing, and then exits.</p>
+<p>Servers are different. They run forever, waiting for requests to come in, processing them, sending responses, and then waiting for the next request. If they didn’t work this way, websites and apps would be down and unavailable <em>all the time</em>!</p>
+<p><strong>Debugging a server</strong></p>
+<p>Debugging a CLI app is simple:</p>
+<ol>
+<li>Write some code</li>
+<li>Build and run the code</li>
+<li>See if it did what you expected.</li>
+<li>If it didn’t, add some logging or fix the code, and go back to step 2.</li>
+</ol>
+<p>Debugging a server is a little different. The <em>simplest</em> way (minimal tooling) is to:</p>
+<ol>
+<li>Write some code</li>
+<li>Build and run the code</li>
+<li><em>Send a request to the server using a browser or some other HTTP client</em></li>
+<li>See if it did what you expected.</li>
+<li>If it didn’t, add some logging or fix the code, and go back to step 2.</li>
+</ol>
+<p><em>Make sure you’re testing your server by hitting endpoints in the browser before submitting your answers.</em></p>
+<p><strong>Restarting a server</strong></p>
+<p>I usually use a single command to build and run my servers, assuming I’m in my <code>main</code> package directory:</p>
+<p>This builds the server and runs it in one command.</p>
+<p>To stop the server, I use <code>ctrl+c</code>. This sends a signal to the server, telling it to stop. The server then exits.</p>
+<p>To start it again, I just run the same command.</p>
+<p><strong>CLI tip</strong></p>
+<p>If you didn’t know, you can continuously press the up arrow key on the command line to see the commands you’ve previously run. That way you don’t need to retype commands that you use often!</p>
+<p><strong>Custom Handlers</strong></p>
+<p>In the previous exercise, we used the <a href="https://pkg.go.dev/net/http#FileServer">http.FileServer</a> function, which simply returns a built-in <a href="https://pkg.go.dev/net/http#Handler">http.Handler</a>.</p>
+<p>An <code>http.Handler</code> is just an interface:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Handler</span> <span>interface</span> <span>{</span>
+</span></span><span><span>	<span>ServeHTTP</span><span>(</span><span>ResponseWriter</span><span>,</span> <span>*</span><span>Request</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Any type with a <code>ServeHTTP</code> method that matches the <a href="https://pkg.go.dev/net/http#HandlerFunc">http.HandlerFunc</a> signature above is an <code>http.Handler</code>. Take a second to think about it: it makes a lot of sense! To handle an incoming HTTP request, all a function needs is a way to write a response and the request itself.</p>
+<p><strong>Assignment</strong></p>
+<p>Let’s add a readiness endpoint to the Chirpy server! Readiness endpoints are commonly used by external systems to check if our server is ready to receive traffic.</p>
+<p>The endpoint should be accessible at the <code>/healthz</code> path using any HTTP method.</p>
+<p>The endpoint should simply return a <code>200 OK</code> status code indicating that it has started up successfully and is listening for traffic. The endpoint should return a <code>Content-Type: text/plain; charset=utf-8</code> header, and the body will contain a message that simply says “OK” (the text associated with the 200 status code).</p>
+<p><em>Later this endpoint can be enhanced to return a <code>503 Service Unavailable</code> status code if the server is not ready.</em></p>
+<p><strong>1. Add the readiness endpoint</strong></p>
+<p>I recommend using the <a href="https://pkg.go.dev/net/http#ServeMux.HandleFunc">mux.HandleFunc</a> to register your handler. Your handler can just be a function that matches the signature of <a href="https://pkg.go.dev/net/http#HandlerFunc">http.HandlerFunc</a>:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>handler</span> <span>func</span><span>(</span><span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>)</span>
+</span></span></code></pre></div><p>Your handler should do the following:</p>
+<ol>
+<li> Write the <code>Content-Type</code> header</li>
+<li> Write the status code using <a href="https://pkg.go.dev/net/http#ResponseWriter.WriteHeader">w.WriteHeader</a></li>
+<li> Write the body text using <a href="https://pkg.go.dev/net/http#ResponseWriter.Write">w.Write</a></li>
+</ol>
+<p><strong>2. Update the fileserver path</strong></p>
+<p>Now that we’ve added a new handler, we don’t want potential conflicts with the fileserver handler. Update the fileserver to use the <code>/app/</code> path instead of <code>/</code>.</p>
+<p>Not only will you need to <a href="https://pkg.go.dev/net/http#ServeMux.Handle">mux.Handle</a> the <code>/app/</code> path, you’ll also need to strip the <code>/app</code> prefix from the request path before passing it to the fileserver handler. You can do this using the <a href="https://pkg.go.dev/net/http#StripPrefix">http.StripPrefix</a> function.</p>
+<p><strong>Handler Review</strong></p>
+<p><strong>Handler</strong></p>
+<p>An <a href="https://pkg.go.dev/net/http#Handler">http.Handler</a> is any <a href="https://go.dev/ref/spec#Type_definitions">defined type</a> that implements the set of methods defined by the <code>Handler</code> <a href="https://go.dev/tour/methods/9">interface</a>, specifically the <code>ServeHTTP</code> method.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Handler</span> <span>interface</span> <span>{</span>
+</span></span><span><span>	<span>ServeHTTP</span><span>(</span><span>ResponseWriter</span><span>,</span> <span>*</span><span>Request</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The <a href="https://pkg.go.dev/net/http#ServeMux">ServeMux</a> you used in the previous exercise is an <code>http.Handler</code>.</p>
+<p>You will typically use a <code>Handler</code> for more complex use cases, such as when you want to implement a custom router, middleware, or other custom logic.</p>
+<p><strong>HandlerFunc</strong></p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>HandlerFunc</span> <span>func</span><span>(</span><span>ResponseWriter</span><span>,</span> <span>*</span><span>Request</span><span>)</span>
+</span></span></code></pre></div><p>You’ll typically use a <code>HandlerFunc</code> when you want to implement a simple handler. The <code>HandlerFunc</code> type is just a function that matches the <code>ServeHTTP</code> signature above.</p>
+<p><strong>Why this signature?</strong></p>
+<p>The <code>Request</code> argument is fairly obvious: it contains all the information about the incoming request, such as the HTTP method, path, headers, and body.</p>
+<p>The <code>ResponseWriter</code> is less intuitive in my opinion. The response is an <em>argument</em>, not a <em>return type</em>. Instead of returning a value all at once from the handler function, we <em>write</em> the response to the <code>ResponseWriter</code>.</p>
+<h2 id="routing">
+  <span> Routing</span> <a href="#routing">🔗</a></h2>
+<p><strong>Stateful Handlers</strong></p>
+<p>It’s frequently useful to have a way to store and access state in our handlers. For example, we might want to keep track of the number of requests we’ve received, or we may want to pass around an open connection to a database, or credentials to an API.</p>
+<p><strong>Assignment</strong></p>
+<p>The product managers at Chirpy want to know how many requests are being made to serve our homepage - in essence, they want to know how many people are viewing the site!</p>
+<p>They have asked for a simple HTTP endpoint they can hit to get the number of requests that have been processed. It will return the count as plain text in the response body.</p>
+<p>For now, they just want the number of requests that have been processed since the last time the server was started, we don’t need to worry about saving the data between restarts.</p>
+<p><strong>Steps</strong></p>
+<ol>
+<li> Create a struct that will hold any stateful, in-memory data we’ll need to keep track of. In our case, we just need to keep track of the number of requests we’ve received.</li>
+</ol>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>apiConfig</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>fileserverHits</span> <span>int</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><ol start="2">
+<li> Next, write a new <a href="https://en.wikipedia.org/wiki/Middleware">middleware</a> method on a <code>*apiConfig</code> that increments the <code>fileserverHits</code> counter every time it’s called. Here’s the method signature I used:</li>
+</ol>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>(</span><span>cfg</span> <span>*</span><span>apiConfig</span><span>)</span> <span>middlewareMetricsInc</span><span>(</span><span>next</span> <span>http</span><span>.</span><span>Handler</span><span>)</span> <span>http</span><span>.</span><span>Handler</span> <span>{</span>
+</span></span><span><span>	<span>// ...
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><ol start="3">
+<li> <a href="https://en.wikipedia.org/wiki/Wrapper_function">Wrap</a> the <code>http.FileServer</code> handler with the middleware method we just wrote. For example:</li>
+</ol>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>mux</span><span>.</span><span>Handle</span><span>(</span><span>&#34;/app/&#34;</span><span>,</span> <span>apiCfg</span><span>.</span><span>middlewareMetricsInc</span><span>(</span><span>handler</span><span>))</span>
+</span></span></code></pre></div><ol start="4">
+<li> Create a new handler that writes the number of requests that have been counted as plain text in this format to the HTTP response:</li>
+</ol>
+<pre tabindex="0"><code>Hits: x
+</code></pre><p>Where <code>x</code> is the number of requests that have been processed. This handler should be a method on the <code>*apiConfig</code> struct so that it can access the <code>fileserverHits</code> data.</p>
+<ol start="5">
+<li>
+<p> Register that handler with the serve mux on the <code>/metrics</code> path.</p>
+</li>
+<li>
+<p> Finally, create and register a handler on the <code>/reset</code> path that, when hit, will reset your <code>fileserverHits</code> back to <code>0</code>.</p>
+</li>
+</ol>
+<p><em>It should follow the same design as the previous handlers.</em></p>
+<p>Remember, similar to the metrics endpoint, <code>/reset</code> will need to be a method on the <code>*apiConfig</code> struct so that it can also access the <code>fileserverHits</code></p>
+<p><strong>Middleware</strong></p>
+<p>Middleware is a way to wrap a handler with additional functionality. It is a common pattern in web applications that allows us to write DRY code. For example, we can write a middleware that logs every request to the server. We can then wrap our handler with this middleware and every request will be logged without us having to write the logging code in every handler.</p>
+<p>Here are examples of the middleware that we’ve written so far.</p>
+<p><strong>Keeping track of the number of times a handler has been called</strong></p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>(</span><span>cfg</span> <span>*</span><span>apiConfig</span><span>)</span> <span>middlewareMetricsInc</span><span>(</span><span>next</span> <span>http</span><span>.</span><span>Handler</span><span>)</span> <span>http</span><span>.</span><span>Handler</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>http</span><span>.</span><span>HandlerFunc</span><span>(</span><span>func</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>r</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>)</span> <span>{</span>
+</span></span><span><span>		<span>cfg</span><span>.</span><span>fileserverHits</span><span>++</span>
+</span></span><span><span>		<span>next</span><span>.</span><span>ServeHTTP</span><span>(</span><span>w</span><span>,</span> <span>r</span><span>)</span>
+</span></span><span><span>	<span>})</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>Logging every request</strong></p>
+<p>We haven’t written this one yet, but it would look something like this:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>middlewareLog</span><span>(</span><span>next</span> <span>http</span><span>.</span><span>Handler</span><span>)</span> <span>http</span><span>.</span><span>Handler</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>http</span><span>.</span><span>HandlerFunc</span><span>(</span><span>func</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>r</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>)</span> <span>{</span>
+</span></span><span><span>		<span>log</span><span>.</span><span>Printf</span><span>(</span><span>&#34;%s %s&#34;</span><span>,</span> <span>r</span><span>.</span><span>Method</span><span>,</span> <span>r</span><span>.</span><span>URL</span><span>.</span><span>Path</span><span>)</span>
+</span></span><span><span>		<span>next</span><span>.</span><span>ServeHTTP</span><span>(</span><span>w</span><span>,</span> <span>r</span><span>)</span>
+</span></span><span><span>	<span>})</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>Routing</strong></p>
+<p>The Go standard library has a lot of powerful HTTP features and, as of version 1.22, comes equipped with method-based pattern matching for routing.</p>
+<p>Note that there are other powerful routing libraries like <a href="https://github.com/gorilla/mux">Gorilla Mux</a> and <a href="https://github.com/go-chi/chi">Chi</a>, however, the instructions for this course will assume you are using Go’s standard library. Just know that it isn’t your only option!</p>
+<p>In this lesson, we are going to limit which endpoints are available via which HTTP methods. In our current implementation, we can use any HTTP method to access any endpoint. <em>This is not ideal.</em></p>
+<p><strong>Try it!</strong></p>
+<p>Run this command to send an empty <code>POST</code> request to your running server:</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>curl -X POST http://localhost:8080/healthz
+</span></span></code></pre></div><p>You should get an <code>OK</code> response - but we want this endpoint to only be available via <code>GET</code> requests.</p>
+<p><strong>Assignment</strong></p>
+<p>Add explicit HTTP methods to our current 2 custom endpoints to only allow for <code>GET</code> methods.</p>
+<ul>
+<li><code>/healthz</code></li>
+<li><code>/metrics</code></li>
+</ul>
+<p>In general, a pattern looks something like this: <code>[METHOD ][HOST]/[PATH]</code></p>
+<p>Here are some examples:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>mux</span><span>.</span><span>HandleFunc</span><span>(</span><span>&#34;POST /articles&#34;</span><span>,</span> <span>handlerArticlesCreate</span><span>)</span>
+</span></span><span><span><span>mux</span><span>.</span><span>HandleFunc</span><span>(</span><span>&#34;DELETE /articles&#34;</span><span>,</span> <span>handlerArticlesDelete</span><span>)</span>
+</span></span></code></pre></div><p>When a request is made to one of these endpoints with a method other than <code>GET</code>, the server should return a <code>405</code> (Method Not Allowed) response (this is handled automatically!).</p>
+<p><strong>Patterns</strong></p>
+<p>A pattern is a string that specifies the set of URL paths that should be matched to handle HTTP requests. Go’s <code>ServeMux</code> router uses these patterns to dispatch requests to the appropriate handler functions based on the URL path of the request. As we saw in the previous lesson, patterns help organize the handling of different routes efficiently.</p>
+<p>As previously mentioned, patterns generally look like this: <code>[METHOD ][HOST]/[PATH]</code>. Note that all three parts are optional.</p>
+<p><strong>Rules and Definitions</strong></p>
+<p><strong>Fixed URL Paths</strong></p>
+<p>A pattern that exactly matches the URL path. For example, if you have a pattern <code>/about</code>, it will match the URL path <code>/about</code> and no other paths.</p>
+<p><strong>Subtree Paths</strong></p>
+<p>If a pattern ends with a slash <code>/</code>, it matches all URL paths that have the same prefix. For example, a pattern <code>/images/</code> matches <code>/images/</code>, <code>/images/logo.png</code>, and <code>/images/css/style.css</code>. As we saw with our <code>/app/</code> path, this is useful for serving a directory of static files or for structuring your application into sub-sections.</p>
+<p><strong>Longest Match Wins</strong></p>
+<p>If more than one pattern matches a request path, the longest match is chosen. This allows more specific handlers to override more general ones. For example, if you have patterns <code>/</code> (root) and <code>/images/</code>, and the request path is <code>/images/logo.png</code>, the <code>/images/</code> handler will be used because it’s the longest match.</p>
+<p><strong>Host-specific Patterns</strong></p>
+<p>We won’t be using this but be aware that patterns can also start with a hostname (e.g., <code>www.example.com/</code>). This allows you to serve different content based on the Host header of the request. If both host-specific and non-host-specific patterns match, the host-specific pattern takes precedence.</p>
+<p>If you’re interested, you can read more in the <a href="https://pkg.go.dev/net/http#ServeMux">ServeMux docs</a>.</p>
+<h2 id="architecture">
+  <span> Architecture</span> <a href="#architecture">🔗</a></h2>
+<p><strong>Monoliths and Decoupling</strong></p>
+<p>“Architecture” in software can mean <em>many</em> different things, but in this lesson, we’re talking about the high-level architecture of a web application from a structural standpoint. More specifically, we are concerned with the separation (or lack thereof) between the back-end and the front-end.</p>
+<p>When we talk about “coupling” in this context, we’re talking about the coupling between the <em>data</em> and the <em>presentation logic</em> of that data. Loosely speaking, when I say “a tightly coupled front-end and back-end”, what I mean is:</p>
+<p><strong>Front-end: The presentation logic</strong></p>
+<p>If it’s a web app, then this is the HTML, CSS, and JavaScript that is served to the browser which will then be used to render any dynamic data. If it’s a mobile app, then this is the compiled code that is downloaded on the mobile device.</p>
+<p><strong>Back-end: Raw data</strong></p>
+<p>For an app like YouTube, this would be videos and comments. For an app like Twitter, this might be tweets and users data. You can’t embed the YouTube videos directly into the Youtube app, because a user’s feed changes each time they open the app. The app downloads new raw data from Google’s back-end each time the app is opened.</p>
+<p><strong>Monolithic</strong></p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/ek42mUQ.png" alt="monolith"/></p>
+<p>A monolith is a single, large program that contains all of the functionality for both the front-end and the back-end of an application. It’s a common architecture for web applications, and it’s what we’re building here in this course.</p>
+<p>Sometimes monoliths host a REST API for raw data (like JSON data) within a subpath, like <code>/api</code> as shown in the image. That said, there are even more tightly coupled kinds of monoliths that inject the dynamic data directly into the HTML as well. The nice thing about separate data endpoints is that they can be consumed by any client, (like a mobile app) and not just the website. That said, injection is typically more performant, so it’s a trade-off. WordPress and other web<em>site</em> builders typically work this way.</p>
+<p><strong>Decoupled</strong></p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/VDJk0zU.png" alt="decoupled"/></p>
+<p>A “decoupled” architecture is one where the front-end and back-end are separated into different codebases. For example, the front-end might be hosted by a static file server on one domain, and the back-end might be hosted on a subdomain by a different server.</p>
+<p>Depending on whether or not a load balancer is sitting in front of a decoupled architecture or not, the API server might be hosted on a separate domain (as shown in the image) <em>or</em> on a subpath, as shown in the monolithic architecture. A decoupled architecture allows for either approach.</p>
+<p><strong>Assignment</strong></p>
+<p>For now, Chirpy is <em>technically</em> a monolith. That said we <em>are</em> keeping all the API logic decoupled in the sense that it will be served from its own namespace (path prefix). We serve the website from the <code>app</code> path, and we’ll be serving the API from the <code>/api</code> path.</p>
+<p>Let’s move our non-website endpoints to the <code>/api</code> namespace in our routing.</p>
+<p>To do this, prepend <code>/api</code> to the beginning of each of our API endpoints, e.g. <code>/api/healthz</code> and <code>/api/metrics</code></p>
+<p><strong>Which is better?</strong></p>
+<p>There is <em>always</em> a trade-off.</p>
+<p><strong>Pros for monoliths</strong></p>
+<ul>
+<li>Simpler to get started with</li>
+<li>Easier to deploy new versions because everything is always in sync</li>
+<li>In the case of the data being embedded in the HTML, the performance can result in better UX and SEO</li>
+</ul>
+<p><strong>Pros for decoupled architectures</strong></p>
+<ul>
+<li>Easier to scale as traffic grows</li>
+<li>Easier to practice good separation of concerns as the codebase grows</li>
+<li>Can be hosted on separate servers and using separate technologies</li>
+<li>Embedding data in the HTML is still possible with pre-rendering (similar to how Next.js works), it’s just more complicated</li>
+</ul>
+<p><strong>Can we have the best of both worlds?</strong></p>
+<p>Perhaps. My recommendation to someone building a new application from scratch would be to start with a monolith, but to keep the API and the front-end decoupled logically within the project from the start (like we’re doing with Chirpy).</p>
+<p>That way, our app is easy to get started with, but we can migrate to a fully decoupled architecture later if we need to.</p>
+<p>@<a href="https://www.youtube.com/watch?v=k0XuJjZ_HP0">youtube</a></p>
+<p><strong>Admin Namespace</strong></p>
+<p>One of the advantages of a monolithic architecture is that it’s fairly simple to inject data directly into the HTML of a web page.</p>
+<p><strong>Assignment</strong></p>
+<p>Let’s swap out the <code>/metrics</code> endpoint, which just returns plain text, for an <code>/admin/metrics</code> (not under the <code>/api</code> namespace) endpoint that returns HTML intended to be rendered in the browser. It should be accessible via <code>GET</code> requests only.</p>
+<p>Use this template:</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>html</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>body</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>h1</span><span>&gt;</span>Welcome, Chirpy Admin<span>&lt;/</span><span>h1</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>p</span><span>&gt;</span>Chirpy has been visited %d times!<span>&lt;/</span><span>p</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;/</span><span>body</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>html</span><span>&gt;</span>
+</span></span></code></pre></div><p>Where <code>%d</code> is replaced with the number of times the page has been loaded.</p>
+<p>Make sure you use the <code>Content-Type</code> header to set the response type to <code>text/html</code> so that the browser knows how to render it.</p>
+<p>Try loading <code>http://localhost:8080/admin/metrics</code> in your browser, and in another tab load <code>http://localhost:8080/app</code> a few times. Refreshing the admin page should show the updated count.</p>
+<p>Run and submit the HTTP tests using the CLI tool.</p>
+<p><strong>Deployment Options</strong></p>
+<p>We won’t go in-depth with deployment instructions right now, that said, let’s talk about how our choice of project architecture affects our deployment options, and how we <em>could</em> deploy our application in the future. We’ll only talk about cloud deployment options here, and by the “cloud” I’m just referring to a remote server that’s managed by a third-party company like Google or Amazon.</p>
+<p><img src="https://imgs.xkcd.com/comics/the_cloud.png" alt="xkcd the cloud"/></p>
+<ul>
+<li><a href="https://xkcd.com/908/">xkcd</a></li>
+</ul>
+<p>Using a cloud service to deploy applications is <em>super</em> common these days because it’s easy, fast, and cheap.</p>
+<p>That said, it’s still possible to deploy to a local or on-premise server, and some companies still do that, but it’s not as common as it used to be.</p>
+<p><strong>Monolithic deployment</strong></p>
+<p>Deploying a monolith is straightforward. Because your server is just one program, you just need to get it running on a server that’s exposed to the internet and point your DNS records to it.</p>
+<p>You could upload and run it on classic server, something like:</p>
+<ul>
+<li>AWS EC2</li>
+<li>GCP Compute Engine (GCE)</li>
+<li>Digital Ocean Droplets</li>
+<li>Azure Virtual Machines</li>
+</ul>
+<p>Alternatively, you could use a platform that’s specifically designed to run web applications, like:</p>
+<ul>
+<li>Heroku</li>
+<li>Google App Engine</li>
+<li>Fly.io</li>
+<li>AWS Elastic Beanstalk</li>
+</ul>
+<p><strong>Decoupled deployment</strong></p>
+<p>With a decoupled architecture, you have <em>two</em> different programs that need to be deployed. You would typically deploy your <em>back-end</em> to the same kinds of places you would deploy a monolith.</p>
+<p>For your front-end server, you can do the same, <em>or</em> you can use a platform that’s specifically designed to host static files and server-side rendered front-end apps, something like:</p>
+<ul>
+<li>Vercel</li>
+<li>Netlify</li>
+<li>GitHub Pages</li>
+</ul>
+<p>Because the front-end bundle is likely just static files, you can host it easily on a <a href="https://www.cloudflare.com/learning/cdn/what-is-a-cdn/">CDN (Content Delivery Network)</a> inexpensively.</p>
+<p><strong>More powerful options</strong></p>
+<p>If you want to be able to scale your application up and down in specific ways, or you want to add other back-end servers to your stack, you might want to look into container orchestration options like Kubernetes and Docker Swarm.</p>
+<p><strong>Don’t worry about all this stuff!</strong></p>
+<p>I’m trying to gently introduce you to some popular technologies and how they work together, but you don’t need to memorize all of these products and options.</p>
+<h2 id="json">
+  <span> JSON</span> <a href="#json">🔗</a></h2>
+<p><strong>HTTP Clients</strong></p>
+<p>So far, you have <em>probably</em> been using a browser to test your server. That works fine with simple <code>GET</code> requests (the kind of request a browser sends when you type a URL into the address bar), but it’s not very useful for any other HTTP methods or requests with custom headers and bodies.</p>
+<p><strong>Debugging your endpoints</strong></p>
+<p>Servers are built to be used by clients. As you develop your code, you should be using a tool that makes sending one-off requests to your server easy! Here are some of my favorites:</p>
+<ul>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=rangav.vscode-thunder-client">Thunder Client for VS Code</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=humao.rest-client">REST Client for VS Code</a></li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=Postman.postman-for-vscode">Postman for VS Code</a></li>
+<li><a href="https://curl.se/">cURL</a></li>
+<li><a href="https://www.postman.com/">Postman</a></li>
+</ul>
+<p>Use whichever client you like, <em>but make sure you’re using one!</em></p>
+<p><strong>Why do I like Thunder Client?</strong></p>
+<p>Thunder Client is built into VS Code, so I don’t need to leave my editor, and it’s fairly minimalistic.</p>
+<p><strong>JSON</strong></p>
+<p>Hopefully, by now you already know what JSON is. If not, you should go back and take the Learn HTTP course <a href="https://www.boot.dev/courses/learn-http-clients-golang">here first</a>.</p>
+<p>What you may be new to is handling and parsing JSON on the server side, rather than sending it as a client.</p>
+<p>If you want to take a super deep dive into JSON in Go, then you can <a href="https://blog.boot.dev/golang/json-golang/">read this post here</a>. With that in mind, you don’t need to! I’ll give you the relevant info below.</p>
+<p><strong>Decode JSON request body</strong></p>
+<p>It’s <em>very</em> common for <code>POST</code> requests to send JSON data in the request body. Here’s how you can handle that incoming data:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;name&#34;</span><span>:</span> <span>&#34;John&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;age&#34;</span><span>:</span> <span>30</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>handler</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>r</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>){</span>
+</span></span><span><span>    <span>type</span> <span>parameters</span> <span>struct</span> <span>{</span>
+</span></span><span><span>        <span>// these tags indicate how the keys in the JSON should be mapped to the struct fields
+</span></span></span><span><span><span></span>        <span>// the struct fields must be exported (start with a capital letter) if you want them parsed
+</span></span></span><span><span><span></span>        <span>Name</span> <span>string</span> <span>`json:&#34;name&#34;`</span>
+</span></span><span><span>        <span>Age</span> <span>int</span> <span>`json:&#34;age&#34;`</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>
+</span></span><span><span>    <span>decoder</span> <span>:=</span> <span>json</span><span>.</span><span>NewDecoder</span><span>(</span><span>r</span><span>.</span><span>Body</span><span>)</span>
+</span></span><span><span>    <span>params</span> <span>:=</span> <span>parameters</span><span>{}</span>
+</span></span><span><span>    <span>err</span> <span>:=</span> <span>decoder</span><span>.</span><span>Decode</span><span>(</span><span>&amp;</span><span>params</span><span>)</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>// an error will be thrown if the JSON is invalid or has the wrong types
+</span></span></span><span><span><span></span>        <span>// any missing fields will simply have their values in the struct set to their zero value
+</span></span></span><span><span><span></span>		<span>log</span><span>.</span><span>Printf</span><span>(</span><span>&#34;Error decoding parameters: %s&#34;</span><span>,</span> <span>err</span><span>)</span>
+</span></span><span><span>		<span>w</span><span>.</span><span>WriteHeader</span><span>(</span><span>500</span><span>)</span>
+</span></span><span><span>		<span>return</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>// params is a struct with data populated successfully
+</span></span></span><span><span><span></span>    <span>// ...
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><p><strong>Encode JSON response body</strong></p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>handler</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>r</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>){</span>
+</span></span><span><span>    <span>// ...
+</span></span></span><span><span><span></span>
+</span></span><span><span>    <span>type</span> <span>returnVals</span> <span>struct</span> <span>{</span>
+</span></span><span><span>        <span>// the key will be the name of struct field unless you give it an explicit JSON tag
+</span></span></span><span><span><span></span>        <span>CreatedAt</span> <span>time</span><span>.</span><span>Time</span> <span>`json:&#34;created_at&#34;`</span>
+</span></span><span><span>        <span>ID</span> <span>int</span> <span>`json:&#34;id&#34;`</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>respBody</span> <span>:=</span> <span>returnVals</span><span>{</span>
+</span></span><span><span>        <span>CreatedAt</span><span>:</span> <span>time</span><span>.</span><span>Now</span><span>(),</span>
+</span></span><span><span>        <span>ID</span><span>:</span> <span>123</span><span>,</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>dat</span><span>,</span> <span>err</span> <span>:=</span> <span>json</span><span>.</span><span>Marshal</span><span>(</span><span>respBody</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>log</span><span>.</span><span>Printf</span><span>(</span><span>&#34;Error marshalling JSON: %s&#34;</span><span>,</span> <span>err</span><span>)</span>
+</span></span><span><span>		<span>w</span><span>.</span><span>WriteHeader</span><span>(</span><span>500</span><span>)</span>
+</span></span><span><span>		<span>return</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>    <span>w</span><span>.</span><span>Header</span><span>().</span><span>Set</span><span>(</span><span>&#34;Content-Type&#34;</span><span>,</span> <span>&#34;application/json&#34;</span><span>)</span>
+</span></span><span><span>    <span>w</span><span>.</span><span>WriteHeader</span><span>(</span><span>200</span><span>)</span>
+</span></span><span><span>	<span>w</span><span>.</span><span>Write</span><span>(</span><span>dat</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>Assignment</strong></p>
+<p>At Chirpy, we have a silly rule that says all Chirps must be 140 characters long or less.</p>
+<p>Add a new endpoint to the Chirpy API that accepts a <code>POST</code> request at <code>/api/validate_chirp</code>. It should expect a JSON body of this shape:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;body&#34;</span><span>:</span> <span>&#34;This is an opinion I need to share with the world&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>If any errors occur, it should respond with an appropriate HTTP status code and a JSON body of this shape:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;error&#34;</span><span>:</span> <span>&#34;Something went wrong&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>For example, if the Chirp is too long, respond with a <code>400</code> code and this body:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;error&#34;</span><span>:</span> <span>&#34;Chirp is too long&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>If the Chirp is valid, respond with a <code>200</code> code and this body:</p>
+<p><strong>Tips</strong></p>
+<p>Use an HTTP client like <a href="https://marketplace.visualstudio.com/items?itemName=rangav.vscode-thunder-client">Thunder Client</a> to test your POST requests.</p>
+<p>Use <a href="https://pkg.go.dev/encoding/json#Marshal">json.Marshal()</a> like the example above to remove whitespace in your encoded data.</p>
+<p><strong>JSON Review</strong></p>
+<p><strong>Struct 1</strong></p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>parameters</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>Name</span> <span>string</span> <span>`json:&#34;name&#34;`</span>
+</span></span><span><span>    <span>Age</span> <span>int</span> <span>`json:&#34;age&#34;`</span>
+</span></span><span><span>    <span>School</span> <span>struct</span> <span>{</span>
+</span></span><span><span>        <span>Name</span> <span>string</span> <span>`json:&#34;name&#34;`</span>
+</span></span><span><span>        <span>Location</span> <span>string</span> <span>`json:&#34;location&#34;`</span>
+</span></span><span><span>    <span>}</span> <span>`json:&#34;school&#34;`</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>Struct 2</strong></p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>parameters</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>name</span> <span>string</span> <span>`json:&#34;name&#34;`</span>
+</span></span><span><span>    <span>Age</span> <span>int</span> <span>`json:&#34;age&#34;`</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>Struct 3</strong></p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>parameters</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>Name</span> <span>string</span>
+</span></span><span><span>    <span>Age</span> <span>int</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>The Profane</strong></p>
+<p>Not only do we validate that Chirps are under 140 characters, but we also have a list of words that are not allowed.</p>
+<p><strong>Assignment</strong></p>
+<p>We need to update the <code>/api/validate_chirp</code> endpoint to replace all “profane” words with <code>4</code> asterisks: <code>****</code>.</p>
+<p>Assuming the length validation passed, replace any of the following words in the Chirp with the static 4-character string <code>****</code>:</p>
+<ul>
+<li>kerfuffle</li>
+<li>sharbert</li>
+<li>fornax</li>
+</ul>
+<p>Be sure to match against uppercase versions of the words as well, but not punctuation. “Sharbert!” does <em>not</em> need to be replaced, we’ll consider it a different word due to the exclamation point. Finally, instead of the <code>valid</code> boolean, your handler should return the cleaned version of the text in a JSON response:</p>
+<p><strong>Example input</strong></p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;body&#34;</span><span>:</span> <span>&#34;This is a kerfuffle opinion I need to share with the world&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>Example output</strong></p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;cleaned_body&#34;</span><span>:</span> <span>&#34;This is a **** opinion I need to share with the world&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>Tips</strong></p>
+<p><em>Use an HTTP client like <a href="https://marketplace.visualstudio.com/items?itemName=rangav.vscode-thunder-client">Thunder Client</a> to test your POST requests.</em></p>
+<p>I’d recommend creating two helper functions:</p>
+<ul>
+<li><code>respondWithError(w http.ResponseWriter, code int, msg string)</code></li>
+<li><code>respondWithJSON(w http.ResponseWriter, code int, payload interface{})</code></li>
+</ul>
+<p>These helpers are not <em>required</em> but might help <a href="https://blog.boot.dev/clean-code/dry-code/">DRY</a> up your code when we add more endpoints in the future.</p>
+<p>I’d also recommend breaking the bad word replacement into a separate function. You can even write some unit tests for it!</p>
+<p>Here are some useful standard library functions:</p>
+<ul>
+<li><a href="https://pkg.go.dev/strings#ToLower">strings.ToLower</a></li>
+<li><a href="https://pkg.go.dev/strings#Split">strings.Split</a></li>
+<li><a href="https://pkg.go.dev/strings#Join">strings.Join</a></li>
+</ul>
+<h2 id="storage">
+  <span> Storage</span> <a href="#storage">🔗</a></h2>
+<p>Arguably the most important part of your typical web application is the storage of data. It would be pretty useless if each time you logged into your account on YouTube, Twitter or GitHub all of your subscriptions, tweets, or repositories were gone.</p>
+<p>Let’s talk about how web applications store, or “persist” data to a hard disk.</p>
+<p><strong>Memory vs Disk</strong></p>
+<p>When you run a program on your computer, the program is loaded into <em>memory</em>. Memory is a lot like a scratch pad. It’s fast, but it’s not permanent. If the program terminates or restarts, the data in memory is <em>lost</em>.</p>
+<p>When you’re building a web server, any data you store in memory (in your program’s variables) is lost when the server is restarted. Any important data needs to be saved to disk via the file system.</p>
+<p><strong>Assignment</strong></p>
+<p>Our API needs to support the standard CRUD operations for “chirps”. A “chirp” is just a short message that a user can post to the API, like a tweet. For now, we’ll just be adding the <code>POST</code> and <code>GET</code> endpoints to create and read chirps respectively.</p>
+<p><strong>POST /api/chirps</strong></p>
+<p>This endpoint should accept a JSON payload with a <code>body</code> field.</p>
+<p><strong>Request body:</strong></p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;body&#34;</span><span>:</span> <span>&#34;Hello, world!&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Delete the <code>/api/validate_chirp</code> endpoint that we created before, but port all that logic into this one. Users should not be allowed to create invalid chirps!</p>
+<p>If the chirp is valid, you should give it a <em>unique</em> <code>id</code> and save it to disk. If all goes well, respond with a <code>201</code> status code and the full chirp resource. For now, just use integers for the <code>id</code> field, and increment the <code>id</code> by 1 for each new chirp.</p>
+<p><strong>Response body:</strong></p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>  <span>&#34;body&#34;</span><span>:</span> <span>&#34;Hello, world!&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>GET /api/chirps</strong></p>
+<p>This endpoint should return an <em>array</em> of <em>all</em> chirps in the file, ordered by <code>id</code> in ascending order. Use a <code>200</code> code for success.</p>
+<p><strong>Response body:</strong></p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>[</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>&#34;id&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>    <span>&#34;body&#34;</span><span>:</span> <span>&#34;First chirp&#34;</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>{</span>
+</span></span><span><span>    <span>&#34;id&#34;</span><span>:</span> <span>2</span><span>,</span>
+</span></span><span><span>    <span>&#34;body&#34;</span><span>:</span> <span>&#34;The second chirp that was chirped&#34;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>]</span>
+</span></span></code></pre></div><p><strong>Saving to disk</strong></p>
+<p>In a production system, you would almost certainly use a piece of database software like <a href="https://www.postgresql.org/">PostgreSQL</a> or <a href="https://www.mysql.com/">MySQL</a> to store your data on disk. We’ll be learning SQL soon, but for now, we’ll just be using the file system to store our data. It’s less efficient, but it will work for our purposes.</p>
+<p>Keep your entire “database” in a single file called <code>database.json</code> at the root of your project. Make sure to ignore it in Git. Your server should automatically create the file if it doesn’t exist upon startup. Here’s the structure of the file:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;chirps&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;1&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;id&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>      <span>&#34;body&#34;</span><span>:</span> <span>&#34;This is the first chirp ever!&#34;</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>    <span>&#34;2&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;id&#34;</span><span>:</span> <span>2</span><span>,</span>
+</span></span><span><span>      <span>&#34;body&#34;</span><span>:</span> <span>&#34;Hello, world!&#34;</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Any time you need to update the database, you should read the entire thing into memory (unmarshal it into a <code>struct</code>), update the data, and then write the entire thing back to disk (marshal it back into JSON).</p>
+<p>To make sure that multiple requests don’t try to write to the database at the same time, you should use a <a href="https://blog.boot.dev/golang/golang-mutex/">mutex</a> to lock the database while you’re using it. Again, I didn’t say this will be <em>efficient</em>, but it will work!</p>
+<p>While not necessary, I recommend encapsulating all of your database logic in an <code>internal/database</code> package.</p>
+<p><strong>Tips</strong></p>
+<p><strong>Make sure to delete your <code>database.json</code> file every time before you run the tests!!!</strong> The tests assume that they start with a fresh database each time.</p>
+<p>Here are <em>some</em> of the types and methods I used to create the database package to get you started:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>DB</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>path</span> <span>string</span>
+</span></span><span><span>	<span>mux</span>  <span>*</span><span>sync</span><span>.</span><span>RWMutex</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>DBStructure</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>Chirps</span> <span>map</span><span>[</span><span>int</span><span>]</span><span>Chirp</span> <span>`json:&#34;chirps&#34;`</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>// NewDB creates a new database connection
+</span></span></span><span><span><span>// and creates the database file if it doesn&#39;t exist
+</span></span></span><span><span><span></span><span>func</span> <span>NewDB</span><span>(</span><span>path</span> <span>string</span><span>)</span> <span>(</span><span>*</span><span>DB</span><span>,</span> <span>error</span><span>)</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>// CreateChirp creates a new chirp and saves it to disk
+</span></span></span><span><span><span></span><span>func</span> <span>(</span><span>db</span> <span>*</span><span>DB</span><span>)</span> <span>CreateChirp</span><span>(</span><span>body</span> <span>string</span><span>)</span> <span>(</span><span>Chirp</span><span>,</span> <span>error</span><span>)</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>// GetChirps returns all chirps in the database
+</span></span></span><span><span><span></span><span>func</span> <span>(</span><span>db</span> <span>*</span><span>DB</span><span>)</span> <span>GetChirps</span><span>()</span> <span>([]</span><span>Chirp</span><span>,</span> <span>error</span><span>)</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>// ensureDB creates a new database file if it doesn&#39;t exist
+</span></span></span><span><span><span></span><span>func</span> <span>(</span><span>db</span> <span>*</span><span>DB</span><span>)</span> <span>ensureDB</span><span>()</span> <span>error</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>// loadDB reads the database file into memory
+</span></span></span><span><span><span></span><span>func</span> <span>(</span><span>db</span> <span>*</span><span>DB</span><span>)</span> <span>loadDB</span><span>()</span> <span>(</span><span>DBStructure</span><span>,</span> <span>error</span><span>)</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>// writeDB writes the database file to disk
+</span></span></span><span><span><span></span><span>func</span> <span>(</span><span>db</span> <span>*</span><span>DB</span><span>)</span> <span>writeDB</span><span>(</span><span>dbStructure</span> <span>DBStructure</span><span>)</span> <span>error</span>
+</span></span></code></pre></div><p>Here are some useful standard library functions to know about:</p>
+<ul>
+<li><a href="https://pkg.go.dev/os#ReadFile">os.ReadFile</a></li>
+<li><a href="https://pkg.go.dev/os#ErrNotExist">os.ErrNotExist</a></li>
+<li><a href="https://pkg.go.dev/os#WriteFile">os.WriteFile</a></li>
+<li><a href="https://pkg.go.dev/sort#Slice">sort.Slice</a></li>
+</ul>
+<p><strong>Database Review</strong></p>
+<p>As we talked about, <em>normally</em> you would use database software to store your data on disk. Your Go code would connect to a database using a library like <a href="https://pkg.go.dev/database/sql">database/sql</a> and use SQL commands to query the database.</p>
+<p>Sometimes that database runs on the same host machine as your server, but it’s also common to have a separate database server that your server connects to over the network.</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/tHmqS6O.png" alt="db architecture diagram"/></p>
+<p><strong>What is a database?</strong></p>
+<p>We’ll talk more about databases in the future, but I chose to use a flat JSON file for this course because, at the end of the day, a “database” is just software that’s optimized to <em>efficiently</em> store and retrieve data from disk, and I really want to drive that point home.</p>
+<p><strong>Popular databases</strong></p>
+<p>You don’t need to know about these yet, but you might be curious about some of these technologies. Feel free to read about them if you have some spare time:</p>
+<ul>
+<li><a href="https://www.postgresql.org/">PostgreSQL</a>: A fantastic open-source SQL database.</li>
+<li><a href="https://www.mysql.com/">MySQL</a>: Another open-source SQL database. Less fantastic IMO.</li>
+<li><a href="https://www.mongodb.com/">MongoDB</a>: A popular open-source NoSQL document database.</li>
+<li><a href="https://firebase.google.com/">Firebase</a>: A popular cloud-based NoSQL database service.</li>
+</ul>
+<p>Feel free to browse <a href="https://db-engines.com/en/ranking">DB Engine</a> if you want to dive deeper into the world of database technologies.</p>
+<p><strong>Get</strong></p>
+<p>Request sizes can get out of control quickly if users need to download <em>every chirp in the database</em> each time they want to read one.</p>
+<p><strong>Assignment</strong></p>
+<p>Add a new endpoint to your server that allows users to get a <em>single</em> chirp by ID. The response should be a <code>200</code> status code and the chirp resource.</p>
+<p><strong>GET /api/chirps/{chirpID}</strong></p>
+<p>The <code>{chirpID}</code> part of the path should be replaced with the ID of the chirp. For example, if the user wants to get chirp <code>1</code>, they should make a request to <code>/api/chirps/1</code>.</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>  <span>&#34;body&#34;</span><span>:</span> <span>&#34;Hello, world!&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>If the chirp does not exist, the server should return a <code>404</code> status code.</p>
+<p><strong>Tips</strong></p>
+<p><strong>Make sure to delete your <code>database.json</code> file every time before you run the tests!!!</strong> The tests assume that they start with a fresh database each time.</p>
+<ul>
+<li>Use <a href="https://pkg.go.dev/net/http#Request.PathValue">http.Request.PathValue</a> to get the <code>chirpID</code> from the request.</li>
+<li><a href="https://pkg.go.dev/strconv#Atoi">strconv.Atoi</a> can be used to convert a string to an integer.</li>
+</ul>
+<p><strong>Collections and Singletons</strong></p>
+<p>We’re building a <em>fairly</em> <a href="https://restfulapi.net/">RESTful API</a>.</p>
+<p>REST is a set of guidelines for how to build APIs. It’s not a standard, but it’s a set of conventions that many people follow. Not all back-end APIs are RESTful, but many are, and as a back-end developer you’ll need to know how to build RESTful APIs.</p>
+<p><strong>Collections and Singletons</strong></p>
+<p>In REST, it’s conventional to name all of your endpoints after the resource that they represent, and for the name to be plural. That’s why we use <code>POST /api/chirps</code> to create a new chirp instead of <code>POST /api/chirp</code>.</p>
+<p>To get a collection of resources it’s conventional to use a <code>GET</code> request to the plural name of the resource. That’s why we use <code>GET /api/chirps</code> to get all of the chirps.</p>
+<p>To get a <em>singleton</em>, or a <em>single instance</em> of a resource, it’s conventional to use a <code>GET</code> request to the plural name of the resource, followed by the <code>ID</code> of the resource. That’s why we use <code>GET /api/chirps/1</code> to get the chirp with ID <code>1</code>.</p>
+<p>@<a href="https://www.youtube.com/watch?v=YahE7cWw4p0">youtube</a></p>
+<p><strong>Users</strong></p>
+<p>Our API is in a strange state at the moment - chirps can be created and read, but we have no concept of “users” which are to be the authors of chirps. Let’s add the ability to create users.</p>
+<p><strong>Assignment</strong></p>
+<p>Add a new endpoint to your server that allows users to be created. For now, a user will just have an <code>id</code> (integer) and an <code>email</code> (string).</p>
+<p><strong>POST <code>/api/users</code></strong></p>
+<p>Request:</p>
+<p>Response:</p>
+<p><code>HTTP 201 Created</code></p>
+<p>A new user should be created and persisted to the <code>database.json</code> file. Use the same <code>id</code> system used for chirps.</p>
+<p><strong>Tips</strong></p>
+<p><strong>Make sure to delete your <code>database.json</code> file every time before you run the tests!!!</strong> The tests assume that they start with a fresh database each time.</p>
+<p><strong>Debug Mode</strong></p>
+<p>When you’re developing a server on your local machine, it’s super common to develop against a temporary local database, like we’ve been doing.</p>
+<p>Obviously, you would never just delete a production database! You’d lose all of your user’s accounts and data!</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/Sf2FcyZ.png" alt="delete database meme"/></p>
+<p><strong>It’s a pain to manually delete the database every time!</strong></p>
+<p>Here’s my recommendation: Add a <code>--debug</code> flag to your server that will delete the database upon server start. For example:</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>go build -o out <span>&amp;&amp;</span> ./out --debug
+</span></span></code></pre></div><p>You can use the flag when testing <em>locally</em>, but the DevOps team at Chirpy can leave it out when deploying to production.</p>
+<p><em>This is optional, but I highly recommend it!</em></p>
+<p><strong>Parsing command line flags in Go</strong></p>
+<p>Use <a href="https://pkg.go.dev/flag#Bool">flag.Bool</a> to create a pointer to a boolean value representing the <code>--debug</code> flag. Then, use <a href="https://pkg.go.dev/flag#Parse">flag.Parse</a> to parse the command line and fill in the value of the pointer.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>dbg</span> <span>:=</span> <span>flag</span><span>.</span><span>Bool</span><span>(</span><span>&#34;debug&#34;</span><span>,</span> <span>false</span><span>,</span> <span>&#34;Enable debug mode&#34;</span><span>)</span>
+</span></span><span><span><span>flag</span><span>.</span><span>Parse</span><span>()</span>
+</span></span></code></pre></div><h2 id="authentication-with-passwords">
+  <span> Authentication with Passwords</span> <a href="#authentication-with-passwords">🔗</a></h2>
+<p>Authentication is the process of verifying <em>who</em> a user is. If you don’t have a secure authentication system, your back-end systems will be open to attack!</p>
+<p>Imagine if I could make an HTTP request to the YouTube API and upload a video to <em>your</em> channel. YouTube’s authentication system prevents this from happening by verifying that I am who I say I am.</p>
+<p><strong>Passwords</strong></p>
+<p>Passwords are a common way to authenticate users. You know how they work: When a user signs up for a new account, they choose a password. When they log in, they enter their password again. The server will then compare the password they entered with the password that was stored in the database.</p>
+<p>There are 2 <em>really important</em> things to consider when storing passwords:</p>
+<ol>
+<li><strong>Storing passwords in plain text is awful.</strong> If someone gets access to your database, they will be able to see all of your users’ passwords. If you store passwords in plain text, you are giving away your users’ passwords to anyone who gets access to your database.</li>
+<li><strong>Password strength matters.</strong> If you allow users to choose weak passwords, they will be more likely to reuse the same password on other websites. If someone gets access to your database, they will be able to log in to your users’ other accounts.</li>
+</ol>
+<p>We won’t be writing code to validate password strength in this course, but you get the idea: you can enforce rules in your HTTP handlers to make sure passwords are of a certain length and complexity.</p>
+<p><strong>Hashing</strong></p>
+<p>On the other hand, we <em>will</em> be writing code to store passwords in a way that prevents them from being read by anyone who gets access to your database. This is called <em>hashing</em>. Hashing is a one-way function. It takes a string as input and produces a string as output. The output string is called a <em>hash</em>.</p>
+<p>We’ll cover how hashing works in-depth in a later course. For now, just know that hashing is a way to store passwords in a way that prevents them from being read by anyone who gets access to your database, but still allows us to <em>compare</em> passwords when a user logs in.</p>
+<p><strong>Assignment</strong></p>
+<p>Update the <code>POST /api/users</code> endpoint, and create a new <code>POST /api/login</code> endpoint.</p>
+<p><strong>POST <code>/api/users</code></strong></p>
+<p>Update the body parameters for this endpoint to include a new <code>password</code> field:</p>
+<p><em>Note: As long as your server uses HTTPS in production, it’s safe to send passwords in HTTP bodies, because the entire request is encrypted.</em></p>
+<p>Hash the password using the <a href="https://pkg.go.dev/golang.org/x/crypto/bcrypt#GenerateFromPassword">bcrypt.GenerateFromPassword</a> function. <a href="https://blog.boot.dev/cryptography/bcrypt-step-by-step/">Bcrypt</a> is a secure hash function that is intended to be used with passwords.</p>
+<p>Be sure to store the hashed password in the database as you create the user.</p>
+<p>The response from this endpoint should <em>not</em> include the password.</p>
+<p><strong>POST <code>/api/login</code></strong></p>
+<p>This endpoint should allow a user to login. In a future exercise this endpoint will be used to give the user a token that they can use to make authenticated requests, but for now, let’s just make sure the password validation is working.</p>
+<p>The login endpoint should accept this request body:</p>
+<p>You’ll need a new way to look up a user by their email address (you don’t have access to an ID here)! At the same time, it would be a good idea to update your database’s “create user” logic to ensure that 2 users can’t be created with the same email address.</p>
+<p>Use the <a href="https://pkg.go.dev/golang.org/x/crypto/bcrypt#CompareHashAndPassword">bcrypt.CompareHashAndPassword</a> function to compare the password that the user entered in the HTTP request with the password that is stored in the database.</p>
+<p>If either the user lookup or the password comparison errors, just return a <code>401 Unauthorized</code> response with the message “Incorrect email or password”.</p>
+<p>If the passwords match, return a <code>200 OK</code> response and a copy of the user resource (without the password of course):</p>
+<p><strong>Passwords should never be reused</strong></p>
+<p>It’s a really bad idea for users to reuse the same passwords across sites. If someone figures out their password for one site, they can try it on other sites. If they get lucky, they can log in to and compromise many of their accounts.</p>
+<p>Unfortunately, it’s very common for users to reuse passwords. We can’t <em>force</em> users to not reuse passwords on the server side, but we can take steps to make it harder for them to reuse passwords. Namely, we can require that passwords are strong.</p>
+<p><strong>Passwords should be strong</strong></p>
+<p>The most important factor for the strength of a password is its <em>entropy</em>. <a href="https://blog.boot.dev/cryptography/what-is-entropy-in-cryptography/">Entropy</a> is a measure of how many possible combinations of characters there are in a string. To put it simply:</p>
+<ul>
+<li>The longer the password the better</li>
+<li>Special characters and capitals should always be allowed</li>
+<li>Special characters and capitals aren’t as important as length</li>
+</ul>
+<p><img src="https://imgs.xkcd.com/comics/password_strength.png" alt="password strength"/></p>
+<ul>
+<li><a href="https://xkcd.com/936/">xkcd: Password Strength</a></li>
+</ul>
+<p><strong>Passwords should never be stored in plain text</strong></p>
+<p>The most critical thing we can do to protect our users’ passwords is to <em>never</em> store them in plain text. We should use cryptographically strong key derivation functions (which are a special class of hash functions) to store passwords in a way that prevents them from being read by anyone who gets access to your database.</p>
+<p><a href="https://blog.boot.dev/cryptography/bcrypt-step-by-step/">Bcrypt</a> is a great choice. <a href="https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/">SHA-256</a> and <a href="https://en.wikipedia.org/wiki/MD5">MD5</a> are not.</p>
+<p><strong>Types of Authentication</strong></p>
+<p>Here are a few of the most common authentication methods you’ll see in the wild:</p>
+<ol>
+<li>Password + ID (username, email, etc.)</li>
+<li>3rd Party Authentication (“Sign in with Google”, “Sign in with GitHub”, etc)</li>
+<li>Magic Links</li>
+<li>API Keys</li>
+</ol>
+<p><strong>1. Password + ID</strong></p>
+<p>This is the most common type of authentication that requires a manual login from a user. When users use password managers, it’s one of the more secure ways to authenticate users, unfortunately, many users don’t, so it’s not as secure as it could be.</p>
+<p>That said, it’s a valid choice.</p>
+<p><strong>2. 3rd Party Authentication</strong></p>
+<p>3rd party authentication is a way to authenticate users using a service like Google or GitHub (similarly to how we do it here on Boot.dev). 3rd party auth is great for user experience because it allows users to use their existing accounts to log in to your app, lowering friction.</p>
+<p>It’s also nice because you don’t need to worry about storing passwords yourself, meaning you can outsource the security of your users’ passwords to a company that <em>hopefully</em> does a good job.</p>
+<p>The only real drawback to 3rd party auth is that you’re trusting a 3rd party, and if your users don’t have an account with that 3rd party, they won’t be able to log in.</p>
+<p><strong>3. Magic Links</strong></p>
+<p>Magic links are a way to authenticate users without a password. It relies on the assumption that the user’s email is something that they have unique access to.</p>
+<p>The webserver sends a link to the user’s email and encodes a unique token in that link. When the user clicks the link, the webserver can decode the token and use it to authenticate the user. Eg:</p>
+<p><code>https://example.com/login?token=...</code></p>
+<p><strong>4. API Keys</strong></p>
+<p>API keys are a fantastic way to authenticate users and systems programmatically. An API Key is just a long secure string that uniquely identifies a user or system, and that can’t be guessed. Because they’re intended to be used in code, they don’t need to be memorized and as such can be much longer and double as an identifier. An API key might look something like this:</p>
+<p><code>bd_JDS543J3n5NMKspDXNRlowiqw523lKHK32K43kl</code></p>
+<p>@<a href="https://www.youtube.com/watch?v=L1tcPu95fEU">youtube</a></p>
+<p><strong>Authentication with JWTs</strong></p>
+<p>There are several different ways to handle authentication. We’ll be using <a href="https://blog.boot.dev/cryptography/hmac-and-macs-in-jwts/">JWTs</a> in this course. They’re a popular choice for APIs that are consumed by web applications and mobile apps.</p>
+<p><img src="https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/hFgop3U.png" alt="jwt lifecycle"/></p>
+<p><strong>Step 1: Login</strong></p>
+<p>It would be pretty annoying if you had to enter your username and password every time you wanted to make a request to an API. Instead, after a user enters a username and password, our server should respond with a <em>token</em> (JWT) that’s saved in the client’s device.</p>
+<p>The token remains valid until it expires at which point the user will need to log in again.</p>
+<p><strong>Step 2: Using the token</strong></p>
+<p>When the user wants to make a request to the API, they send the token along with the request in the HTTP headers. The server can then verify that the token is valid, which means the user is who they say they are.</p>
+<p><strong>What is a JWT?</strong></p>
+<p>A JWT is a JSON Web Token. It’s a cryptographically signed JSON object that contains information about the user. You’ll learn about how the cryptography of JWTs work in our <a href="https://www.boot.dev/courses/learn-cryptography-golang">Learn Cryptography</a> course, for now, it’s just important to know that once the token is created by the server, the data in the token can’t be changed without the server knowing.</p>
+<p><em>When your server issues a JWT to Bob, bob can use that token to make requests as Bob to your API. Bob won’t be able to change the token to make requests as Alice.</em></p>
+<p><strong>Assignment</strong></p>
+<p>Update the <code>POST /api/login</code> endpoint, and create a new <code>PUT /api/users</code> endpoint.</p>
+<p><strong>POST /login</strong></p>
+<p>This endpoint should accept a new <em>optional</em> <code>expires_in_seconds</code> field in the request body:</p>
+<p><strong>JWT Secret</strong></p>
+<p>First, you’ll need to create a <em>secret</em> for your server - the secret is used to sign and verify JWTs. By keeping it safe, no other servers will be able to create valid JWTs for your server.</p>
+<p>Secrets shouldn’t be stored in Git, just in case anyone malicious gains access to your repository. <a href="https://en.wikipedia.org/wiki/Environment_variable">Environment variables</a> are simple key/value pairs that are available to the programs you run. They’re a platform-agnostic way to store secrets and configuration information.</p>
+<p>We <em>could</em> manually set environment variables in our shell each time we start a session, but that’s a pain. Instead, we’ll store the secret in a gitignore’d file called <code>.env</code> at the root of the repo. That file should look like this:</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span><span>JWT_SECRET</span><span>=</span>your-secret-key
+</span></span></code></pre></div><p>Replace <code>your-secret-key</code> with a long, random string. You can generate one on the command line like this:</p>
+<p>Because we’re using a file, and not manually adding the variable to our session, we’ll need to use a library to load the environment variables. We’ll use <a href="https://github.com/joho/godotenv">godotenv</a>. Once you’ve installed the package, you can load the environment variables at the top of your <code>main()</code> function like this:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// by default, godotenv will look for a file named .env in the current directory
+</span></span></span><span><span><span></span><span>godotenv</span><span>.</span><span>Load</span><span>()</span>
+</span></span></code></pre></div><p>Then you can load the <code>JWT_SECRET</code> variable using the standard library like this:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>jwtSecret</span> <span>:=</span> <span>os</span><span>.</span><span>Getenv</span><span>(</span><span>&#34;JWT_SECRET&#34;</span><span>)</span>
+</span></span></code></pre></div><p>You’ll want to store the <code>jwtSecret</code> in your <code>apiConfig</code> struct so that your handlers can access it.</p>
+<p><strong>Creating a JWT</strong></p>
+<p>Create a JWT using <a href="https://github.com/golang-jwt/jwt">this JWT library</a>. Again, you’ll need to install the library. You’ll need to:</p>
+<ul>
+<li>Use <a href="https://pkg.go.dev/github.com/golang-jwt/jwt/v5#NewWithClaims">jwt.NewWithClaims</a> to create a new token.
+<ul>
+<li>Use <a href="https://pkg.go.dev/github.com/golang-jwt/jwt/v5#SigningMethodHS256">jwt.SigningMethodHS256</a> as the signing method.</li>
+<li>Use <a href="https://pkg.go.dev/github.com/golang-jwt/jwt/v5#RegisteredClaims">jwt.RegisteredClaims</a> as the claims.
+<ul>
+<li>Set the <code>Issuer</code> to “chirpy”</li>
+<li>Set <code>IssuedAt</code> to the current time in UTC</li>
+<li>Set <code>ExpiresAt</code> to the current time plus the expiration time (<code>expires_in_seconds</code>)</li>
+<li>Set the <code>Subject</code> to a stringified version of the user’s <code>id</code></li>
+</ul>
+</li>
+<li>Use <a href="https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Token.SignedString">token.SignedString</a> to sign the token with the secret key. Refer to <a href="https://golang-jwt.github.io/jwt/usage/signing_methods/#signing-methods-and-key-types">here</a> for an overview of the different signing methods and their respective key types.</li>
+</ul>
+</li>
+</ul>
+<p><code>expires_in_seconds</code> is an <em>optional</em> parameter. If it’s specified by the client, use it as the expiration time. If it’s not specified, use a default expiration time of 24 hours. If the client specified a number over 24 hours, use 24 hours as the expiration time.</p>
+<p>Once you have the token, respond to the request with a <code>200</code> code and this body shape:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>  <span>&#34;email&#34;</span><span>:</span> <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="5c303d32391c39243d312c3039723f3331">[email protected]</a>&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;token&#34;</span><span>:</span> <span>&#34;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>PUT <code>/api/users</code></strong></p>
+<p>This endpoint should <em>update</em> a user’s email and password.</p>
+<p>This is our first <em>authenticated endpoint</em>, which means it will require a JWT to be present in the request headers:</p>
+<pre tabindex="0"><code>Authorization: Bearer &lt;token&gt;
+</code></pre><p>Notice that there is <em>not</em> an <code>id</code> in the path, that’s because we already know the <code>id</code> of the user from the JWT in the headers.</p>
+<p><strong>Validating the JWT</strong></p>
+<p>First, extract the token from the request headers using <a href="https://pkg.go.dev/net/http#Header.Get">r.Header.Get</a>. Remember, you’ll need to strip off the <code>Bearer </code> prefix.</p>
+<p>Next, use the <a href="https://pkg.go.dev/github.com/golang-jwt/jwt/v5#ParseWithClaims">jwt.ParseWithClaims</a> function to validate the signature of the JWT and extract the claims into a <a href="https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Token">*jwt.Token</a> struct. An error will be returned if the token is invalid or has expired. If the token is invalid, return a <code>401 Unauthorized</code> response.</p>
+<p>If all is well with the token, use the <a href="https://pkg.go.dev/github.com/golang-jwt/jwt/v5#Claims">token.Claims</a> interface to get access to the user’s <code>id</code> from the claims (which should be stored in the <code>Subject</code> field).</p>
+<p><strong>Updating the user</strong></p>
+<p>If the JWT was valid, you should now have the ID of the authenticated user. Use that ID to look up the user in the database and update their fields with the parameters from the request body.</p>
+<p>You’ll probably need to add a new <code>UpdateUser</code> method to your database package.</p>
+<p>After updating the user, return a copy of the updated user resource (without the password) and a <code>200</code> status code.</p>
+<p><strong>Revoking JWTs</strong></p>
+<p><strong>Access tokens</strong></p>
+<p>One of the main benefits of JWTs is that they’re <em>stateless</em>. The server doesn’t need to keep track of which users are logged in via JWT. The server just needs to issue a JWT to a user and the user can use that JWT to authenticate themselves. Statelessness is <em>fast and scalable</em>, your server doesn’t need to consult a database to see if a user is currently logged in.</p>
+<p>However, that same benefit poses a potential problem. JWTs can’t be revoked. If a user’s JWT is stolen, there’s no easy way to stop the JWT from being used. JWTs are just a signed string of text.</p>
+<p>The JWTs we’ve been using so far are more specifically <em>access tokens</em>. Access tokens are used to authenticate a user to a server, and they provide <em>access</em> to protected resources. Access tokens are:</p>
+<ul>
+<li>Stateless</li>
+<li>Short-lived (15m-24h)</li>
+<li>Irrevocable</li>
+</ul>
+<p>They <em>must</em> be short-lived because they can’t be revoked. The shorter the lifespan, the more secure they are. Trouble is, this can create a poor user experience. We don’t want users to have to log in every 15 minutes.</p>
+<p><strong>#A solution: refresh tokens</strong></p>
+<p>Refresh tokens don’t provide access to resources directly, but they can be used to get new access tokens. Refresh tokens are much longer lived, and importantly, they <em>can</em> be revoked. They are:</p>
+<ul>
+<li>Stateful</li>
+<li>Long-lived (24h-60d)</li>
+<li>Revocable</li>
+</ul>
+<p>Now we get the best of both worlds! Our endpoints and servers that provide access to protected resources can use access tokens, which are fast, stateless, simple, and scalable. On the other hand, refresh tokens are used to keep users logged in for longer periods of time, and they can be revoked if a user’s access token is compromised.</p>
+<p><strong>Refresh Tokens</strong></p>
+<p>To allow our users to stay logged in for longer periods, let’s add refresh tokens to our authentication system. At the same time, we’ll reduce the lifespan of our access tokens to improve security.</p>
+<p><strong>Session store</strong></p>
+<p>In our case, a refresh token will just be a random 256-bit string. It’s a <em>token</em>, but not a <em>JSON Web Token</em>. It doesn’t need to be a JWT because we’ll store it in our database and associate it with a user server-side. No point in using stateless JWTs if we’re going to store them in a database anyway.</p>
+<p>To revoke a refresh token, we’ll simply delete it from the database.</p>
+<p><strong>Assignment</strong></p>
+<p>We need to:</p>
+<ul>
+<li>Update the <code>POST /api/login</code> endpoint</li>
+<li>Add the <code>POST /api/refresh</code> endpoint</li>
+<li>Add the <code>POST /api/revoke</code> endpoint</li>
+</ul>
+<p><strong>POST /api/login</strong></p>
+<p>The login endpoint should now return this shape:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>  <span>&#34;email&#34;</span><span>:</span> <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="1478757a7154716c75796478713a777b79">[email protected]</a>&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;token&#34;</span><span>:</span> <span>&#34;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;refresh_token&#34;</span><span>:</span> <span>&#34;56aa826d22baab4b5ec2cea41a59ecbba03e542aedbb31d9b80326ac8ffcfa2a&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><ul>
+<li>Access tokens (JWTs) should expire after 1 hour. Expiration time is stored in the <code>exp</code> claim.</li>
+<li>Refresh tokens should expire after 60 days. Expiration time is stored in the database.</li>
+</ul>
+<p>I used the following standard library functions to generate the refresh tokens:</p>
+<ul>
+<li><a href="https://pkg.go.dev/crypto/rand#Read">rand.Read</a> to generate 32 bytes (256 bits) of random data from the <code>crypto/rand</code> package (<code>math/rand</code>’s <code>Read</code> function is deprecated).</li>
+<li><a href="https://pkg.go.dev/encoding/hex#EncodeToString">hex.EncodeToString</a> to convert the random data to a hex string</li>
+</ul>
+<p><strong>POST /api/refresh</strong></p>
+<p>This new endpoint does <em>not</em> accept a request body but <em>does</em> require a refresh token to be present in the headers, in the same <code>Authorization: Bearer &lt;token&gt;</code> format.</p>
+<p>Look up the token in the database. If it doesn’t exist, or if it’s expired, respond with a <code>401</code> status code. Otherwise, respond with a <code>200</code> code and this shape:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;token&#34;</span><span>:</span> <span>&#34;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The <code>token</code> field should be a newly created access token that expires in 1 hour.</p>
+<p><strong>POST /api/revoke</strong></p>
+<p>This new endpoint does <em>not</em> accept a request body but <em>does</em> require a refresh token to be present in the headers, in the same <code>Authorization: Bearer &lt;token&gt;</code> format.</p>
+<p>Revoke the token in the database that matches the token that was passed in the header of the request. Respond with a <a href="https://www.rfc-editor.org/rfc/rfc9110.html#name-204-no-content"><code>204</code> status code</a>. A 204 status means the request was successful but no body is returned.</p>
+<p><strong>Cookies</strong></p>
+<p>HTTP <a href="https://en.wikipedia.org/wiki/HTTP_cookie">cookies</a> are one of the most talked about but least understood aspects of the web.</p>
+<p>When cookies are talked about in the news, they’re usually implied to simply be privacy-stealing bad guys. While cookies can certainly invade your privacy, that’s not what they <em>are</em>.</p>
+<p><strong>What is an HTTP cookie?</strong></p>
+<p>A cookie is a small piece of data that a server sends to a client. The client then dutifully stores the cookie and sends it back to the server on subsequent requests.</p>
+<p>Cookies can store any arbitrary data:</p>
+<ul>
+<li>A user’s name, or other tracking information</li>
+<li>A JWT (refresh and access tokens)</li>
+<li>Items in a shopping cart</li>
+<li>etc.</li>
+</ul>
+<p>The server decides <em>what</em> to put in a cookie, and the client’s job is simply to store it and send it back.</p>
+<p><strong>How do cookies work?</strong></p>
+<p>Simply put, cookies work through HTTP headers.</p>
+<p>Cookies are sent from the server to the client in the <code>Set-Cookie</code> header. Cookies are most popular for web (browser-based) applications because browsers <em>automatically</em> send any cookies they have back to the server in the <code>Cookie</code> header.</p>
+<p><strong>Why aren’t we using cookies in Chirpy?</strong></p>
+<p>Simply put, Chirpy’s API is designed to be consumed by mobile apps and other servers. Cookies are primarily for browsers.</p>
+<p>A good use-case for cookies is to serve as a more strict and secure transport layer for JWTs within the context of a browser-based application.</p>
+<p>For example, when using <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies">httpOnly cookies</a>, you can ensure that 3rd party JavaScript that’s being executed on your website can’t access any cookies. That’s a lot better than storing JWTs in the browser’s local storage, where it’s easily accessible to any JavaScript running on the page.</p>
+
+<p>While authentication is about verifying <em>who</em> a user is, authorization is about verifying <em>what a user is allowed to do</em>.</p>
+<p>For example, a user might be authenticated as <code><a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="deb2bfb0bb9ebba6bfb3aeb2bbf0bdb1b3">[email protected]</a></code>, but that doesn’t mean that they should be allowed to delete chirps authored by <code><a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="bbdad7d7dad5fbdec3dad6cbd7de95d8d4d6">[email protected]</a></code>. Only the user who created the chirp should be allowed to delete it.</p>
+<p>Authorization logic is just the code that enforces these kinds of rules.</p>
+<p><strong>Assignment</strong></p>
+<p>Update the <code>POST /api/chirps</code> endpoint to only allow users to create chirps if they are authenticated. When they do create a chirp, the chirp should be associated with the user who created it. Add a new <code>author_id</code> field to your chirps and use it to store the user’s ID.</p>
+<p>Make sure that the <code>GET /api/chirps</code> endpoints return the <code>author_id</code> field as well.</p>
+<p><strong>Authentication vs Authorization</strong></p>
+<p>As we covered briefly, authentication and authorization are two different things.</p>
+<p><strong>Authentication</strong></p>
+<p>Verify <em>who</em> a user is, typically by asking for a password, api key, or other credentials.</p>
+<p><strong>Authorization</strong></p>
+<p>Only allow a verified user to perform actions that <em>they</em> are allowed to perform. Sometimes it’s based on exactly who they are, but often it’s based on a role, like “admin” or “owner”.</p>
+<p><strong>Delete Chirp</strong></p>
+<p><strong>Assignment</strong></p>
+<p>Add a new <code>DELETE /api/chirps/{chirpID}</code> route to your server that deletes a chirp from the database.</p>
+<p>This is an authenticated endpoint, so be sure to check the token in the header. Only allow the deletion of a chirp if the user is the author of the chirp. If they aren’t return a <code>403</code> status code.</p>
+<p>If the chirp is deleted successfully, return a <code>204</code> status code..</p>
+<p><em>Note: for simplicity we set the chirp id to <code>len(dbStructure.Chirps) + 1</code>. Though the HTTP tests do not test for this, consider what happens if a user does not delete the most recent chirp. We will get an ID conflict!</em></p>
+<h2 id="webhooks">
+  <span> Webhooks</span> <a href="#webhooks">🔗</a></h2>
+<p>Webhooks sound like a scary advanced concept, but they’re quite simple.</p>
+<p>A webhook is just an event that’s sent to your server by an external service when something happens.</p>
+<p>For example, here at Boot.dev we use Stripe as a third-party payment processor. When a student makes a payment, Stripe sends a webhook to the Boot.dev servers so that we can unlock the student’s membership.</p>
+<ol>
+<li>Student makes a payment to stripe</li>
+<li>Stripe processes the payment</li>
+<li>If the payment is successful, Stripe sends an <code>HTTP POST</code> request to <code>https://api.boot.dev/stripe/webhook</code> (that’s not the real URL, but you get the idea)</li>
+</ol>
+<p>That’s it! The only real difference between a webhook and a typical <code>HTTP</code> request, is that the system making the request is an automated system, not a human loading a webpage or web app. As such, webhook handlers must be <a href="https://en.wikipedia.org/wiki/Idempotence">idempotent</a> because the system on the other side may retry the request multiple times.</p>
+<p><strong>Idempo… what?</strong></p>
+<p>Idempotent, or “idempotence”, is a fancy word that means “the same result no matter how many times you do it”. For example, your typical <code>POST /api/users</code> (create a user) endpoint will <em>not</em> be idempotent. If you send the same request twice, you’ll end up with two users with the same information but different IDs.</p>
+<p>Webhooks on the other hand should be idempotent, and it’s typically easy to build them this way because it’s the client that’s sending some kind of “event”, and they’ll usually be providing their own unique ID.</p>
+<p><strong>Assignment</strong></p>
+<p>We recently rolled out a new feature called “Chirpy Red”. It’s a membership program, and members of “Chirpy Red” get vaporware features that we’ll announce in the future.</p>
+<p>Until then, the only thing that Chirpy Red members get is a special badge on their profile page.</p>
+<p>Chirpy uses “Polka” as its payment provider, and they send us webhooks whenever a user upgrades their account to Chirpy Red. We need to mark users as Chirpy Red members when we receive these webhooks.</p>
+<p><strong>POST /api/polka/webhooks</strong></p>
+<p>This endpoint should accept a request body of this shape:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;event&#34;</span><span>:</span> <span>&#34;user.upgraded&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;data&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;user_id&#34;</span><span>:</span> <span>3</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>If the <code>event</code> is any <em>other</em> than <code>user.upgraded</code>, the endpoint should simply immediately respond with a <code>204</code> status code - we don’t care about any other events.</p>
+<p>However, if the <code>event</code> <em>is</em> <code>user.upgraded</code>, then it should then go update the user in the database, and mark that they are a Chirpy Red member.</p>
+<p>If the user is upgraded successfully, the endpoint should respond with a <code>204</code> status code and an empty response body. If the user can’t be found, the endpoint should respond with a <code>404</code> status code.</p>
+<p><strong>Updating the “User” resource</strong></p>
+<p>The <code>User</code> resource should be updated to include a new field called <code>is_chirpy_red</code>. This field should be a boolean, and it should default to <code>false</code> when a user is created, only becoming <code>true</code> when the user is upgraded to Chirpy Red.</p>
+<p>The <code>is_chirpy_red</code> field should be present on all the endpoints that return a <code>User</code> resource, including the <code>POST /api/login</code> endpoint.</p>
+<p><strong>Webhooks Review</strong></p>
+<p>A webhook is just an event that’s sent to your server by an external service. There are just a couple of things to keep in mind when building a webhook handler:</p>
+<ul>
+<li>The third-party system will probably retry requests multiple times, so your handler should be <a href="https://en.wikipedia.org/wiki/Idempotence">idempotent</a></li>
+<li>Be extra careful to never “acknowledge” a webhook request unless you processed it successfully. By sending a <code>2XX</code> code, you’re telling the third-party system that you processed the request successfully, and they’ll stop retrying it.</li>
+<li>When you’re writing a server, you typically get to define the API. However, when you’re integrating a webhook from a service like Stripe, you’ll probably need to adhere to their API: they’ll tell you what shape the events will be sent in.</li>
+</ul>
+<p><strong>Are webhooks and websockets the same thing?</strong></p>
+<p>Nope! A websocket is a persistent connection between a client and a server. Websockets are typically used for real-time communication, like chat apps. Webhooks are a one-way communication from a third-party service to your server.</p>
+<p>We’ll talk about websockets in a future course.</p>
+<p>@<a href="https://www.youtube.com/watch?v=DsFqTWAQakU">youtube</a></p>
+<p><strong>API Keys</strong></p>
+<p>You may have noticed that there is an issue with our webhook handler: it’s not secure!</p>
+<p>Anyone can send a request to our webhook handler, and we’ll process it. That means that if Chirpy users figured out our API documentation, they could simply upgrade their account without paying!</p>
+<p><strong>Assignment</strong></p>
+<p>Luckily, Polka has a solution for this: API keys. Polka provided us with an API key, and if a request to our webhook handler doesn’t use that API key, we should reject the request. This ensures that only Polka can tell us to upgrade a user’s account.</p>
+<p>Your Polka key: <code>f271c81ff7084ee5b99a5091b42d486e</code></p>
+<p>Add that key to your <code>.env</code> file and load it into your app when your server starts.</p>
+<p><strong>POST /api/polka/webhooks</strong></p>
+<p>When you receive a request to your webhook handler, you should expect an API key in this header format:</p>
+<pre tabindex="0"><code>Authorization: ApiKey &lt;key&gt;
+</code></pre><p>Where <code>&lt;key&gt;</code> is the API key that Polka provided you. If any events come in without that API key, you should immediately respond with a <code>401</code> status code.</p>
+<h2 id="documentation">
+  <span> Documentation</span> <a href="#documentation">🔗</a></h2>
+<p>When you’re designing a server-side API, no one is going to know how to interact with it unless you tell them. Are you going to force the front-end developers, mobile developers, or other back-end service teams to sift through your code and reverse engineer your API?</p>
+<p>Of course not! You’re a good person. You’re going to write documentation.</p>
+<p><strong>First be obvious, then document it anyway</strong></p>
+<p>We’ve talked a lot about how your REST API should follow conventions as much as possible. That said, the conventions aren’t enough. You still need to document your endpoints. Without documentation, no one will know:</p>
+<ul>
+<li>Which resources are available</li>
+<li>What the path to the endpoints are</li>
+<li>Which HTTP methods are supported for each resource</li>
+<li>What the shape of the data is for each resource</li>
+<li>etc</li>
+</ul>
+<p><strong>Assignment</strong></p>
+<p>One type of endpoint that’s nearly impossible to interact with without documentation is a plural <code>GET</code> endpoint, that is, an endpoint that returns a list of resources.</p>
+<p>That’s because they often have different sorting, filtering, and <a href="https://developer.squareup.com/docs/build-basics/common-api-patterns/pagination">pagination</a> features.</p>
+<p>Update the <code>GET /api/chirps</code> endpoint. It should accept an <em>optional</em> query parameter called <code>author_id</code>. If the <code>author_id</code> query parameter is provided, the endpoint should return only the chirps for that author. If the <code>author_id</code> query parameter is not provided, the endpoint should return all chirps as it did before.</p>
+<p>For example:</p>
+<p><code>GET http://localhost:8080/api/chirps?author_id=1</code></p>
+<p><em>Continue sorting the chirps by <code>id</code> in ascending order.</em></p>
+<p><strong>Tips</strong></p>
+<p>The <a href="https://pkg.go.dev/net/http#Request">http.Request</a> struct has a way to grab the query parameters from the URL:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>s</span> <span>:=</span> <span>r</span><span>.</span><span>URL</span><span>.</span><span>Query</span><span>().</span><span>Get</span><span>(</span><span>&#34;author_id&#34;</span><span>)</span>
+</span></span><span><span><span>// s is a string that contains the value of the author_id query parameter
+</span></span></span><span><span><span>// if it exists, or an empty string if it doesn&#39;t
+</span></span></span></code></pre></div><p><strong>How to document</strong></p>
+<p>As far as creating documentation goes, there are 2 main approaches:</p>
+<ol>
+<li>Manually write documentation</li>
+<li>Use a tool to generate documentation</li>
+</ol>
+<p>Obviously, the first approach is easier to get going with if you have a small API, but as the system grows, it can be really hard to keep the documentation up to date.</p>
+<p><strong>Incorrect documentation is worse than no documentation.</strong></p>
+<p>At least when there is <em>no</em> documentation your clients will reach out and ask for clarification. When the documentation is incorrect, it can lead to a lot of wasted time and frustration.</p>
+<p><strong>Manually writing documentation</strong></p>
+<p>When I’ve worked on smaller teams, we’ve generally opted to write our documentation in <a href="https://www.markdownguide.org/">Markdown files</a> and host them on GitHub. This is a great way to get started because Markdown is a simple format that is easy to write and easy to read.</p>
+<p><strong>Some automated tools to be aware of</strong></p>
+<p>I’ve also written and consumed APIs that have used:</p>
+<ul>
+<li><a href="https://swagger.io/">Swagger</a></li>
+<li><a href="https://graphql.org/">GraphQL</a> (not RESTful, but still a networking API)</li>
+<li><a href="https://go.dev/blog/godoc">Godoc</a> (which only works for REST APIs if you provide an SDK)</li>
+<li><a href="https://learning.postman.com/docs/publishing-your-api/documenting-your-api/">Postman</a> (only useful if your team all uses Postman as their HTTP client)</li>
+</ul>
+<p><strong>Okay, but what should <em>I</em> do <em>now</em>?</strong></p>
+<p>I recommend writing documentation for your personal projects in Markdown files and storing them alongside the rest of your code in Git. Your project’s README.md file is a great place to start, but it’s also common for the README.md file to link to a <code>/docs</code> folder that contains more detailed documentation. The benefits are:</p>
+<ul>
+<li>It’s easy to get started writing docs</li>
+<li>The documentation lives alongside your code, so it’s easy to keep it up to date</li>
+<li>You’ll learn Markdown, which is a great skill to have</li>
+<li>GitHub/GitLab will render your Markdown files for you, so your docs will look great</li>
+</ul>
+<p>@<a href="https://www.youtube.com/watch?v=oqyCM8_r79w">youtube</a></p>
+<p><strong>Sorting Chirps</strong></p>
+<p>In a more robust server, especially one that uses <a href="https://blog.boot.dev/clean-code/what-are-uuids-and-should-you-use-them/">UUIDs</a> or something instead of auto-incrementing integers, we would probably want to sort by <code>created_at</code> <code>time.Time</code> instead of a numeric <code>id</code>.</p>
+<p>That said, this is the same concept, and works just fine for our little server.</p>
+<p><strong>Assignment</strong></p>
+<p>Update the <code>GET /api/chirps</code> endpoint. It should accept an <em>optional</em> query parameter called <code>sort</code>. It can have 2 possible values:</p>
+<ul>
+<li><code>asc</code> - Sort the chirps in the response by <code>id</code> in ascending order</li>
+<li><code>desc</code> - Sort the chirps in the response by <code>id</code> in descending order</li>
+</ul>
+<p><code>asc</code> is the default if no <code>sort</code> query parameter is provided.</p>
+<p><strong>Examples of valid URLs</strong></p>
+<ul>
+<li><code>GET http://localhost:8080/api/chirps?sort=asc&amp;author_id=2</code></li>
+<li><code>GET http://localhost:8080/api/chirps?sort=asc</code></li>
+<li><code>GET http://localhost:8080/api/chirps?sort=desc</code></li>
+<li><code>GET http://localhost:8080/api/chirps</code></li>
+</ul>
+<p><strong>Adding a README</strong></p>
+<p>You’re done building Chirpy! Great work!</p>
+<p>I want to take a moment to cover how you should think about your public GitHub profile, and especially how it can help you in your job search.</p>
+<p>We’ll be adding a more in-depth module on building a professional GitHub profile in the future, but for now, I want to cover some basics.</p>
+<p><strong>Do I have to put this on GitHub?</strong></p>
+<p>You <em>really should</em>. It doesn’t necessarily <em>need</em> to be publicly visible, but it’s good to keep copies of <em>all</em> of your code for future reference.</p>
+<p><strong>Projects are your professional portfolio</strong></p>
+<p>When you start looking for jobs, you’re going to want a couple of <em>great</em> projects on your GitHub or GitLab profile that show off your skills.</p>
+<p><em>This probably isn’t one of those because you built it using a guide.</em></p>
+<p>That said, it may be wise to <em>treat</em> this project like one and get your feet wet with the process of presenting a project to the world.</p>
+<p><strong>How to present this project</strong></p>
+<p>When someone navigates to your project’s link, the <em>first</em> thing they’ll see is the <code>README.md</code> file. You should quickly and concisely explain:</p>
+<ul>
+<li>What your project does</li>
+<li>Why someone should care</li>
+<li>How to install and run your project</li>
+</ul>
+<p>Take a look at one of my portfolio projects as an example: <a href="https://github.com/wagslane/go-rabbitmq">go-rabbitmq</a>.</p>
+<p>Good luck!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

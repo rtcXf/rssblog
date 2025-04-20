@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Format on Save in Go with VS Code [2023] | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/format-on-save-vs-code-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Format on Save in Go with VS Code [2023]</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Go has hard opinions about how you should style and format your code. Setting up your VS Code environment to enforce the standard linting and formatting rules can save you a <em>ton</em> of time.</p>
+<p>I don’t like to think about code styling. I like to type a bunch of code with incorrect spacing and press <code>(ctrl+s)</code> or <code>(cmd+s)</code> to save my code and auto-format it.</p>
+<h2 id="what-youll-need">
+  <span> What you’ll need</span> <a href="#what-youll-need">🔗</a></h2>
+<ul>
+<li>Make sure you have the latest version of Go installed on your machine (as of the time of writing, 1.20)</li>
+<li>Install the <a href="https://code.visualstudio.com/docs/languages/go">Official Golang VS Code Plugin</a></li>
+</ul>
+<p><img src="https://blog.boot.dev/img/800/Screen-Shot-2020-06-25-at-8.34.33-AM-1024x310.png" alt="official golang vs code extension"/></p>
+<p>Next, open your <a href="https://code.visualstudio.com/docs/getstarted/settings#_settings-file-locations">settings.json</a> file in VS Code. These settings can be specific to a single workspace or to your user account, whichever you prefer.</p>
+<p>I use the following settings:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>// format all files on save if a formatter is available
+</span></span></span><span><span><span></span>  <span>&#34;editor.formatOnSave&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>  <span>// I use &#34;goimports&#34; instead of &#34;gofmt&#34;
+</span></span></span><span><span><span></span>  <span>// because it does the same thing but also formats imports
+</span></span></span><span><span><span></span>  <span>&#34;go.formatTool&#34;</span><span>:</span> <span>&#34;goimports&#34;</span><span>,</span>
+</span></span><span><span>  <span>// go-specific settings
+</span></span></span><span><span><span></span>  <span>&#34;[go]&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;editor.formatOnSave&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>    <span>&#34;editor.codeActionsOnSave&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;source.organizeImports&#34;</span><span>:</span> <span>true</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>&#34;[go.mod]&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;editor.formatOnSave&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>    <span>&#34;editor.codeActionsOnSave&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;source.organizeImports&#34;</span><span>:</span> <span>true</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="why-goimports-and-not-gofmt">
+  <span> Why <code>goimports</code> and not <code>gofmt</code>?</span> <a href="#why-goimports-and-not-gofmt">🔗</a></h2>
+<p>Simply put, <a href="https://godoc.org/golang.org/x/tools/cmd/goimports">goimports</a> does everything <code>gofmt</code> does but additionally formats import statements. I like that.</p>
+<h2 id="bonus-auto-update-staticcheck-and-vetting">
+  <span> Bonus: Auto-Update, Staticcheck and Vetting</span> <a href="#bonus-auto-update-staticcheck-and-vetting">🔗</a></h2>
+<p>I also have these additional settings to add even more functionality to my VS Code environment. If you find them useful, feel free to use them.</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;go.toolsManagement.autoUpdate&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>  <span>&#34;go.vetOnSave&#34;</span><span>:</span> <span>&#34;package&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The <a href="https://staticcheck.io/">staticcheck</a> tools should automatically work within VS Code if you’re using the language server and the Go extension and have it <a href="https://staticcheck.io/docs/getting-started/">installed</a>.</p>
+<h2 id="not-working">
+  <span> Not Working?</span> <a href="#not-working">🔗</a></h2>
+<p>If it still isn’t working, you likely need to reload your VS Code window and/or install the missing tools that VS Code is prompting you to install via popups in the bottom-right of the editor.</p>
+<p>I will do my best to keep this guide up to date. Let me know if it isn’t working for you in the <a href="https://www.boot.dev/community">boot.dev Discord</a>.</p>
+<p>PS: If you’d like to learn Go, you can check out my <a href="https://www.boot.dev/courses/learn-golang">full Go course here</a>.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

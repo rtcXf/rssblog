@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Variables and Types in Python | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/tutorials/python/variables/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Variables and Types in Python</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Variables are how we <em>store</em> data as our program runs. You’re probably already familiar with <em>printing</em> data by passing it straight into <code>print()</code>:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>print</span><span>(</span><span>&#34;hello world&#34;</span><span>)</span>
+</span></span><span><span><span># hello world</span>
+</span></span><span><span>
+</span></span><span><span><span>print</span><span>(</span><span>45</span><span>)</span>
+</span></span><span><span><span># 45</span>
+</span></span></code></pre></div><p>Variables allow us to <em>save</em> the data in variables so we can reuse it and change it <em>before</em> printing it.</p>
+<p><em>We’re making all the static content from our Boot.dev courses available for free here on the blog. This one is the “Variables” chapter from <a href="https://www.boot.dev/courses/learn-code-python">Learn to Code in Python</a>. If you want to try the far more immersive version of the course, do check it out!</em></p>
+<h2 id="creating-variables">
+  <span> Creating Variables</span> <a href="#creating-variables">🔗</a></h2>
+<p>A “variable” is just a name that we give to a value. For example, we can make a new variable named <code>my_height</code> and set its value to <code>100</code>:</p>
+<p>Or we can define a variable called <code>my_name</code> and set it to the text string <code>&#34;Lane&#34;</code>:</p>
+<p>We have the freedom to choose any name for our variables, but they should be <em>descriptive</em> and consist of a single “token”, meaning continuous text with underscores separating the words.</p>
+<h2 id="using-variables">
+  <span> Using Variables</span> <a href="#using-variables">🔗</a></h2>
+<p>Once we have a variable, we can access its value by using its name. For example, this will print <code>100</code>:</p>
+<p>And this will print <code>Lane</code>:</p>
+<h2 id="variables-vary">
+  <span> Variables Vary</span> <a href="#variables-vary">🔗</a></h2>
+<p>Variables are called “variables” because they can hold any value and that value can change (it varies).</p>
+<p>For example, this code prints <code>20</code>:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>acceleration</span> <span>=</span> <span>10</span>
+</span></span><span><span><span>acceleration</span> <span>=</span> <span>20</span>
+</span></span><span><span><span>print</span><span>(</span><span>acceleration</span><span>)</span>
+</span></span></code></pre></div><p>The line <code>acceleration = 20</code> <em>reassigns</em> the value of <code>acceleration</code> to 20. It <em>overwrites</em> whatever was being held in the <code>acceleration</code> variable before (10 in this case).</p>
+<h2 id="storing-results">
+  <span> Storing Results</span> <a href="#storing-results">🔗</a></h2>
+<p>Now that we know how to store and change the value of variables, let’s do some math!</p>
+<p>Here are some examples of common mathematical operators in Python syntax.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>summation</span> <span>=</span> <span>a</span> <span>+</span> <span>b</span>  <span># Addition</span>
+</span></span><span><span><span>difference</span> <span>=</span> <span>a</span> <span>-</span> <span>b</span> <span># Subtraction</span>
+</span></span><span><span><span>product</span> <span>=</span> <span>a</span> <span>*</span> <span>b</span>    <span># Multiplication</span>
+</span></span><span><span><span>quotient</span> <span>=</span> <span>a</span> <span>/</span> <span>b</span>   <span># Division</span>
+</span></span></code></pre></div><p>Parentheses can be used to <a href="https://www.mathsisfun.com/operation-order-pemdas.html">order math operations</a>.</p>
+<h2 id="negative-numbers">
+  <span> Negative Numbers</span> <a href="#negative-numbers">🔗</a></h2>
+<p>Negative numbers in Python work the way you probably expect. Just add a minus sign:</p>
+
+<p>Comments don’t do… anything. They are <em>ignored</em> by the Python interpreter. That said, they’re good for what the name implies: adding comments to your code in plain English (or whatever language you speak).</p>
+
+<p>A single <code>#</code> makes the rest of the line a comment:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span># speed describes how fast the player</span>
+</span></span><span><span><span># moves in meters per second</span>
+</span></span><span><span><span>speed</span> <span>=</span> <span>2</span>
+</span></span></code></pre></div>
+<p>You can use triple quotes to start and end multi-line comments as well:</p>
+<div><pre tabindex="0"><code data-lang="python"><span><span><span>&#34;&#34;&#34;
+</span></span></span><span><span><span>    the code found below
+</span></span></span><span><span><span>    will print &#39;Hello, World!&#39; to the console
+</span></span></span><span><span><span>&#34;&#34;&#34;</span>
+</span></span><span><span><span>print</span><span>(</span><span>&#34;Hello, World!&#34;</span><span>)</span>
+</span></span></code></pre></div><p>This is useful if you don’t want to add the <code>#</code> to the start of each line when writing paragraphs of comments.</p>
+<h2 id="variable-names">
+  <span> Variable Names</span> <a href="#variable-names">🔗</a></h2>
+<p>Variable names can <em>not</em> have spaces; they’re continuous strings of characters.</p>
+<p>The creator of the Python language himself, Guido van Rossum, implores us to use <code>snake_case</code> for variable names. What <em>is</em> snake case? It’s just a style for writing variable names. Here are some examples of different casing styles:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Code</th>
+<th>Language(s) that recommend it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Snake Case</td>
+<td><code>my_hero_health</code></td>
+<td>Python, Ruby, Rust</td>
+</tr>
+<tr>
+<td>Camel Case</td>
+<td><code>myHeroHealth</code></td>
+<td>JavaScript, Java</td>
+</tr>
+<tr>
+<td>Pascal Case</td>
+<td><code>MyHeroHealth</code></td>
+<td>C#, C++</td>
+</tr>
+<tr>
+<td>No Casing</td>
+<td><code>myherohealth</code></td>
+<td>No one: don’t do this</td>
+</tr>
+</tbody>
+</table>
+<p>To be clear, your Python code will still <em>work</em> with Camel Case or Pascal Case, but can we please just have nice things? We just want some consistency in our craft.</p>
+<blockquote>
+<p>If you won’t use snake case for <em>you</em>, do it for <em>me</em>. I beg you.</p>
+</blockquote>
+<h2 id="basic-variable-types">
+  <span> Basic Variable Types</span> <a href="#basic-variable-types">🔗</a></h2>
+<p>Python has several basic data types.</p>
+<h3 id="strings">
+  <span> Strings</span> <a href="#strings">🔗</a></h3>
+<p>In programming, snippets of text are called “strings”. They’re lists of characters <em>strung</em> together. We create strings by wrapping the text in single quotes or double quotes. That said, <strong>double quotes are preferred</strong>.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>name_with_single_quotes</span> <span>=</span> <span>&#39;boot.dev&#39;</span> <span># not so good</span>
+</span></span><span><span><span>name_with_double_quotes</span> <span>=</span> <span>&#34;boot.dev&#34;</span> <span># so good</span>
+</span></span></code></pre></div><h3 id="numbers">
+  <span> Numbers</span> <a href="#numbers">🔗</a></h3>
+<p>Numbers are <em>not</em> surrounded by quotes when they’re declared.</p>
+<p><strong>An integer is a number without a decimal part</strong>:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>x</span> <span>=</span> <span>5</span> <span># positive integer</span>
+</span></span><span><span><span>y</span> <span>=</span> <span>-</span><span>5</span> <span># negative integer</span>
+</span></span></code></pre></div><p><strong>A float is a number with a decimal part</strong>:</p>
+<h3 id="booleans">
+  <span> Booleans</span> <a href="#booleans">🔗</a></h3>
+<p>A “Boolean” (or “bool”) is a type that can only have one of two values: <code>True</code> or <code>False</code>. As you may have heard, computers really only use 1’s and 0’s. These 1’s and 0’s are just <code>True/False</code> boolean values.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>is_tall</span> <span>=</span> <span>True</span>
+</span></span><span><span><span>is_short</span> <span>=</span> <span>False</span>
+</span></span></code></pre></div><h2 id="f-strings-in-python">
+  <span> F-strings in Python</span> <a href="#f-strings-in-python">🔗</a></h2>
+<p>Ever played Pokemon and chosen a funny name so that the in-game messages would come out funny?</p>
+<p>In Python, we can create strings that contain dynamic values with the f-string syntax.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>num_bananas</span> <span>=</span> <span>10</span>
+</span></span><span><span><span>print</span><span>(</span><span>f</span><span>&#34;You have </span><span>{</span><span>num_bananas</span><span>}</span><span> bananas&#34;</span><span>)</span>
+</span></span><span><span><span># You have 10 bananas</span>
+</span></span></code></pre></div><ul>
+<li>Opening quotes must be preceded by an <code>f</code>.</li>
+<li>Variables within curly brackets have their values “interpolated” (injected) into the string.</li>
+</ul>
+<h2 id="nonetype-variables">
+  <span> NoneType Variables</span> <a href="#nonetype-variables">🔗</a></h2>
+<p>Not all variables have a value. We can make an “empty” variable by setting it to <code>None</code>. <code>None</code> is a special value in Python that represents the absence of a value. It is <em>not</em> the same as zero, False, or an empty string.</p>
+<p>The value of <code>my_mental_acuity</code> in this case is <code>None</code> until we use the assignment operator, <code>=</code>, to give it a value.</p>
+
+<p>
+  <iframe src="https://www.youtube.com/embed/pZoDH6aU7ws" allowfullscreen="" title="YouTube Video"></iframe>
+</p>
+
+
+
+<h3 id="none-is-_not_-a-string">
+  <span> None is <em>not</em> a string</span> <a href="#none-is-_not_-a-string">🔗</a></h3>
+<p>NoneType is <em>not</em> the same as a string with a value of “None”:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>my_none</span> <span>=</span> <span>None</span> <span># this is a None-type</span>
+</span></span><span><span><span>my_none</span> <span>=</span> <span>&#34;None&#34;</span> <span># this is a string with the value &#34;None&#34;</span>
+</span></span></code></pre></div><p>So when would you <em>use</em> it? One use case is to represent that a value hasn’t been determined yet, for example, an uncaptured input. For example, maybe your program is waiting for a user to enter their name. You might start with a variable:</p>
+<p>Then later in the code, once the user has entered their name, you can assign it to the <code>username</code> variable:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>username</span> <span>=</span> <span>input</span><span>(</span><span>&#34;What&#39;s your name? &#34;</span><span>)</span>
+</span></span></code></pre></div><p>Remember, it’s crucial to recognize that <code>None</code> is not the same as the string <code>&#34;None&#34;</code>. They look the same when printed to the console, but they are different data types. If you use <code>&#34;None&#34;</code> instead of <code>None</code>, you will end up with code that looks correct when it’s <em>printed</em> but fails the <em>tests</em>.</p>
+<h2 id="dynamic-typing">
+  <span> Dynamic Typing</span> <a href="#dynamic-typing">🔗</a></h2>
+<p>Python is dynamically typed, which means a variable can store any type, and that type can <em>change</em>.</p>
+<p>For example, if I make a number variable, I can later change that variable to a string:</p>
+<h3 id="but-like-maybe-dont">
+  <span> But like, maybe don’t</span> <a href="#but-like-maybe-dont">🔗</a></h3>
+<p>In almost all circumstances, it’s a <em>bad idea</em> to change the type of a variable. The “proper” thing to do is to just create a new one. For example:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>speed</span> <span>=</span> <span>5</span>
+</span></span><span><span><span>speed_description</span> <span>=</span> <span>&#34;five&#34;</span>
+</span></span></code></pre></div><h3 id="what-is-non-dynamic-typing">
+  <span> What is non-dynamic typing?</span> <a href="#what-is-non-dynamic-typing">🔗</a></h3>
+<p>Languages that aren’t dynamically typed are statically typed, such as Go. In a statically typed language, if you try to assign a value to a variable of the wrong type, an error would crash the program.</p>
+<p>If Python were statically typed, the first example from before would crash on the second line, <code>speed = &#34;five&#34;</code>. The computer would give an error along the lines of <code>you can&#39;t assign a string value (&#34;five&#34;) to a number variable (speed)</code>.</p>
+<h2 id="math-with-strings">
+  <span> Math With Strings</span> <a href="#math-with-strings">🔗</a></h2>
+<p>When working with strings, the <code>+</code> operator performs a “concatenation”, which is a fancy word that means “joining two strings”. <em>Generally speaking, it’s better to use string interpolation with <code>f-strings</code> over <code>+</code> concatenation</em>.</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>first_name</span> <span>=</span> <span>&#34;Lane &#34;</span>
+</span></span><span><span><span>last_name</span> <span>=</span> <span>&#34;Wagner&#34;</span>
+</span></span><span><span><span>full_name</span> <span>=</span> <span>first_name</span> <span>+</span> <span>last_name</span>
+</span></span><span><span><span>print</span><span>(</span><span>full_name</span><span>)</span>
+</span></span><span><span><span># prints &#34;Lane Wagner&#34;</span>
+</span></span></code></pre></div><p><code>full_name</code> now holds the value “Lane Wagner”.</p>
+<p>Notice the extra space at the end of <code>&#34;Lane &#34;</code> in the <code>first_name</code> variable. That extra space is there to separate the words in the final result: <code>&#34;Lane Wagner&#34;</code>.</p>
+<h2 id="multi-variable-declaration">
+  <span> Multi-Variable Declaration</span> <a href="#multi-variable-declaration">🔗</a></h2>
+<p>We can save space when creating many new variables by declaring them on the same line:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>sword_name</span><span>,</span> <span>sword_damage</span><span>,</span> <span>sword_length</span> <span>=</span> <span>&#34;Excalibur&#34;</span><span>,</span> <span>10</span><span>,</span> <span>200</span>
+</span></span></code></pre></div><p>Which is the same as:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>sword_name</span> <span>=</span> <span>&#34;Excalibur&#34;</span>
+</span></span><span><span><span>sword_damage</span> <span>=</span> <span>10</span>
+</span></span><span><span><span>sword_length</span> <span>=</span> <span>200</span>
+</span></span></code></pre></div><p>Any number of variables can be declared on the same line, and variables declared on the same line <em>should</em> be related to one another in some way so that the code remains easy to understand.</p>
+<p>We call code that’s easy to understand “clean code”.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

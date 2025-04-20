@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Ultimate Guide to JSON in Go | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/json-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>The Ultimate Guide to JSON in Go</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>As a language designed for the web, Go provides extensive support for working with JSON data. <a href="https://www.json.org/json-en.html">JSON (JavaScript Object Notation)</a> is an incredibly popular data exchange format whose syntax resembles simple JavaScript objects. It’s one of the most common ways for applications to communicate on the modern web.</p>
+
+<p>Go takes a unique approach for working with JSON data. The best way to think about JSON data in Go is as an encoded <code>struct</code>. When you encode and decode a struct to JSON, the key of the JSON object will be the name of the struct field unless you give the field an explicit JSON <a href="https://golang.org/ref/spec#Tag">tag</a>.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>User</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>FirstName</span> <span>string</span> <span>`json:&#34;first_name&#34;`</span> <span>// key will be &#34;first_name&#34;
+</span></span></span><span><span><span></span>    <span>BirthYear</span> <span>int</span> <span>`json:&#34;birth_year&#34;`</span> <span>// key will be &#34;birth_year&#34;
+</span></span></span><span><span><span></span>    <span>Email</span> <span>string</span> <span>// key will be &#34;Email&#34;
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h3 id="example-marshal-json-from-struct-encode">
+  <span> Example marshal JSON from struct (encode)</span> <a href="#example-marshal-json-from-struct-encode">🔗</a></h3>
+<p>The <code>encoding/json</code> package exposes a <code>json.Marshal</code> function that allows us to generate the JSON encoding of any value, assuming that type has an encoder implemented. The good news is, all the <a href="https://blog.boot.dev/golang/default-native-types-golang/">default types</a> in Go have an encoder created out-of-the-box, and you’ll usually be working with structs containing default-type fields.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>Marshal</span><span>(</span><span>v</span> <span>interface</span><span>{})</span> <span>([]</span><span>byte</span><span>,</span> <span>error</span><span>)</span>
+</span></span></code></pre></div><p>As you can see, <code>Marshal()</code> takes a value as input, and returns the encoded JSON as a slice of bytes on success, or an <code>error</code> if something went wrong.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>dat</span><span>,</span> <span>_</span> <span>:=</span> <span>json</span><span>.</span><span>Marshal</span><span>(</span><span>User</span><span>{</span>
+</span></span><span><span>    <span>FirstName</span><span>:</span> <span>&#34;Lane&#34;</span><span>,</span>
+</span></span><span><span>    <span>BirthYear</span><span>:</span> <span>1990</span><span>,</span>
+</span></span><span><span>    <span>Email</span><span>:</span>     <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="c8adb0a9a5b8a4ad88afa5a9a1a4e6aba7a5">[email protected]</a>&#34;</span><span>,</span>
+</span></span><span><span><span>})</span>
+</span></span><span><span><span>fmt</span><span>.</span><span>Println</span><span>(</span><span>string</span><span>(</span><span>dat</span><span>))</span>
+</span></span><span><span>
+</span></span><span><span><span>// prints:
+</span></span></span><span><span><span>// {&#34;first_name&#34;:&#34;Lane&#34;,&#34;birth_year&#34;:1990,&#34;Email&#34;:&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="0c69746d617c60694c6b616d6560226f6361">[email protected]</a>&#34;}
+</span></span></span></code></pre></div><h3 id="example-unmarshal-json-to-struct-decode">
+  <span> Example unmarshal JSON to struct (decode)</span> <a href="#example-unmarshal-json-to-struct-decode">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>Unmarshal</span><span>(</span><span>data</span> <span>[]</span><span>byte</span><span>,</span> <span>v</span> <span>interface</span><span>{})</span> <span>error</span>
+</span></span></code></pre></div><p>Similarly, the <code>json.Unmarshal()</code> function takes some encoded JSON data and a pointer to a value where the encoded JSON should be written, and returns an error if something goes wrong.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>dat</span> <span>:=</span> <span>[]</span><span>byte</span><span>(</span><span>`{
+</span></span></span><span><span><span>    &#34;first_name&#34;:&#34;Lane&#34;,
+</span></span></span><span><span><span>    &#34;birth_year&#34;:1990,
+</span></span></span><span><span><span>    &#34;Email&#34;:&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="80e5f8e1edf0ece5c0e7ede1e9ecaee3efed">[email protected]</a>&#34;
+</span></span></span><span><span><span>}`</span><span>)</span>
+</span></span><span><span><span>user</span> <span>:=</span> <span>User</span><span>{}</span>
+</span></span><span><span><span>err</span> <span>:=</span> <span>json</span><span>.</span><span>Unmarshal</span><span>(</span><span>dat</span><span>,</span> <span>&amp;</span><span>user</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>fmt</span><span>.</span><span>Println</span><span>(</span><span>user</span><span>)</span>
+</span></span><span><span><span>// prints:
+</span></span></span><span><span><span>// {Lane 1990 <a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="bdd8c5dcd0cdd1d8fddad0dcd4d193ded2d0">[email protected]</a>}
+</span></span></span></code></pre></div><h3 id="example---go-json-http-server">
+  <span> Example - Go JSON HTTP server</span> <a href="#example---go-json-http-server">🔗</a></h3>
+<p>Building a JSON API in Go is simple, you don’t even need a framework to get access to convenient high-level HTTP support. I typically start by writing two little helper functions, <code>respondWithJSON</code> and <code>respondWithError</code>.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>respondWithJSON</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>code</span> <span>int</span><span>,</span> <span>payload</span> <span>interface</span><span>{})</span> <span>error</span> <span>{</span>
+</span></span><span><span>    <span>response</span><span>,</span> <span>err</span> <span>:=</span> <span>json</span><span>.</span><span>Marshal</span><span>(</span><span>payload</span><span>)</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>return</span> <span>err</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>w</span><span>.</span><span>Header</span><span>().</span><span>Set</span><span>(</span><span>&#34;Content-Type&#34;</span><span>,</span> <span>&#34;application/json&#34;</span><span>)</span>
+</span></span><span><span>    <span>w</span><span>.</span><span>Header</span><span>().</span><span>Set</span><span>(</span><span>&#34;Access-Control-Allow-Origin&#34;</span><span>,</span> <span>&#34;*&#34;</span><span>)</span>
+</span></span><span><span>    <span>w</span><span>.</span><span>WriteHeader</span><span>(</span><span>code</span><span>)</span>
+</span></span><span><span>    <span>w</span><span>.</span><span>Write</span><span>(</span><span>response</span><span>)</span>
+</span></span><span><span>    <span>return</span> <span>nil</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><code>respondWithJSON</code> makes it easy to send a JSON response by simply providing the handler’s ResponseWriter, an HTTP status code, and a payload to be marshaled (typically a struct).</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>respondWithError</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>code</span> <span>int</span><span>,</span> <span>msg</span> <span>string</span><span>)</span> <span>error</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>respondWithJSON</span><span>(</span><span>w</span><span>,</span> <span>code</span><span>,</span> <span>map</span><span>[</span><span>string</span><span>]</span><span>string</span><span>{</span><span>&#34;error&#34;</span><span>:</span> <span>msg</span><span>})</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The <code>respondWithError</code> function wraps the <code>respondWithJSON</code> function and always sends an error message. Now let’s take a look at how to build a full HTTP handler.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>handler</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>r</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>defer</span> <span>r</span><span>.</span><span>Body</span><span>.</span><span>Close</span><span>()</span>
+</span></span><span><span>    <span>type</span> <span>requestBody</span> <span>struct</span> <span>{</span>
+</span></span><span><span>        <span>Email</span>    <span>string</span> <span>`json:&#34;email&#34;`</span>
+</span></span><span><span>        <span>Password</span> <span>string</span> <span>`json:&#34;password&#34;`</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>type</span> <span>responseBody</span> <span>struct</span> <span>{</span>
+</span></span><span><span>        <span>Token</span> <span>string</span> <span>`json:&#34;token&#34;`</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>
+</span></span><span><span>    <span>dat</span><span>,</span> <span>err</span> <span>:=</span> <span>io</span><span>.</span><span>ReadAll</span><span>(</span><span>r</span><span>.</span><span>Body</span><span>)</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>respondWithError</span><span>(</span><span>w</span><span>,</span> <span>500</span><span>,</span> <span>&#34;couldn&#39;t read request&#34;</span><span>)</span>
+</span></span><span><span>        <span>return</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>params</span> <span>:=</span> <span>requestBody</span><span>{}</span>
+</span></span><span><span>    <span>err</span> <span>=</span> <span>json</span><span>.</span><span>Unmarshal</span><span>(</span><span>dat</span><span>,</span> <span>&amp;</span><span>params</span><span>)</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>respondWithError</span><span>(</span><span>w</span><span>,</span> <span>500</span><span>,</span> <span>&#34;couldn&#39;t unmarshal parameters&#34;</span><span>)</span>
+</span></span><span><span>        <span>return</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>
+</span></span><span><span>    <span>// do stuff with username and password
+</span></span></span><span><span><span></span>
+</span></span><span><span>    <span>respondWithJSON</span><span>(</span><span>w</span><span>,</span> <span>200</span><span>,</span> <span>responseBody</span><span>{</span>
+</span></span><span><span>        <span>Token</span><span>:</span> <span>&#34;example-auth-token&#34;</span><span>,</span>
+</span></span><span><span>    <span>})</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Since the <code>json.Marshal</code> and <code>json.Unmarshal</code> function work on the <code>[]byte</code> type, it’s really easy to send those bytes over the wire or write them to disk.</p>
+<h3 id="example---reading-and-writing-json-files">
+  <span> Example - Reading and writing JSON files</span> <a href="#example---reading-and-writing-json-files">🔗</a></h3>
+<p>I use JSON files to store configuration from time to time. Go makes it easy to read and write JSON files.</p>
+<h4 id="write-json-to-a-file-in-go">
+  <span> Write JSON to a file in Go</span> <a href="#write-json-to-a-file-in-go">🔗</a></h4>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>car</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>Speed</span> <span>int</span>    <span>`json:&#34;speed&#34;`</span>
+</span></span><span><span>    <span>Make</span>  <span>string</span> <span>`json:&#34;make&#34;`</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>c</span> <span>:=</span> <span>car</span><span>{</span>
+</span></span><span><span>    <span>Speed</span><span>:</span> <span>10</span><span>,</span>
+</span></span><span><span>    <span>Make</span><span>:</span>  <span>&#34;Tesla&#34;</span><span>,</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>dat</span><span>,</span> <span>err</span> <span>:=</span> <span>json</span><span>.</span><span>Marshal</span><span>(</span><span>c</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>err</span> <span>=</span> <span>io</span><span>.</span><span>WriteFile</span><span>(</span><span>&#34;/tmp/file.json&#34;</span><span>,</span> <span>dat</span><span>,</span> <span>0644</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Read JSON from a file in Go</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>car</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>Speed</span> <span>int</span>    <span>`json:&#34;speed&#34;`</span>
+</span></span><span><span>    <span>Make</span>  <span>string</span> <span>`json:&#34;make&#34;`</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>dat</span><span>,</span> <span>err</span> <span>:=</span> <span>io</span><span>.</span><span>ReadFile</span><span>(</span><span>&#34;/tmp/file.json&#34;</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>c</span> <span>:=</span> <span>car</span><span>{}</span>
+</span></span><span><span><span>err</span> <span>=</span> <span>json</span><span>.</span><span>Unmarshal</span><span>(</span><span>dat</span><span>,</span> <span>&amp;</span><span>c</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h3 id="tag-options---omitempty">
+  <span> Tag Options - Omitempty</span> <a href="#tag-options---omitempty">🔗</a></h3>
+<p>When marshaling data you can leave out a key completely if the key’s value contains a zero value using the <code>omitempty</code> tag.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>User</span> <span>struct</span> <span>{</span>
+</span></span><span><span>  <span>FirstName</span> <span>string</span> <span>`json:&#34;first_name,omitempty&#34;`</span>
+</span></span><span><span>  <span>BirthYear</span> <span>int</span> <span>`json:&#34;birth_year&#34;`</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// if FirstName = &#34;&#34; and BirthYear = 0
+</span></span></span><span><span><span>// marshaled JSON will be:
+</span></span></span><span><span><span>// {&#34;birth_year&#34;:0}
+</span></span></span><span><span><span></span>
+</span></span><span><span><span>// if FirstName = &#34;lane&#34; and BirthYear = 0
+</span></span></span><span><span><span>// marshaled JSON will be:
+</span></span></span><span><span><span>// {&#34;first_name&#34;:&#34;lane&#34;,&#34;birth_year&#34;:0}
+</span></span></span></code></pre></div><h3 id="tag-options---ignore-field">
+  <span> Tag Options - Ignore field</span> <a href="#tag-options---ignore-field">🔗</a></h3>
+<p><a href="https://go.dev/tour/basics/3">Unexported</a> (lowercase) fields are ignored by the marshaler. If you want to ignore additional fields you can use the <code>-</code> tag.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>User</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>// FirstName will never be encoded
+</span></span></span><span><span><span></span>    <span>FirstName</span> <span>string</span> <span>`json:&#34;-&#34;`</span>
+</span></span><span><span>    <span>BirthYear</span> <span>int</span> <span>`json:&#34;birth_year&#34;`</span>
+</span></span><span><span> <span>}</span>
+</span></span></code></pre></div><h2 id="default-encoding-types">
+  <span> Default encoding types</span> <a href="#default-encoding-types">🔗</a></h2>
+<p>JSON and Go types don’t match up 1-to-1. Below is a table that describes the type relationships when encoding and decoding.</p>
+<div>
+<table>
+<thead>
+<tr>
+<th>Go Type</th>
+<th>JSON Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bool</code></td>
+<td><code>boolean</code></td>
+</tr>
+<tr>
+<td><code>float64</code></td>
+<td><code>number</code></td>
+</tr>
+<tr>
+<td><code>string</code></td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td>nil pointer</td>
+<td><code>null</code></td>
+</tr>
+<tr>
+<td><a href="https://blog.boot.dev/golang/golang-date-time/">time.Time</a></td>
+<td><a href="https://tools.ietf.org/html/rfc3339">RFC 3339</a> timestamp (string)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>You will notice that the <code>float32</code> and <code>int</code> types are missing. Don’t worry, you can certainly encode and decode numbers into these types, they just don’t have an explicit type in the JSON specification. For example, if you encode an integer in JSON, it’s guaranteed not to have a decimal point. However, if someone converts that JSON value to a floating-point number before you decode it, you’ll get a runtime error.</p>
+<p>It’s rare to encounter an error when marshaling JSON data, but unmarshalling JSON can often cause errors. Here are some things to watch out for:</p>
+<ul>
+<li>Any type conflicts will result in an error. For example, you can’t unmarshal a <code>string</code> into a <code>int</code>, even if the string value is a stringified number: <code>&#34;speed&#34;: &#34;42&#34;</code></li>
+<li>A floating-point number can’t be decoded into an integer</li>
+<li>A <code>null</code> value can’t be decoded into a value that doesn’t have a <code>nil</code> option. For example, if you have a number field that can be <code>null</code>, you should unmarshal into a <code>*int</code></li>
+<li>A <code>time.Time</code> can only decode an RFC 3339 string - other kinds of timestamps will fail</li>
+</ul>
+<h2 id="custom-json-marshaling">
+  <span> Custom JSON marshaling</span> <a href="#custom-json-marshaling">🔗</a></h2>
+<p>While most types have a default way to encode and decode JSON data, you may want custom behavior from time to time. Luckily, the <code>json.Marshal</code> and <code>json.Unmarshal</code> respect the <a href="https://golang.org/pkg/encoding/json/#Marshaler"><code>json.Marshaler</code></a> and <a href="https://golang.org/pkg/encoding/json/#Unmarshaler"><code>json.Unmarshaler</code></a> interfaces. To <a href="https://blog.boot.dev/golang/golang-interfaces/">customize your behavior you just need to overwrite their methods</a> <code>MarshalJSON</code> and <code>UnmarshalJSON</code> respectively.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Marshaler</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>MarshalJSON</span><span>()</span> <span>([]</span><span>byte</span><span>,</span> <span>error</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Unmarshaler</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>UnmarshalJSON</span><span>([]</span><span>byte</span><span>)</span> <span>error</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>One of the most common scenarios for me is want to encode and decode timestamps in a different format, usually due to interoperability with another language like JavaScript.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Group</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>ID</span>        <span>string</span>        <span>`json:&#34;id&#34;`</span>
+</span></span><span><span>    <span>CreatedAt</span> <span>unixTimestamp</span> <span>`json:&#34;created_at&#34;`</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>type</span> <span>unixTimestamp</span> <span>time</span><span>.</span><span>Time</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>ut</span> <span>unixTimestamp</span><span>)</span> <span>MarshalJSON</span><span>()</span> <span>([]</span><span>byte</span><span>,</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>s</span> <span>:=</span> <span>strconv</span><span>.</span><span>Itoa</span><span>(</span><span>int</span><span>(</span><span>time</span><span>.</span><span>Time</span><span>(</span><span>ut</span><span>).</span><span>Unix</span><span>()))</span>
+</span></span><span><span>    <span>return</span> <span>[]</span><span>byte</span><span>(</span><span>s</span><span>),</span> <span>nil</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>ut</span> <span>*</span><span>unixTimestamp</span><span>)</span> <span>UnmarshalJSON</span><span>(</span><span>dat</span> <span>[]</span><span>byte</span><span>)</span> <span>error</span> <span>{</span>
+</span></span><span><span>    <span>unix</span><span>,</span> <span>err</span> <span>:=</span> <span>strconv</span><span>.</span><span>Atoi</span><span>(</span><span>string</span><span>(</span><span>dat</span><span>))</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>return</span> <span>err</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>*</span><span>ut</span> <span>=</span> <span>unixTimestamp</span><span>(</span><span>time</span><span>.</span><span>Unix</span><span>(</span><span>int64</span><span>(</span><span>unix</span><span>),</span> <span>0</span><span>))</span>
+</span></span><span><span>    <span>return</span> <span>nil</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>g</span> <span>:=</span> <span>Group</span><span>{</span>
+</span></span><span><span>        <span>ID</span><span>:</span>        <span>&#34;my-id&#34;</span><span>,</span>
+</span></span><span><span>        <span>CreatedAt</span><span>:</span> <span>unixTimestamp</span><span>(</span><span>time</span><span>.</span><span>Unix</span><span>(</span><span>1619544689</span><span>,</span> <span>0</span><span>)),</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>dat</span><span>,</span> <span>_</span> <span>:=</span> <span>json</span><span>.</span><span>Marshal</span><span>(</span><span>g</span><span>)</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>string</span><span>(</span><span>dat</span><span>))</span>
+</span></span><span><span>    <span>// prints
+</span></span></span><span><span><span></span>    <span>// {&#34;id&#34;:&#34;my-id&#34;,&#34;created_at&#34;:1619544689}
+</span></span></span><span><span><span></span>
+</span></span><span><span>    <span>newG</span> <span>:=</span> <span>Group</span><span>{}</span>
+</span></span><span><span>    <span>json</span><span>.</span><span>Unmarshal</span><span>(</span><span>dat</span><span>,</span> <span>&amp;</span><span>newG</span><span>)</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>newG</span><span>)</span>
+</span></span><span><span>    <span>// prints
+</span></span></span><span><span><span></span>    <span>// {my-id {0 63755141489 0x1694c0}}
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="arbitrary-json-with-mapstringinterface">
+  <span> Arbitrary JSON with map[string]interface</span> <a href="#arbitrary-json-with-mapstringinterface">🔗</a></h2>
+<p>It’s unfortunate when this is the case, but sometimes we have to work with arbitrary JSON data. For example, you need to decode some JSON data, but you aren’t sure what the key structure or shape of the data is.</p>
+<p>The best way to handle this case is to unmarshal the data into a <code>map[string]interface{}</code></p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>dat</span> <span>:=</span> <span>[]</span><span>byte</span><span>(</span><span>`{
+</span></span></span><span><span><span>    &#34;first_name&#34;: &#34;lane&#34;,
+</span></span></span><span><span><span>    &#34;age&#34;: 30
+</span></span></span><span><span><span>}`</span><span>)</span>
+</span></span><span><span><span>m</span> <span>:=</span> <span>map</span><span>[</span><span>string</span><span>]</span><span>interface</span><span>{}{}</span>
+</span></span><span><span><span>json</span><span>.</span><span>Unmarshal</span><span>(</span><span>dat</span><span>,</span> <span>&amp;</span><span>m</span><span>)</span>
+</span></span><span><span><span>for</span> <span>k</span><span>,</span> <span>v</span> <span>:=</span> <span>range</span> <span>m</span> <span>{</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Printf</span><span>(</span><span>&#34;key: %v, value: %v\n&#34;</span><span>,</span> <span>k</span><span>,</span> <span>v</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// prints
+</span></span></span><span><span><span>// key: first_name, value: lane
+</span></span></span><span><span><span>// key: age, value: 30
+</span></span></span></code></pre></div><p>I want to point out that <code>map[string]interface{}</code> should <em>only</em> be used when you absolutely have to. If you have a priori knowledge of the shape of the data, <em>please</em> use a <code>struct</code> or some other concrete type. Avoid the dynamic typing provided by interfaces when working with JSON, if you want, you can always <a href="https://blog.boot.dev/golang/anonymous-structs-golang/">use anonymous structs for one-off usage</a>.</p>
+<h2 id="streaming-json-encodings">
+  <span> Streaming JSON encodings</span> <a href="#streaming-json-encodings">🔗</a></h2>
+<p>Sometimes you don’t have the luxury of reading all the JSON data to or from a <code>[]byte</code>. If you need to be able to parse data as it’s streamed in or out of your program the <code>encoding/json</code> package provides <a href="https://golang.org/pkg/encoding/json/#Decoder">Decoder</a> and <a href="https://golang.org/pkg/encoding/json/#Encoder">Encoder</a> types.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>NewDecoder</span><span>(</span><span>r</span> <span>io</span><span>.</span><span>Reader</span><span>)</span> <span>*</span><span>Decoder</span>
+</span></span><span><span><span>func</span> <span>NewEncoder</span><span>(</span><span>w</span> <span>io</span><span>.</span><span>Writer</span><span>)</span> <span>*</span><span>Encoder</span>
+</span></span></code></pre></div><p>Take a look at the following example. It decodes data from standard in, adds a new key <code>&#34;id&#34;</code> with a value of <code>&#34;gopher-man&#34;</code> and writes the result to standard out.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>dec</span> <span>:=</span> <span>json</span><span>.</span><span>NewDecoder</span><span>(</span><span>os</span><span>.</span><span>Stdin</span><span>)</span>
+</span></span><span><span><span>enc</span> <span>:=</span> <span>json</span><span>.</span><span>NewEncoder</span><span>(</span><span>os</span><span>.</span><span>Stdout</span><span>)</span>
+</span></span><span><span><span>for</span> <span>{</span>
+</span></span><span><span>    <span>v</span> <span>:=</span> <span>map</span><span>[</span><span>string</span><span>]</span><span>interface</span><span>{}{}</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>:=</span> <span>dec</span><span>.</span><span>Decode</span><span>(</span><span>&amp;</span><span>v</span><span>);</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>log</span><span>.</span><span>Fatal</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>v</span><span>[</span><span>&#34;id&#34;</span><span>]</span> <span>=</span> <span>&#34;gopher-man&#34;</span>
+</span></span><span><span>    <span>if</span> <span>err</span> <span>:=</span> <span>enc</span><span>.</span><span>Encode</span><span>(</span><span>&amp;</span><span>v</span><span>);</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>        <span>log</span><span>.</span><span>Fatal</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="pretty-printing-json">
+  <span> Pretty printing JSON</span> <a href="#pretty-printing-json">🔗</a></h2>
+<p>By default, the <code>json.Marshal</code> function compresses all the whitespace in the encoded data for efficiency. If you need to print out your JSON data so that it’s more easily readable you can pretty-print it using the <a href="https://golang.org/pkg/encoding/json/#MarshalIndent">json.MarshalIndent</a> function.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>MarshalIndent</span><span>(</span><span>v</span> <span>interface</span><span>{},</span> <span>prefix</span><span>,</span> <span>indent</span> <span>string</span><span>)</span> <span>([]</span><span>byte</span><span>,</span> <span>error</span><span>)</span>
+</span></span></code></pre></div><p>You can customize how you want your pretty JSON to be formatted, but if you just want it to have proper tabs and newlines you can do the following.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>user</span> <span>struct</span> <span>{</span>
+</span></span><span><span>    <span>Name</span> <span>string</span>
+</span></span><span><span>    <span>Age</span>  <span>int</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>json</span><span>,</span> <span>err</span> <span>:=</span> <span>json</span><span>.</span><span>MarshalIndent</span><span>(</span><span>user</span><span>{</span><span>Name</span><span>:</span> <span>&#34;lane&#34;</span><span>,</span> <span>Age</span><span>:</span> <span>30</span><span>},</span> <span>&#34;&#34;</span><span>,</span> <span>&#34;  &#34;</span><span>)</span>
+</span></span><span><span><span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>err</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>fmt</span><span>.</span><span>Println</span><span>(</span><span>string</span><span>(</span><span>json</span><span>))</span>
+</span></span><span><span><span>// prints
+</span></span></span><span><span><span>// {
+</span></span></span><span><span><span>//     &#34;Name&#34;: &#34;lane&#34;,
+</span></span></span><span><span><span>//     &#34;Age&#34;: 30
+</span></span></span><span><span><span>// }
+</span></span></span></code></pre></div><h2 id="faster-json-encoding-and-decoding">
+  <span> Faster JSON encoding and decoding</span> <a href="#faster-json-encoding-and-decoding">🔗</a></h2>
+<p>Sometimes performance is key, and when you need to squeeze every bit of power out of your CPU cycles you may notice that the standard library’s JSON marshaling and unmarshalling isn’t as performant as you might like. There’s a fairly popular library out there called <a href="https://github.com/pquerna/ffjson">ffjson</a> that can speed up your marshaling performance by ~2-3x.</p>
+<blockquote>
+<p><code>ffjson</code> generates static <code>MarshalJSON</code> and <code>UnmarshalJSON</code> functions for structures in Go. The generated functions reduce the reliance upon runtime reflection to do serialization and are generally 2 to 3 times faster. In cases where <code>ffjson</code> doesn’t understand a Type involved, it falls back to <code>encoding/json</code>, meaning it is a safe drop in replacement. By using <code>ffjson</code> your JSON serialization just gets faster with no additional code changes.</p>
+<p>ffjson Readme.md</p>
+</blockquote>
+<p>If you’re thinking about using this library let me give you my quick two cents: <em>I’ve never actually needed to speed up my JSON performance, it’s never been a bottleneck in my apps</em>. If you desperately need to increase performance I think this is a great tool to look into, but don’t add needless dependencies to your code when the benefit they offer isn’t truly necessary.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

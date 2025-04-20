@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Functional Programming Course Released | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/news/free-functional-programming-course-released-javascript-and-purescript/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Functional Programming Course Released</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>We just launched our new <a href="https://www.boot.dev/courses/learn-functional-programming-python">“Learn Functional Programming” course</a>, and frankly, I’m a bit exhausted (more on that later). This course is an interactive code-in-the-browser course that teaches the basics of FP in JavaScript and PureScript.</p>
+<p>To celebrate this launch, we will be offering the course for <strong>free</strong> on signup (using the 250 free signup gems) for the <strong>entire month of October</strong>! Even if you can’t take the course this month, be sure to create an account and claim the offer :)</p>
+<h2 id="whats-in-the-course">
+  <span> What’s In the Course?</span> <a href="#whats-in-the-course">🔗</a></h2>
+<p>There are 5 modules:</p>
+<ul>
+<li>Recursion</li>
+<li>Pure Functions</li>
+<li>Data Structures</li>
+<li>PureScript</li>
+<li>Higher Order Functions</li>
+</ul>
+<p>The goal of the course is to cover the basics of FP in such a way that students can implement the concepts in any language, framework, or even just for theoretical practice. We go over functional versions of various algorithms and data structures, learn the difference between imperative and functional paradigms, and learn to curry functions using PureScript syntax.</p>
+<p>The course has ~60 exercises currently, and like all of our courses, we will be adding to it and improving the quality regularly.</p>
+<h2 id="what-the-hell-is-purescript">
+  <span> What the Hell is PureScript?</span> <a href="#what-the-hell-is-purescript">🔗</a></h2>
+<p><a href="https://www.purescript.org/">PureScript</a> is a strongly-typed purely functional programming language that compiles to JavaScript. PureScript has a very Haskell-like syntax.</p>
+<p>Example PureScript:</p>
+<pre tabindex="0"><code data-lang="purs">import Prelude
+import Effect.Console (log)
+
+greet :: String -&gt; String
+greet name = &#34;Hello, &#34; &lt;&gt; name &lt;&gt; &#34;!&#34;
+
+main = log (greet &#34;World&#34;)
+</code></pre><p>I was originally intending this course to be written completely in JavaScript. The boot.dev platform already supported JavaScript and I thought I would be able to convey all of the basic FP concepts through JS, at least to a satisfactory degree.</p>
+<p><em>I was wrong.</em></p>
+<p>There are so many concepts that are hard to understand in functional programming if the language allows you to circumvent each rule. For example, in JavaScript you can write an immutable stack by exposing some functions:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>push</span><span>(</span><span>stack</span><span>,</span> <span>s</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>newStack</span> <span>=</span> <span>[];</span>
+</span></span><span><span>  <span>for</span> <span>(</span><span>const</span> <span>item</span> <span>of</span> <span>stack</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>newStack</span><span>.</span><span>push</span><span>(</span><span>item</span><span>);</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>newStack</span><span>.</span><span>push</span><span>(</span><span>s</span><span>);</span>
+</span></span><span><span>  <span>return</span> <span>newStack</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>function</span> <span>pop</span><span>(</span><span>stack</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>newStack</span> <span>=</span> <span>[];</span>
+</span></span><span><span>  <span>for</span> <span>(</span><span>const</span> <span>item</span> <span>of</span> <span>stack</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>newStack</span><span>.</span><span>push</span><span>(</span><span>item</span><span>);</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>newStack</span><span>.</span><span>pop</span><span>();</span>
+</span></span><span><span>  <span>return</span> <span>newStack</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>function</span> <span>peek</span><span>(</span><span>stack</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>if</span> <span>(</span><span>stack</span><span>.</span><span>length</span> <span>&gt;</span> <span>0</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>stack</span><span>[</span><span>stack</span><span>.</span><span>length</span> <span>-</span> <span>1</span><span>];</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>return</span> <span>null</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The problem is there is nothing stopping another developer (or yourself) from “breaking the rules” and mutating the array later. That’s why I decided to teach myself some PureScript and implement it as part of the program!</p>
+<p>I still think JavaScript has a useful part to play in the course, however, especially with the popularity of FP in front-end code. For example, take a look at <a href="https://ramdajs.com/">Ramda</a> and <a href="https://reactjs.org/docs/hooks-intro.html">React Hooks</a>.</p>
+<p>Anyhow, be sure to <a href="https://www.boot.dev/">take a look at the course</a> and as always let us know how we can improve!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

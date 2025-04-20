@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Pros and Cons of Django for Backend Development | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/backend/django-for-backend/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>The Pros and Cons of Django for Backend Development</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Django is a popular <a href="https://blog.boot.dev/python/">Python</a>-based framework for building web applications. It provides pre-built components and conventions, which simplifies the web app development process and allows developers to focus on writing their application’s specific logic rather than dealing with repetitive tasks. Basically, it’s all about <em>reusability</em>.</p>
+<p><a href="https://www.djangoproject.com/">Django</a> was created by Adrian Holovaty and Simon Willison while working as web developers at the Lawrence Journal-World newspaper in Kansas, USA. They initially developed a collection of Python scripts to streamline the creation of news websites, got tired of copy-pasting code, and built a framework – Django – to streamline the boring bits. In 2005, they realized they had a hit on their hands and released it, open source, to the grateful public.</p>
+<p>All sounds good, right? But that doesn’t answer whether <strong>Django is good for backend development</strong>. When looking for a good language for backend dev, you want to consider:</p>
+<ul>
+<li><strong>Scalability</strong>: Can the framework handle increasing workload and user traffic by efficiently distributing resources and accommodating growth?</li>
+<li><strong>Performance</strong>: How well does the framework execute tasks, handle database queries, and respond quickly to user requests?</li>
+<li><strong>Flexibility</strong>: Does this framework let you adapt and customize the codebase to meet specific project requirements?</li>
+<li><strong>Learning</strong>: Does it have intuitive APIs, comprehensive documentation, code generation tools, and an active community for support?</li>
+</ul>
+<p>With that in mind, let’s go over the pros and cons of Django for backend development. I’ll also cover a brief comparison of two good alternatives, Flask and FastAPI.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Pros of Django</strong></th>
+<th><strong>Cons of Django</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A high-level framework with built-in features for efficient development.</td>
+<td>Maybe overkill for simple websites.</td>
+</tr>
+<tr>
+<td>Can handle large-scale applications but may be limited to monolithic architecture.</td>
+<td>Steeper learning curve, especially for beginners or non-Python developers.</td>
+</tr>
+<tr>
+<td>Vibrant community support and extensive third-party resources.</td>
+<td>Opinionated framework with limited flexibility for alternative approaches.</td>
+</tr>
+<tr>
+<td></td>
+<td>Can have performance limitations and issues with high throughput scenarios.</td>
+</tr>
+<tr>
+<td></td>
+<td>More memory usage compared to lighter frameworks like Flask.</td>
+</tr>
+<tr>
+<td></td>
+<td>Built-in ORM may restrict developers who prefer different database approaches.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="pros-of-django">
+  <span> Pros of Django</span> <a href="#pros-of-django">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/download.png.webp" alt="django logo"/></p>
+<p>I’ll try to provide a pretty holistic overview of everything Django. Let’s start with the good.</p>
+<h3 id="its-a-breeze-to-develop-with-django">
+  <span> It’s a breeze to develop with Django</span> <a href="#its-a-breeze-to-develop-with-django">🔗</a></h3>
+<p>One of the best things Django has going for it is its <strong>ease of development.</strong> It is a high-level, batteries-included framework with tons of built-in features for just about everything a developer might need. This includes database interaction, authentication, and templating.</p>
+<p>This means that if you’re a developer working with Django, you don’t have to reinvent the wheel every time you start a new project. The framework provides a solid foundation and takes care of many common tasks, allowing you to focus on the unique aspects of your application.</p>
+<h3 id="scalable-and-versatile">
+  <span> Scalable and versatile</span> <a href="#scalable-and-versatile">🔗</a></h3>
+<p>Get you a programming language that can do both. With many programming languages, you need to choose between scalable performance or versatility. Not with Django. Django can scale up and it can do just about anything you need.</p>
+<p>Django is designed for large-scale applications, as long as that large-scale app fits within the constraints of a monolith. Django is primarily designed as a monolithic web framework, following a traditional architecture where the entire application is built as a single unit. All components, like models, views, templates, and business logic, reside within a single codebase and are tightly coupled.</p>
+<p>You will also have to deal with Python’s admittedly lackluster execution speed compared to languages like C++ or Go.</p>
+<p>However, Django’s modular design promotes code reusability and maintainability, making it easier to scale your application over time. You can break down your application into reusable components called apps, which can be developed and tested independently. These apps can then be combined to create complex and scalable applications without sacrificing flexibility.</p>
+<h3 id="community-and-ecosystem">
+  <span> Community and ecosystem</span> <a href="#community-and-ecosystem">🔗</a></h3>
+<p>A great rule of thumb you should always remember is to look for the subreddit of whatever programming language or framework you’re trying out. How big is it? How active? How many comments are on each post? Things will go wrong when you try to use a new framework. The more mature and friendly the existing user base is, the easier it’ll be to patch things up.</p>
+<p>Django is a very popular framework, and the community support system is vibrant. In addition to an active and friendly subreddit, it also comes with an extensive ecosystem with third-party packages and resources.</p>
+<h2 id="cons-of-django">
+  <span> Cons of Django</span> <a href="#cons-of-django">🔗</a></h2>
+<p>OK, we’ve looked at the good. Now let’s have a look at the bad and the ugly. A lot of times, these are two sides of the same coin as you’ll see below.</p>
+<h3 id="a-tad-complex">
+  <span> A tad complex</span> <a href="#a-tad-complex">🔗</a></h3>
+<p>For beginner developers, you often want to run a small test project to get your feet wet with a new tool. You may struggle to do that with Django. While it is comprehensive and robust, all that muscle can make it a bit OP for small projects or simple applications like e-commerce sites or blogs.</p>
+<p>Plus, you may need unnecessary overhead and require additional configuration just for minimal functionality.</p>
+<h3 id="hard-to-learn">
+  <span> Hard to learn</span> <a href="#hard-to-learn">🔗</a></h3>
+<p>I may surprise some people here because <a href="https://www.boot.dev/courses/learn-code-python">Python is famous for how easy it is to learn</a>. But in my opinion, Django has a steeper learning curve. While it does have a plug-and-play design, it can be hard, especially for beginners or non-Pythonistas who find its conventions and structure challenging to grasp.</p>
+<p>Plus. you can’t just jump in headfirst as I mentioned above. To build anything, first, you’ll have to take the time to understand the framework’s concepts and best practices.</p>
+<h3 id="not-super-flexible">
+  <span> Not super flexible</span> <a href="#not-super-flexible">🔗</a></h3>
+<blockquote>
+<p>“Isn’t this the opposite of what you just said in the pro section?”</p>
+</blockquote>
+<p>Yes – Django is versatile. It’s customizable and it can do lots of different things. But it’s not always flexible. As an opinionated framework, it has standard and consistent ways of doing things. Want to do them a different way? You’re out of luck. Not much wiggle room in this framework.</p>
+<p>Plus, if you want to customize outside the framework’s prescribed patterns, you might need to go even deeper into the weeds to look for additional workarounds or adjustments.</p>
+<h3 id="performance-problems">
+  <span> Performance problems</span> <a href="#performance-problems">🔗</a></h3>
+<p>As I hinted even in the pro section, Django sometimes can’t perform as well as frameworks built on other languages. Because it’s focused on being a modular all-in-one framework, this affects its performance. This is particularly true in scenarios that demand high throughput or low-latency responses.</p>
+<p>It also has its own ORM, which, like all ORMs, can sometimes hide subtle performance issues in the generated SQL queries. I’ll talk about this later, but I wanted to mention it here too since it’s an important con.</p>
+
+<p>Compared to lighter frameworks like Flask (and we’ll get into that below), Django’s comprehensive feature set and built-in components can result in a larger memory footprint.</p>
+<p>For many hobby coders, this becomes a real issue for you because your resources are constrained. It’s also relevant for anyone in environments with limited server capacity or deployments to resource-limited devices.</p>
+<h3 id="reliance-on-orm">
+  <span> Reliance on ORM</span> <a href="#reliance-on-orm">🔗</a></h3>
+<p>As promised, the ORM section. As I mentioned above, Django’s built-in ORM simplifies database interactions. This is great, but it <a href="https://stackoverflow.com/questions/9112571/what-are-the-limitations-of-djangos-orm">may not suit</a> all projects or developers’ preferences.</p>
+<p>Some developers who prefer writing raw SQL queries or using different ORM libraries will probably find Django’s ORM restrictive and even unnecessary.</p>
+<h2 id="django-vs-flask-vs-fastapi">
+  <span> Django vs Flask vs FastAPI</span> <a href="#django-vs-flask-vs-fastapi">🔗</a></h2>
+<p>Let’s compare a few different Python frameworks: Django, Flask, and FastAPI.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Framework</strong></th>
+<th><strong>Pros</strong></th>
+<th><strong>Cons</strong></th>
+<th><strong>Examples</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.djangoproject.com/">Django</a></td>
+<td>Robust and full-featured, ideal for large-scale applications</td>
+<td>Opinionated, lower performance, overkill for small projects</td>
+<td>Instagram: A social media platform with complex user authentication and data management needs</td>
+</tr>
+<tr>
+<td><a href="https://flask.palletsprojects.com/en/2.3.x/">Flask</a></td>
+<td>Lightweight and flexible, allows more freedom in architecture</td>
+<td>Requires additional configuration for common functionalities</td>
+<td>Flaskr: A simple blog application with custom database integration and minimalistic structure</td>
+</tr>
+<tr>
+<td><a href="https://fastapi.tiangolo.com/">FastAPI</a></td>
+<td>High-performance, asynchronous capabilities</td>
+<td>Relatively new framework, may lack a mature community compared to others</td>
+<td>Real-time Chat API: A messaging application that needs instant updates and WebSocket communication capabilities</td>
+</tr>
+</tbody>
+</table>
+<h3 id="flask">
+  <span> Flask</span> <a href="#flask">🔗</a></h3>
+<p><img src="https://blog.boot.dev/img/800/1_0G5zu7CnXdMT9pGbYUTQLQ.png.webp" alt="flask logo"/></p>
+<p>Compared to Django, Flask is more of a lightweight and flexible micro-framework. It gives you more freedom in architecture and customization.</p>
+<p>However, it also requires additional configuration for common functionalities. Since Flask is a microframework, it gives you a minimalistic core, letting you choose and integrate only the specific extensions or libraries you need for your application.</p>
+<p>I’d recommend using Django if you’re trying to build a large-scale web application that requires robust built-in features, such as user authentication, an admin interface, and ORM integration with databases. However, I’d suggest you use Flask if you need to integrate with specific libraries or frameworks, have full control over the application’s structure, or prefer a leaner codebase.</p>
+<h3 id="fastapi">
+  <span> FastAPI</span> <a href="#fastapi">🔗</a></h3>
+<p><img src="https://blog.boot.dev/img/800/logo-teal.png.webp" alt="fastapi logo"/></p>
+<p>If that performance con bothered you, FastAPI might be more your cup of tea. It has a much better performance compared to Django as you might guess from the name, thanks to its asynchronous capabilities and high-performance design.</p>
+<p>It also comes equipped with some more modern features like automatic request validation and serialization using Python type hints, support for WebSocket communication, and seamless integration with popular data validation libraries.</p>
+<p>The main con of FastAPI is that it’s a newer framework. Unlike relative elders like Django (2005) and Flask (2010), FastAPI (2018) is a new arrival on the scene, so it’s not as battle tested as the other two. Remember how I was saying community matters? FastAPI hasn’t (yet) had a chance to build it up.</p>
+<p>I’d recommend FastAPI for more experienced programmers who want to build something like a high-performance API backend for a real-time messaging application. If you need instant updates and WebSocket communication, FastAPI is the obvious choice.</p>
+<p>If you’re looking for a more rapid development cycle, and have a project that requires features like an authentication system, Django can speed things up for you thanks to its opinionated structure and well-established conventions. You may not have a lot of wiggle room, but you will have predefined patterns and answers for typical common web application challenges.</p>
+<h2 id="going-beyond-frameworks">
+  <span> Going beyond frameworks</span> <a href="#going-beyond-frameworks">🔗</a></h2>
+<p>If you’ll allow me a slight diversion, I want to highlight why I recommend <em>not</em> relying on frameworks, <a href="https://blog.boot.dev/backend/dont-start-with-frameworks/">especially as a beginner</a>. You can use them, sure! They can be good and help you make more things, faster. They automate away the boring things and they make your development more productive by handling boilerplate code, authentication, and database migrations.</p>
+<p>But, all that being said, they have a real downside too, especially for beginners. Frameworks like Django abstract away the fundamental concepts that all backend developers, even those without knowledge of Django’s conventions, will understand.</p>
+<p>When you start your learning journey with frameworks, you’ll have a hard time understanding how (and sometimes why) things work under the hood. Things will go wrong because they always do. At this point, an experienced developer will know how to debug. But you, as a novice, won’t know how to peek under the hood and troubleshoot because you missed learning the fundamentals.</p>
+<p>It can also make learning slower, ironically. Imagine in third grade someone handed you a calculator and taught you how to learn exponential equations. With your calculator, you can handle that, no problem. But you don’t understand the fundamentals of multiplication beneath it. So when you try to learn about derivative equations, you’ll be clueless.</p>
+<h3 id="what-i-recommend-doing">
+  <span> What I recommend doing</span> <a href="#what-i-recommend-doing">🔗</a></h3>
+<p>Feel free to use frameworks. They really can make your life easier. But don’t rely on them without judgment.</p>
+<p>Go one layer down the stack from where you plan to work to gain a deeper understanding. For example, make sure you understand HTTP, databases, server configurations, and security practices</p>
+<p>You may even consider building a web server or handling HTTP requests without relying on a framework like Django, at least for your first project. This hands-on experience will help you understand the underlying concepts and processes involved in handling web requests and responses.</p>
+<h2 id="conclusion">
+  <span> Conclusion</span> <a href="#conclusion">🔗</a></h2>
+<p>Django is a great, powerful backend framework that makes a lot of use of Python’s native strengths while making it easy to use and reuse code. It has downsides, like its relatively poor performance and its lack of flexibility, but in some circumstances, it more than makes up for those shortcomings.</p>
+<p>If Django doesn’t quite meet your needs, you might pick Flask if you need a framework that can give you complete control over your application’s structure and can choose the best tools and libraries that suit your project requirements. Or pick FastAPI if you want a high-performance framework with modern features and seamless integration of asynchronous programming.</p>
+<p>Ultimately, before you pick any framework, I recommend you understand the fundamentals beneath them, or else you’ll struggle to progress beyond a certain point in your programming journey. Once you get the basics, they’ll become a powerful tool in your arsenal to code better, faster, and more effectively.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>
