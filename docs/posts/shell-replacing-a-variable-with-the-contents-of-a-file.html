@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shell: replacing a variable with the contents of a file | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/gists/shell-replacing-variable-by-file-content/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Shell: replacing a variable with the contents of a file</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>I’ve been trying to improve the <a href="https://gohugo.io">Hugo</a> template that I created for this blog, and one of the things I wanted to do was inject the contents of an <code>index.css</code> file into a <code>index.amp.html</code> layout file - <a href="https://www.ampproject.org/">Accelerated Mobile Pages (AMP)</a> requires us to have our custom styles inlined in the HTML (see <a href="https://www.ampproject.org/docs/design/responsive/style_pages">Custom Amp Styles</a>).</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/gists/-/images/awk-templater-idea.svg" alt="Illustration of the AWK templating "/>
+
+    
+</figure>
+
+<p>Here I go through a way of achieving that - using <code>awk</code> - and a way of <strong>not</strong> achieving that - using <code>sed</code> (naively).</p>
+<p>If you ever need to template a file with contents of another, this gist is for you.</p>
+<p><em>ps.: yes, with Hugo you could use <a href="https://gohugo.io/templates/partials/">partials</a>, but let’s say you want to just have some sort of poor man’s templating engine.</em></p>
+<p><em>If you want to skip the introduction, <a href="#moving-on-using-awk-to-template-the-file">jump to the awk section</a>.</em></p>
+<h3 id="getting-started-with-the-naive-way---sed-without-escapeing">Getting started with the naive way - sed without escapeing</h3>
+<p>Knowing that <code>sed</code> is all about performing substitions, it was the first tool I tried.</p>
+<p>Unfortunatelly, it didn’t work as I expected.</p>
+<div><pre><code data-lang="sh"><span># Create the file that contains the contents that we want</span>
+<span># to insert into another file at a specific location.</span>
+<span>echo</span> <span>&#39;xxxxxxx
+</span><span>yyyyyyy
+</span><span>zzzzzzz&#39;</span> &gt; ./content.txt
+
+<span># Create the template that we want to have the variable</span>
+<span># substitution.</span>
+<span>echo</span> <span>&#39;11111111
+</span><span>22222222
+</span><span>__REPLACE_ME__
+</span><span>33333333&#39;</span> &gt; ./template.txt
+
+
+<span># Perform the substituion of `__REPLACE_ME__` by a single</span>
+<span># string just to test the `sed` syntax.</span>
+sed <span>&#39;s/__REPLACE_ME__/SOMETHING_NEW/g&#39;</span> ./template.txt
+<span>11111111</span>
+<span>22222222</span>
+SOMETHING_NEW
+<span>33333333</span>
+
+
+<span># Well, if it worked for that simple case, why not just </span>
+<span># replace `SOMETHING_NEW&#39; by all the contents of the</span>
+<span># file? We can get that via `cat` anyway:</span>
+<span>CONTENT</span><span>=</span><span>$(</span>cat ./content.txt<span>)</span>
+sed <span>&#34;s/__REPLACE_ME__/</span><span>$CONTENT</span><span>/g&#34;</span> ./template.txt
+
+sed: 1: <span>&#34;s/__REPLACE_ME__/xxxxxxx
+</span><span> ...&#34;</span>: unescaped newline inside substitute pattern
+</code></pre></div><p>As we can see, that doesn’t work.</p>
+<p>The main reason is that the command was not properly formatted - there are newlines not being escaped when we perform the substitution.</p>
+<p>That happens because <code>bash</code> is performing a simple text substitution when we specify <code>$CONTENT</code>.</p>
+<p>To see that working, make use of the <code>xtrace</code> option invoking <code>bash</code> directly:</p>
+<div><pre><code data-lang="sh"><span># By invoking bash with the `-x` flag, we enable the </span>
+<span># `xtrace` option (which is usually added to scripts</span>
+<span># when debugging by specifying `set -o xtrace` or</span>
+<span># `set -x`).</span>
+<span>#</span>
+<span># The options has the effect of expanding every command</span>
+<span># and variables that are supplied to it.</span>
+<span>#</span>
+<span># This way, we&#39;re able to see what bash used as the full</span>
+<span># command after substituting the $CONTENT variable.</span>
+/bin/bash -x -c <span>\
+</span><span></span>        <span>&#34;sed \&#34;s/__REPLACE_ME__/</span><span>$CONTENT</span><span>/g\&#34; ./template.txt&#34;</span>
+
++ sed <span>&#39;s/__REPLACE_ME__/xxxxxxx
+</span><span>yyyyyyy
+</span><span>zzzzzzz/g&#39;</span> ./template.txt
+sed: 1: <span>&#34;s/__REPLACE_ME__/xxxxxx ...&#34;</span>: 
+unescaped newline inside substitute pattern
+</code></pre></div><p>Knowing that, we can either:</p>
+<ol>
+<li>escape the newlines before supplying <code>$CONTENT</code> to <code>sed</code>; or</li>
+<li>make use of something that has greater flexibility (like <code>awk</code>).</li>
+</ol>
+<p>With <code>1</code>, it means that we’d need to get into regular expressions and some fancy <code>sed</code> syntax (see <a href="https://stackoverflow.com/a/1252191/2178180">this stackoverflow answer</a>).</p>
+<p>With <code>2</code>, we can create a little program that we can be very verbose about what’s doing and make the whole process pretty explicity. I’ll go with this one.</p>
+<h3 id="moving-on---using-awk-to-template-the-file">Moving on - using AWK to template the file</h3>
+<p>AWK (just like <code>sed</code>) is a pretty ubiquotous tool in Unix systems, meaning that you can find it everywhere.</p>
+<p>It allows you to create data-driven programs where given a set of rules, actions are performed whenever a match happens.</p>
+<p>By taking data from files (either <code>stdin</code> or regular files supplied via arguments), <code>awk</code> contiguously checks whether your matchers match and then it so, proceeds with the action specified.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/gists/-/images/awk-processing-pipeline.svg" alt="Illustration of the AWK processing pipeline "/>
+
+    
+</figure>
+
+<blockquote>
+<p>“The <code>awk</code> utility interprets a special-purpose programming language that makes it easy to handle simple data-reformatting jobs.”</p>
+</blockquote>
+<blockquote>
+<p>“The basic function of awk is to search files for lines (or other units of text) that contain certain patterns.”</p>
+</blockquote>
+<blockquote>
+<p><a href="https://www.gnu.org/software/gawk/manual/gawk.html">— The GNU Awk User’s Guide</a></p>
+</blockquote>
+<p>Given that, we can start modelling a solution for our problem in terms of matches:</p>
+<ol>
+<li>we definitely want to match <code>__REPLACE_ME__</code> at a given point; and</li>
+<li>we certainly want to match lines those lines that are not meant to be replaced and just printed to <code>stdout</code>.</li>
+</ol>
+<p>We can also model it in terms of actions:</p>
+<ol>
+<li>we want to replace the <code>__REPLACE_ME__</code> tag; and</li>
+<li>we want to just print to the standard output what doesn’t match the <code>__REPLACE_ME__</code> tag.</li>
+</ol>
+<p>Now, it’s a matter of adhering to the <code>awk</code> specifics and implementing it.</p>
+<p><em>note.: because <code>awk</code> gives us a fully featured programming language, here I include parameter validation and the ability for the user to specify the pattern that (s)he wants to replace by using an environment variable (<code>PATTERN</code>).</em></p>
+<div><pre><code data-lang="awk"><span>#!/usr/bin/awk -f</span>
+
+<span># templater - takes a file and replaces a variable</span>
+<span># in a given template with the contents of another file.</span>
+
+<span># err() - Prints a supplied `text` to standard error.</span>
+<span># @text: Text to be printed to stderr.</span>
+<span>function</span> <span>err</span> <span>(</span><span>text</span><span>)</span> <span>{</span>
+        <span>print</span> <span>text</span> <span>&gt;</span> <span>&#34;/dev/stderr&#34;</span>
+<span>}</span>
+
+
+<span># The BEGIN matcher is a special type of matcher that</span>
+<span># gets executed whenever the AWK program is starting</span>
+<span># and no records have been matched yet.</span>
+<span>BEGIN</span> <span>{</span>
+        <span>if</span> <span>(</span><span>ARGC</span> <span>!=</span> <span>3</span><span>)</span> <span>{</span>
+                <span>err</span><span>(</span><span>&#34;Error: not enough arguments.&#34;</span><span>)</span>
+                <span>err</span><span>(</span><span>&#34;&#34;</span><span>)</span>
+
+                <span>err</span><span>(</span><span>&#34;Usage: ./templater &lt;content_file&gt; &lt;template_file&gt;&#34;</span><span>)</span>
+                <span>err</span><span>(</span><span>&#34;Aborting.&#34;</span><span>)</span>
+                <span>exit</span> <span>1</span>
+        <span>}</span>
+
+        <span>if</span> <span>(</span><span>length</span><span>(</span><span>ENVIRON</span><span>[</span><span>&#34;PATTERN&#34;</span><span>])</span> <span>==</span> <span>0</span><span>)</span> <span>{</span>
+                <span>err</span><span>(</span><span>&#34;Error: no pattern specified.&#34;</span><span>)</span>
+                <span>err</span><span>(</span><span>&#34;&#34;</span><span>)</span>
+
+                <span>err</span><span>(</span><span>&#34;Specify a pattern via the `PATTERN` environment variable.&#34;</span><span>)</span>
+                <span>err</span><span>(</span><span>&#34;For example: &#34;</span><span>)</span>
+                <span>err</span><span>(</span><span>&#34;  PATTERN=__CONTENT__ templater contents.txt template.txt&#34;</span><span>)</span>
+                <span>err</span><span>(</span><span>&#34;Aborting.&#34;</span><span>)</span>
+                <span>exit</span> <span>1</span>
+        <span>}</span>
+<span>}</span>
+
+<span># By using the `NR=FNR` pattern we&#39;re able to specify</span>
+<span># an action that we want to perform only on the first</span>
+<span># file that we supply via the command line.</span>
+<span>#</span>
+<span># FNR is a counter that keeps track of the current line</span>
+<span># in the current file that is being processed.</span>
+<span>#</span>
+<span># NR is a counter that keeps track of the total number</span>
+<span># of lines that have been processed so far.</span>
+<span>#</span>
+<span># By trying to match `NR==FNR` we can perform an action</span>
+<span># in the very first file. To visualize that, we can set</span>
+<span># up an experiment:</span>
+<span>#</span>
+<span>#       $ cat file1</span>
+<span>#       a</span>
+<span>#       b</span>
+<span>#       c</span>
+<span>#</span>
+<span>#       $ cat file2</span>
+<span>#       d</span>
+<span>#       e</span>
+<span>#</span>
+<span>#       $ awk &#39;{print FILENAME, NR, FNR, $0}&#39; file1 file2</span>
+<span>#       file1 1 1 a</span>
+<span>#       file1 2 2 b</span>
+<span>#       file1 3 3 c</span>
+<span>#       file2 4 1 d -&gt; not equal -&gt; starts the second one</span>
+<span>#       file2 5 2 e -&gt; not equal</span>
+<span>#</span>
+<span># In the action we can then store all the lines from</span>
+<span># the first file in memory so that we can use it later</span>
+<span># when we find the string to replace.</span>
+<span>#</span>
+<span># By specifying the `next` statement, no further matching</span>
+<span># is performed for this record (line).</span>
+<span>#</span>
+<span># ps.: we could also check `FILENAME`, like:</span>
+<span>#       FILENAME==ARGV[1]</span>
+<span>NR</span><span>==</span><span>FNR</span> <span>{</span>
+        <span>content_lines</span><span>[</span><span>n</span><span>++</span><span>]</span><span>=$</span><span>0</span><span>;</span>
+        <span>next</span><span>;</span>
+<span>}</span>
+
+<span># Once we find the string to replace, we iterate over</span>
+<span># all the lines that we stored (from the first file)</span>
+<span># and then once we&#39;re done, we force AWK to immediately</span>
+<span># stop processing the current record so that it doesn&#39;t</span>
+<span># print `__CONTENT__` and don&#39;t proceed with performing</span>
+<span># further matches for this record (line).</span>
+<span>#</span>
+<span># ps.: if you didn&#39;t want to take a variable here, for</span>
+<span># instance, have a fixed pattern to replace, you could</span>
+<span># simply use `/PATTERN/ { ... }`.</span>
+<span>$</span><span>0</span> <span>~</span> <span>ENVIRON</span><span>[</span><span>&#34;PATTERN&#34;</span><span>]</span> <span>{</span>
+        <span>for</span> <span>(</span><span>i</span> <span>=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>n</span><span>;</span> <span>i</span><span>++</span><span>)</span> <span>{</span>
+                <span>print</span> <span>content_lines</span><span>[</span><span>i</span><span>];</span>
+        <span>}</span>
+        <span>next</span>
+<span>}</span>
+
+<span># Given that 1 always evaluates to `true`, this is a match</span>
+<span># that will always occur.</span>
+<span>#</span>
+<span># As we can either omit an action or a match (not both!),</span>
+<span># we can use a catch-all match (1) and let awk use the</span>
+<span># default action (print current line).</span>
+<span>#</span>
+<span># This has the effect of printing all lines that didn&#39;t</span>
+<span># match the other matches that we specified above.</span>
+<span>1</span>
+</code></pre></div><p>As we’re already specifying the interpreter directive (<code>#!/usr/bin/awk -f</code>), we can execute the program by making it executable and then feeding some data to it:</p>
+<div><pre><code data-lang="sh"><span># Make it executable</span>
+chmod +x ./templater.awk
+
+<span># Execute it passing the necessary arguments</span>
+<span>PATTERN</span><span>=</span>__REPLACE_ME__ <span>\
+</span><span></span>        ./templater.awk <span>\
+</span><span></span>        content.txt <span>\
+</span><span></span>        template.txt
+<span>11111111</span>
+<span>22222222</span>
+xxxxxxx
+yyyyyyy
+zzzzzzz
+<span>33333333</span>
+
+
+<span># Using `-` as the `template.txt` argument</span>
+<span># and feeding its `stdin` also works:</span>
+<span>export</span> <span>PATTERN</span><span>=</span>__REPLACE_ME__
+<span>echo</span> <span>&#34;this is
+</span><span>very cool
+</span><span>__REPLACE_ME__
+</span><span>right?&#34;</span> <span>|</span> ./templater.awk <span>\
+</span><span></span>        content.txt <span>\
+</span><span></span>        -
+this is
+very cool
+xxxxxxx
+yyyyyyy
+zzzzzzz
+right?
+</code></pre></div><h3 id="closing-thoughts">Closing thoughts</h3>
+<p>Although I’ve copied and pasted AWK snippets now and then, I’ve never really understood the intrisics of them.</p>
+<p>Now, going through its documentation, it feels like I have so much more power when it comes to processing text in the terminal.</p>
+<p>I hope you feel that way too! If you’re willing to know more, make sure you check out the <a href="https://www.gnu.org/software/gawk/manual/html_node"><code>gawk</code> manual</a>. There you have multiple examples and it’s also very detailed.</p>
+<p>If you have any questions or just want to make contact, feel free to reach me at <a href="https://twitter.com/cirowrc">@cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+<p><em>finis</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

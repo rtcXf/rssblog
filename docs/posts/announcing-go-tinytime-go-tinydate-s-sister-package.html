@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Announcing Go-TinyTime, Go-TinyDate&#39;s Sister Package | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/announcing-go-tinytime-go-tinydates-sister-package/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Announcing Go-TinyTime, Go-TinyDate&#39;s Sister Package</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p><a href="https://golang.org/pkg/time/#Time">time.Time</a> is the perfect choice for <a href="https://blog.boot.dev/golang/golang-date-time/">handling times in Go</a> in most cases, it even comes in the standard library! The problem is that the <code>time.Time{}</code> struct uses more than <strong>24 bytes</strong> of memory under most conditions. <a href="https://github.com/wagslane/go-tinytime">Go-TinyTime</a> solves this problem by restricting the available dates to the range between 1970 - 2106, and only supporting UTC timezones. This brings data usage down to just <strong>4 bytes</strong> of memory.</p>
+<p><a href="https://github.com/wagslane/go-tinydate">Go-TinyDate</a> is its sister package that allows for a much larger date range but doesn’t get more than <strong>day</strong> precision. Between <strong>time.Time</strong>, <strong>go-tinydate</strong>, and <strong>go-tinytime</strong> all of our time problems can be solved using the same API.</p>
+<p>Don’t forget to ⭐ the <a href="https://github.com/wagslane/go-tinytime">GitHub</a></p>
+<h2 id="how-does-it-work">
+  <span> How Does It Work?</span> <a href="#how-does-it-work">🔗</a></h2>
+<p>A normal time.Time object takes at least 16 bytes of memory:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Time</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>wall</span> <span>uint64</span> <span>// 8 bytes
+</span></span></span><span><span><span></span>	<span>ext</span>  <span>int64</span> <span>// b bytes
+</span></span></span><span><span><span></span>	<span>loc</span> <span>*</span><span>Location</span> <span>// 8 bytes if not nil, plus location memory
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><p>If there is a location set (which there usually is), then this can be higher, usually about 24 bytes.</p>
+<p>TinyTime, on the other hand, uses only 4 bytes.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>TinyTime</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>unix</span> <span>uint32</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>We sacrifice timezones and dates older than the unix epoch of 1970, but if these are acceptable tradeoffs, we can save a lot of memory.</p>
+<h2 id="when-should-it-be-used">
+  <span> When Should It Be Used?</span> <a href="#when-should-it-be-used">🔗</a></h2>
+<p>As the TinyTime <a href="https://github.com/wagslane/go-tinytime/blob/master/README.md">Readme</a> states, if you aren’t hurting for resources, better to stick with the standard time.Time. The following situations can be good reasons to use to TinyTime:</p>
+<ul>
+<li>You are working in embedded systems and every byte counts</li>
+<li>You are working on a system that stores thousands of dates, and reducing memory costs by &gt;75% is significant</li>
+<li>If you are sure you will never need more than second precision</li>
+<li>Or you know you will never need timezones other than UTC</li>
+</ul>
+<h2 id="api">
+  <span> API</span> <a href="#api">🔗</a></h2>
+<p>The tinytime.TinyTime API largely mirrors that of time.Time. The only methods missing are the ones that make no sense without timezone support. You can swap out the vast majority without any changes. Check out the <a href="https://godoc.org/github.com/wagslane/go-tinytime">godoc for reference</a>.</p>
+<h2 id="tinydate">
+  <span> TinyDate</span> <a href="#tinydate">🔗</a></h2>
+<p>If you need a larger date range, be sure to check out the <a href="https://blog.boot.dev/open-source/i-wrote-go-tinydate-the-missing-golang-date-package/">intro to Go-TinyDate</a>.</p>
+<p><img src="https://blog.boot.dev/img/800/package-1024x683.jpeg" alt="tiny fragile box"/></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

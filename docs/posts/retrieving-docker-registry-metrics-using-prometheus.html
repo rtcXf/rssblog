@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retrieving Docker Registry metrics using Prometheus | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/gists/retrieving-docker-registry-metrics-using-prometheus/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Retrieving Docker Registry metrics using Prometheus</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <figure>
+    <img width="100%" height="100%" src="https://ops.tips/gists/-/images/blob-upload-latency.png" alt="Docker Registry Blob upload latency Heatmap "/>
+
+    
+</figure>
+
+<p>Hey,</p>
+<p>Today I was looking at the internal struct that ends up being filled as the result of parsing the Docker Registry configuration, and doing that I found that in the <code>master</code> branch of the repository there’s already support for metrics scraping by Prometheus (see <a href="https://github.com/docker/distribution/blob/749f6afb4572201e3c37325d0ffedb6f32be8950/configuration/configuration.go#L137">configuration.go</a>), something that used to be only available in OpenShift (see <a href="https://github.com/openshift/origin/issues/3916">openshift/origin issue</a>).</p>
+<p>It surprised me that this addition came not super recently:</p>
+<pre><code data-lang="git">commit e3c37a46e2529305ad6f5648abd6ab68c777820a
+Author: tifayuki &lt;tifayuki@gmail.com&gt;
+Date:   Thu Nov 16 16:43:38 2017 -0800
+
+    Add Prometheus Metrics
+    
+    at the first iteration, only the following metrics are collected:
+    
+      - HTTP metrics of each API endpoint
+      - cache counter for request/hit/miss
+      - histogram of storage actions, including:
+        GetContent, PutContent, Stat, List, Move, and Delete
+    
+    Signed-off-by: tifayuki &lt;tifayuki@gmail.com&gt;
+</code></pre><p>What about giving it a try?</p>
+<p>So, first, start by building an image right from the <code>master</code> branch:</p>
+<div><pre><code data-lang="sh"><span># Clone the Docker registry repository</span>
+git clone https://github.com/docker/distribution
+
+<span># Build the registry image using the provided Dockerfile</span>
+<span># that lives right in the root of the project.</span>
+<span>#</span>
+<span># Here I tag it as `local` just to make sure that we</span>
+<span># don&#39;t confuse it with `registry:latest`. </span>
+docker build --tag registry:local .
+</code></pre></div><p>With the image built using the latest code, tailor a configuration that enables the exporter:</p>
+<div><pre><code data-lang="yml"><span>version</span><span>:</span><span> </span><span>0.1</span><span>
+</span><span></span><span>log</span><span>:</span><span>
+</span><span>  </span><span>level</span><span>:</span><span> </span><span>&#34;debug&#34;</span><span>
+</span><span>  </span><span>formatter</span><span>:</span><span> </span><span>&#34;json&#34;</span><span>
+</span><span>  </span><span>fields</span><span>:</span><span>
+</span><span>    </span><span>service</span><span>:</span><span> </span><span>&#34;registry&#34;</span><span>
+</span><span></span><span>storage</span><span>:</span><span>
+</span><span>  </span><span>cache</span><span>:</span><span>
+</span><span>    </span><span>blobdescriptor</span><span>:</span><span> </span><span>&#34;inmemory&#34;</span><span>
+</span><span>  </span><span>filesystem</span><span>:</span><span>
+</span><span>    </span><span>rootdirectory</span><span>:</span><span> </span><span>&#34;/var/lib/registry&#34;</span><span>
+</span><span></span><span>http</span><span>:</span><span>
+</span><span>  </span><span>addr</span><span>:</span><span> </span><span>&#34;:5000&#34;</span><span>
+</span><span>  </span><span>debug</span><span>:</span><span>
+</span><span>    </span><span>addr</span><span>:</span><span> </span><span>&#34;:5001&#34;</span><span>
+</span><span>    </span><span>prometheus</span><span>:</span><span>
+</span><span>      </span><span>enabled</span><span>:</span><span> </span><span>true</span><span>
+</span><span>      </span><span>path</span><span>:</span><span> </span><span>&#34;/metrics&#34;</span><span>
+</span><span>  </span><span>headers</span><span>:</span><span>
+</span><span>    </span><span>X-Content-Type-Options</span><span>:</span><span> </span><span>[</span><span> </span><span>&#34;nosniff&#34;</span><span> </span><span>]</span><span>
+</span></code></pre></div><p>Run the registry with this configuration and note how <code>:5001/metrics</code> will provide you with the metrics you expect.</p>
+<div><pre><code data-lang="sh"><span># Make a request to the metrics endpoint and filter the</span>
+<span># output so we can see what the metrics descriptions are.</span>
+<span>#</span>
+<span># ps.: each of those metrics end up expanding to multiple</span>
+<span># dimensions via labels.</span>
+curl localhost:5001/metrics --silent <span>|</span> ag registry_ <span>|</span> ag HELP
+
+HELP registry_http_in_flight_requests The in-flight HTTP requests
+HELP registry_http_request_duration_seconds The HTTP request latencies in seconds.
+HELP registry_http_request_size_bytes The HTTP request sizes in bytes.
+HELP registry_http_requests_total Total number of HTTP requests made.
+HELP registry_http_response_size_bytes The HTTP response sizes in bytes.
+HELP registry_storage_action_seconds The number of seconds that the storage action takes
+HELP registry_storage_cache_total The number of cache request received
+</code></pre></div><p>Wanting to see how useful these metrics can be, I set up an environment in AWS where there’s an EC2 instance with a registry instance that’s backed by an S3 bucket as the storage tier (you can check more about how to achieve it here: <a href="https://ops.tips/gists/aws-s3-private-docker-registry">How to set up a private docker registry using AWS S3</a>).</p>
+<p>With the registry up, it was now a matter of having Prometheus and Grafana running locally so I could start making some queries:</p>
+<div><pre><code data-lang="yaml"><span>version</span><span>:</span><span> </span><span>&#39;3.3&#39;</span><span>
+</span><span></span><span>services</span><span>:</span><span>
+</span><span>
+</span><span>  </span><span># Create a &#34;pod-like&#34; container that will serve as both the</span><span>
+</span><span>  </span><span># network entrypoint for both of the containers as well as</span><span>
+</span><span>  </span><span># provide a common ground for them to communicate over localhost</span><span>
+</span><span>  </span><span># (given that they&#39;ll share the same network namespace).</span><span>
+</span><span>  </span><span>pod</span><span>:</span><span>
+</span><span>    </span><span>container_name</span><span>:</span><span> </span><span>&#39;pod&#39;</span><span>
+</span><span>    </span><span>ports</span><span>:</span><span>
+</span><span>      </span>- <span>&#39;9090:9090&#39;</span><span>
+</span><span>      </span>- <span>&#39;3000:3000&#39;</span><span>
+</span><span>    </span><span>image</span><span>:</span><span> </span><span>&#39;alpine&#39;</span><span>
+</span><span>    </span><span>tty</span><span>:</span><span> </span><span>true</span><span>
+</span><span>
+</span><span>  </span><span>grafana</span><span>:</span><span>
+</span><span>    </span><span>container_name</span><span>:</span><span> </span><span>&#39;grafana&#39;</span><span>
+</span><span>    </span><span>depends_on</span><span>:</span><span> </span><span>[</span><span> </span><span>&#39;pod&#39;</span><span> </span><span>]</span><span>
+</span><span>    </span><span>network_mode</span><span>:</span><span> </span><span>&#39;service:pod&#39;</span><span>
+</span><span>    </span><span>image</span><span>:</span><span> </span><span>&#39;grafana/grafana:5.2.0-beta3&#39;</span><span>
+</span><span>    </span><span>restart</span><span>:</span><span> </span><span>&#39;always&#39;</span><span>
+</span><span>
+</span><span>  </span><span>prometheus</span><span>:</span><span>
+</span><span>    </span><span>container_name</span><span>:</span><span> </span><span>&#39;prometheus&#39;</span><span>
+</span><span>    </span><span>depends_on</span><span>:</span><span> </span><span>[</span><span> </span><span>&#39;pod&#39;</span><span> </span><span>]</span><span>
+</span><span>    </span><span>network_mode</span><span>:</span><span> </span><span>&#39;service:pod&#39;</span><span>
+</span><span>    </span><span>image</span><span>:</span><span> </span><span>&#39;prom/prometheus&#39;</span><span>
+</span><span>    </span><span>restart</span><span>:</span><span> </span><span>&#39;always&#39;</span><span>
+</span><span>    </span><span>volumes</span><span>:</span><span> 
+</span><span>      </span>- <span>&#39;./prometheus.yml:/etc/prometheus/prometheus.yml&#39;</span><span>
+</span></code></pre></div><p>Given that <code>prometheus</code> is making use of a local configuration under <code>./prometheus.yml</code>, this one looked like the following:</p>
+<div><pre><code data-lang="yaml"><span>global</span><span>:</span><span>
+</span><span>  </span><span>scrape_interval</span><span>:</span><span> </span><span>&#39;15s&#39;</span><span>
+</span><span>  </span><span>evaluation_interval</span><span>:</span><span> </span><span>&#39;15s&#39;</span><span>
+</span><span>  </span><span>scrape_timeout</span><span>:</span><span> </span><span>&#39;10s&#39;</span><span>
+</span><span>
+</span><span></span><span>scrape_configs</span><span>:</span><span>
+</span><span>  </span>- <span>job_name</span><span>:</span><span> </span><span>&#39;prometheus&#39;</span><span>
+</span><span>    </span><span>static_configs</span><span>:</span><span>
+</span><span>      </span>- <span>targets</span><span>:</span><span> </span><span>[</span><span> </span><span>&#39;localhost:9090&#39;</span><span> </span><span>]</span><span>
+</span><span>
+</span><span>  </span>- <span>job_name</span><span>:</span><span> </span><span>&#39;registry&#39;</span><span>
+</span><span>    </span><span># Here I just specified the public IP address of the</span><span>
+</span><span>    </span><span># EC2 instance that I had holding the registry at that</span><span>
+</span><span>    </span><span># time. </span><span>
+</span><span>    </span><span>#</span><span>
+</span><span>    </span><span># Naturally, you wouldn&#39;t keep it open like this.</span><span>
+</span><span>     </span><span>static_configs</span><span>:</span><span>
+</span><span>      </span>- <span>targets</span><span>:</span><span> </span><span>[</span><span> </span><span>&#39;52.67.104.105:5001&#39;</span><span> </span><span>]</span><span>
+</span></code></pre></div><p>Now, to reproduce the panel showed in the beginning, head over to our grafana dashboard and create a heatmap panel with the following query:</p>
+<pre><code>rate(registry_http_request_duration_seconds_bucket{handler=&#34;blob_upload&#34;}[10m])
+</code></pre><p>That’s it!</p>
+<p>If you have any questions or found something odd, please let me know! I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+<p><em>finis</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

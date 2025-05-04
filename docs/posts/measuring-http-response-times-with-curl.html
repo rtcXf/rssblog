@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Measuring HTTP response times with cURL | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/gists/measuring-http-response-times-curl/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Measuring HTTP response times with cURL</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>Oftentimes I see myself needing to check response times while making a bunch of requests quickly. Most of the tools out there either do not continuously make new requests (via an entirely new TCP connection) or don’t expose connection times.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/gists/-/images/httpstat.png" alt="Snapshot of the HTTPSTAT tool showing the request times "/>
+
+    <figcaption>
+        Snapshot of the `httpstat` tool
+      </figcaption>
+    
+</figure>
+
+<p><a href="https://github.com/davecheney/httpstat"><code>httpstat</code></a> is a great tool that does the job really well. It’s a single binary that you can put under your <code>$PATH</code> and have nice stats, but it’s yet another tool, and you might just be inside a container (or maybe a sealed environment?) and want to check response times quickly.</p>
+<p><code>curl</code> comes very handy when needing to have an easy way of displaying response times. Tied with a little of shell scripting, you can even create a comma-separated values output that allows you to see how it changes over time.</p>
+<h3 id="discovering-the-right-curl-flags">Discovering the right curl flags</h3>
+<p>Looking at <code>man curl</code> (<code>curl</code>’s <code>man</code> page), we can see that there’s an interesting flag named <code>--write-out</code> that we can leverage to gather further insights about the connection:</p>
+<pre><code>-w, --write-out &lt;format&gt;
+        Make curl display information on stdout 
+        after a completed transfer. 
+        
+        The format is a string that may contain plain 
+        text mixed with any  number  of  variables.
+
+        The variables present in the output format will 
+        be substituted by the value or text that curl 
+        thinks fit, as described below. 
+        
+        All variables are specified  as %{variable_name}.
+</code></pre><p>What are these variables? Let’s see some of them:</p>
+<pre><code>http_code           The  numerical  response  code that was found 
+                    in the last retrieved HTTP(S) or FTP(s) transfer.
+
+time_appconnect     The time, in seconds, it took from the start until 
+                    the SSL/SSH/etc connect/handshake to the remote host 
+                    was completed.
+
+time_connect        The time, in seconds, it took from the start until 
+                    the TCP connect to the remote host (or proxy) was 
+                    completed.
+
+time_namelookup     The time, in seconds, it took from the start until the name 
+                    resolving was completed.
+
+time_pretransfer    The time, in seconds, it took from the start until the 
+                    file transfer was just about to begin.
+
+time_starttransfer  The time, in seconds, it took from the start until the first 
+                    byte was just about to be transferred.
+
+time_total          The total time, in seconds, that the full operation lasted.
+</code></pre><p>Knowing those variables, it becomes a matter of creating a format (a template) to pass to the <code>--write-out</code> flag specifying which variables we want to see.</p>
+<div><pre><code data-lang="sh"><span># Check out how much time it&#39;s going to take for the</span>
+<span># name resolution to happen.</span>
+curl --write-out <span>&#39;%{time_namelookup}&#39;</span> https://google.com
+&lt;HTML&gt;&lt;HEAD&gt;&lt;meta http-equiv<span>=</span><span>&#34;content-type&#34;</span> <span>content</span><span>=</span><span>&#34;text/html;charset=utf-8&#34;</span>&gt;
+&lt;TITLE&gt;301 Moved&lt;/TITLE&gt;&lt;/HEAD&gt;&lt;BODY&gt;
+&lt;H1&gt;301 Moved&lt;/H1&gt;
+The document has moved
+&lt;A <span>HREF</span><span>=</span><span>&#34;https://www.google.com/&#34;</span>&gt;here&lt;/A&gt;.
+&lt;/BODY&gt;&lt;/HTML&gt;
+0.068856
+</code></pre></div><p>You can see that it took <code>0.06</code> seconds, but it also contains some information there that doesn’t really matter for me - if all we want is the timing information, why get all that information from the body?</p>
+<p>We can get rid of that by telling <code>curl</code> to send the body to the <a href="https://en.wikipedia.org/wiki/Null_device"><code>null</code> device</a>:</p>
+<div><pre><code data-lang="sh"><span>#  -o, --output &lt;file&gt; Write output to &lt;file&gt; instead of stdout</span>
+curl <span>\
+</span><span></span>        --output /dev/null <span>\
+</span><span></span>        --write-out <span>&#39;%{time_namelookup}&#39;</span> <span>\
+</span><span></span>        https://google.com
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+<span>100</span>   <span>220</span>  <span>100</span>   <span>220</span>    <span>0</span>     <span>0</span>    <span>462</span>      <span>0</span> --:--:-- --:--:-- --:--:--   <span>462</span>
+0.069249
+</code></pre></div><p>Well, we still have some stuff left - there are these extra header lines that tells us <code>curl</code>’s progress.</p>
+<p>Fortunately, we can get rid of that too:</p>
+<div><pre><code data-lang="sh"><span># -s, --silent</span>
+<span># Silent  or  quiet  mode.  </span>
+<span># Don&#39;t  show progress meter or error messages.  </span>
+<span># Makes Curl mute. </span>
+<span># It will still output the data you ask for.</span>
+curl <span>\
+</span><span></span>        --output /dev/null <span>\
+</span><span></span>        --silent <span>\
+</span><span></span>        --write-out <span>&#39;%{time_namelookup}&#39;</span> <span>\
+</span><span></span>        https://google.com
+0.004344
+</code></pre></div><p>Cool, now that we have the information we want, let’s tailor a script retrieves all the information needed.</p>
+<h3 id="a-snippet-for-printing-a-csv-of-response-times-using-curl">A snippet for printing a CSV of response times using CURL</h3>
+<p>Knowing how the command looks like, now it’s a matter of creating a better defined templated and let it run for <code>n</code> times:</p>
+<div><pre><code data-lang="sh"><span>#!/bin/bash
+</span><span></span>
+<span># Set the `errexit` option to make sure that</span>
+<span># if one command fails, all the script execution</span>
+<span># will also fail (see `man bash` for more </span>
+<span># information on the options that you can set).</span>
+<span>set</span> -o errexit
+
+<span># This is the main routine of our bash program.</span>
+<span># It makes sure that we&#39;ve supplied the necessary</span>
+<span># arguments, then it prints a CSV header and then</span>
+<span># keeps making requests and printing their responses.</span>
+<span>#</span>
+<span># Note.: because we&#39;re calling `curl` each time in</span>
+<span>#        the loop, a new `curl` process is created for </span>
+<span>#        each request. </span>
+<span>#       </span>
+<span>#        This means that a new connection will be made </span>
+<span>#        each time.</span>
+<span>#       </span>
+<span>#        Such property might be useful when you&#39;re testing</span>
+<span>#        if a given load-balancer in the middle might be</span>
+<span>#        messing up with some requests.</span>
+main <span>()</span> <span>{</span>
+  <span>local</span> <span>url</span><span>=</span><span>$1</span>
+
+  <span>if</span> <span>[[</span> -z <span>&#34;</span><span>$url</span><span>&#34;</span> <span>]]</span><span>;</span> <span>then</span>
+    <span>echo</span> <span>&#34;ERROR:
+</span><span>  An URL must be provided.
+</span><span>
+</span><span>  Usage: check-res &lt;url&gt;
+</span><span>
+</span><span>Aborting.
+</span><span>    &#34;</span>
+    <span>exit</span> <span>1</span>
+  <span>fi</span>
+
+  print_header
+  <span>for</span> i in <span>`</span>seq <span>1</span> 10000<span>`</span><span>;</span> <span>do</span>
+    make_request <span>$url</span>
+  <span>done</span>
+<span>}</span>
+
+<span># This method does nothing more that just print a CSV</span>
+<span># header to STDOUT so we can consume that later when</span>
+<span># looking at the results.</span>
+print_header <span>()</span> <span>{</span>
+  <span>echo</span> <span>&#34;code,time_total,time_connect,time_appconnect,time_starttransfer&#34;</span>
+<span>}</span>
+
+<span># Make request performs the actual request using `curl`. </span>
+<span># It specifies those parameters that we&#39;ve defined before,</span>
+<span># taking a given `url` as its parameter.</span>
+make_request <span>()</span> <span>{</span>
+  <span>local</span> <span>url</span><span>=</span><span>$1</span>
+
+  curl <span>\
+</span><span></span>    --write-out <span>&#34;%{http_code},%{time_total},%{time_connect},%{time_appconnect},%{time_starttransfer}\n&#34;</span> <span>\
+</span><span></span>    --silent <span>\
+</span><span></span>    --output /dev/null <span>\
+</span><span></span>    <span>&#34;</span><span>$url</span><span>&#34;</span>
+<span>}</span>
+
+main <span>&#34;</span><span>$@</span><span>&#34;</span>
+</code></pre></div><p>Trying it out:</p>
+<div><pre><code data-lang="sh">./check-res https://google.com
+code,time_total,time_connect,time_appconnect,time_starttransfer
+301,0.469397,0.125566,0.292027,0.469221
+301,0.380109,0.049464,0.204842,0.379735
+301,0.389428,0.048424,0.208052,0.389043
+301,0.731204,0.047314,0.547336,0.730819
+301,0.379709,0.048266,0.205082,0.379577
+301,0.384067,0.048614,0.211338,0.383765
+</code></pre></div><h3 id="closing-thoughts">Closing thoughts</h3>
+<p>While there are tools out there that are able to do this, it’s very useful to have some options to quickly test out when you’re in the middle of an on-call.</p>
+<p>I hope this article was useful for you! If you have any questions or just want to chat a bit, I’m <a href="https://twitter.com/cirowrc">@cirowrc</a> on Twitter.</p>
+<p>I’m planning to post some other articles regarding useful shell scripts that I use, so make sure you also subscribe to the mailing list to get updates on that topic.</p>
+<p>Have a good one!</p>
+<p><em>Ciro</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

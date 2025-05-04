@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dmesg under the hood | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/dmesg-under-the-hood/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Dmesg under the hood</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>This week I wanted to discover a bit more about how <code>dmesg</code> works under the hood. In the past, I wanted to have alerting based on error messages popping at <code>dmesg</code>, so, maybe by trying to create something that uses the same thing that <code>dmesg</code> uses under the hood, I could better understand it.</p>
+<p>Also, I knew that in some systems, it was possible to gather the same information from <code>kern.log</code> and that <code>dmesg</code> was all about reading “the kernel ring buffer”, but, what did that mean?</p>
+<p>More specifically, where was <code>dmesg</code> reading from?</p>
+<p>In this blog post, I go through some exploration to better understand the whole picture.</p>
+<ul>
+<li><a href="#producing-logs-from-kernel-space">Producing logs from kernel space</a></li>
+<li><a href="#producing-logs-from-iptables">Producing logs from iptables</a></li>
+<li><a href="#producing-logs-from-a-linux-loadable-kernel-module">Producing logs from a Linux loadable kernel module</a></li>
+<li><a href="#producing-logs-from-kmsg">Producing logs from kmsg</a></li>
+<li><a href="#seeing-kernel-logs-from-user-space">Seeing kernel logs from user space</a></li>
+<li><a href="#interpreting-the-kmsg-messages">Interpreting the kmsg messages</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+</ul>
+<p><em>You can jump to the tl;dr <a href="#seeing-kernel-logs-from-user-space">here</a>.</em></p>
+
+<h3 id="producing-logs-from-kernel-space">Producing logs from kernel space</h3>
+<p>Whenever something in the Linux kernel (which could be a <a href="https://en.wikipedia.org/wiki/Loadable_kernel_module">module</a>) wants to do the equivalent of a <a href="https://linux.die.net/man/3/printf"><code>printf</code></a>, a similar utility (<code>printk</code>) can be used.</p>
+<p>That allows the program to give information back to the developer (or any other user) in userspace to know more about what’s going on with the module - be a warning message, stack traces or some pure debugging information.</p>
+<p>To test out producing logs from the Kernel, I came up with some ideas:</p>
+<ol>
+<li><a href="https://linux.die.net/man/8/iptables"><code>iptables</code></a> has a <a href="http://ipset.netfilter.org/iptables-extensions.man.html#lbDD"><code>LOG</code> target</a> that essentially produces some logs from <code>iptables</code> itself whenever the target is, well, targetted. Being <code>iptables</code> something that runs in kernel space (not the <code>cli</code>, I mean - the actual thing), we could see logs coming out of the kernel;</li>
+<li>writing a minimal kernel module should not be something very hard - many people did that before. I could write a <code>printk(&#34;hello-world&#34;)</code> and that’s it!</li>
+<li>check if there’s something simpler that we could use to produce the logs (maybe the Kernel exposes a standard interface for doing that?)</li>
+</ol>
+<p>Being this an exploration, why not try all of them?</p>
+<h3 id="producing-logs-from-iptables">Producing logs from iptables</h3>
+<p>Although this blog post is not particularly about iptables, we can use it as an example where interacting with something that is going on under the hood deep in the kernel is interesting for a user that sits on userspace.</p>
+<p>From <a href="https://linux.die.net/man/8/iptables"><code>iptables</code> man page</a>:</p>
+<blockquote>
+<p>Iptables is used to set up, maintain, and inspect the tables of IP packet filter rules in the Linux kernel. Several different tables may be defined.</p>
+</blockquote>
+<p>These mentioned rules can be either very simple things (drop a packet if it comes from a given source), or some very complicated chain of rules that depend on a bunch of conditionals.</p>
+<p>Acknowledging that it’s very useful to be able to visualize the packets that are hitting a specific chain of rules, the <code>LOG</code> target came to existence.</p>
+<blockquote>
+<p>LOG: Turn on kernel logging of matching packets.</p>
+</blockquote>
+<blockquote>
+<p>When this option is set for a rule, the Linux kernel will print some information on all matching packets (like most IP/IPv6 header fields) via the kernel log.</p>
+</blockquote>
+<p>Here’s an example set up that allows us to see that working:</p>
+<div><pre><code data-lang="sh"><span># List the current state of the `filter` table.</span>
+<span># As we can see below, nothing is set up:</span>
+<span># - any packet arriving w/ our machine as the</span>
+<span>#   destination is accepted;</span>
+<span># - any packet arriving that should be forwarded</span>
+<span>#   is dropped;</span>
+<span># - any packet that is sent from our machine is</span>
+<span>#   accepted (can go through).</span>
+iptables --table filter --list
+Chain INPUT <span>(</span>policy ACCEPT<span>)</span>
+target     prot opt <span>source</span>               destination
+
+Chain FORWARD <span>(</span>policy DROP<span>)</span>
+target     prot opt <span>source</span>               destination
+
+Chain OUTPUT <span>(</span>policy ACCEPT<span>)</span>
+target     prot opt <span>source</span>               destination
+
+
+<span># Add a rule to the OUTPUT chain to log every packet</span>
+<span># that is destined towards 8.8.8.8 (google&#39;s public</span>
+<span># dns) </span>
+iptables <span>\
+</span><span></span>        --table filter <span>\
+</span><span></span>        --insert OUTPUT <span>\
+</span><span></span>        --jump LOG <span>\
+</span><span></span>        --destination 8.8.8.8 <span>\
+</span><span></span>        --log-prefix<span>=</span><span>&#34;[google-dns-out]&#34;</span>
+
+<span># Check that the rule has been placed in the OUTPUT </span>
+<span># chain of the `filter` table</span>
+iptables --table filter --list OUTPUT --numeric
+Chain OUTPUT <span>(</span>policy ACCEPT<span>)</span>
+target   prot opt <span>source</span>       destination
+LOG      all  --  0.0.0.0/0    8.8.8.8        LOG flags <span>0</span> level <span>4</span> prefix <span>&#34;[google-dns-out]&#34;</span>
+
+
+<span># Perform a DNS query targetting 8.8.8.8</span>
+dig example.com @8.8.8.8
+... example.com.		18272	IN	A	93.184.216.34
+
+<span># Verify the request packet in our logs (dmesg)</span>
+dmesg <span>|</span> grep google-dns-out
+<span>[</span>66458.608136<span>]</span> <span>[</span>google-dns-out<span>]</span><span>IN</span><span>=</span> <span>OUT</span><span>=</span>enp0s3 <span>SRC</span><span>=</span>10.0.2.15 <span>DST</span><span>=</span>8.8.8.8 <span>LEN</span><span>=</span><span>80</span> <span>TOS</span><span>=</span>0x00 <span>PREC</span><span>=</span>0x00 <span>TTL</span><span>=</span><span>64</span> <span>ID</span><span>=</span><span>30602</span> <span>PROTO</span><span>=</span>UDP <span>SPT</span><span>=</span><span>39573</span> <span>DPT</span><span>=</span><span>53</span> <span>LEN</span><span>=</span><span>60</span>
+</code></pre></div><h3 id="producing-logs-from-a-linux-loadable-kernel-module">Producing logs from a Linux loadable kernel module</h3>
+<p>Not being a driver developer myself (honestly, having never written a kernel module before), it was interesting to look for resources that would teach me how to accomplish this task.</p>
+<p>Based on <a href="https://linux-kernel-labs.github.io/master/labs/kernel_modules.html">a guide from The Linux Kernel Labs</a>, I came up with the following code for a very simple kernel module:</p>
+<div><pre><code data-lang="c"><span>/**
+</span><span> * `module.h` contains the most basic functionality needed for
+</span><span> * us to create a loadable kernel module, including the `MODULE_*`
+</span><span> * macros, `module_*` functions and including a bunch of other
+</span><span> * relevant headers that provide useful functionality for us
+</span><span> * (for instance, `printk`, which comes from `linux/printk.h`,
+</span><span> * a header included by `linux/module.h`).
+</span><span> */</span>
+<span>#include</span> <span>&lt;linux/module.h&gt;</span><span>
+</span><span></span>
+<span>/**
+</span><span> * Following, we make use of several macros to properly provide
+</span><span> * information about the kernel module that we&#39;re creating.
+</span><span> *
+</span><span> * The information supplied here are visible through tools like
+</span><span> * `modinfo`.
+</span><span> *
+</span><span> * Note.: the license you choose here **DOES AFFECT** other things -
+</span><span> * by using a proprietary license your kernel will be &#34;tainted&#34;.
+</span><span> */</span>
+<span>MODULE_LICENSE</span><span>(</span><span>&#34;GPL&#34;</span><span>);</span>
+<span>MODULE_AUTHOR</span><span>(</span><span>&#34;Ciro S. Costa&#34;</span><span>);</span>
+<span>MODULE_DESCRIPTION</span><span>(</span><span>&#34;A hello-world printer&#34;</span><span>);</span>
+<span>MODULE_VERSION</span><span>(</span><span>&#34;0.1&#34;</span><span>);</span>
+
+<span>/** hello_init - initializes the module
+</span><span> *
+</span><span> * The `hello_init` method defines the procedures that performs the set up
+</span><span> * of our module.
+</span><span> */</span>
+<span>static</span> <span>int</span>
+<span>hello_init</span><span>(</span><span>void</span><span>)</span>
+<span>{</span>
+         <span>// By making use of `printk` here (in the initialization),
+</span><span></span>         <span>// we can look at `dmesg` and verify that what we log here
+</span><span></span>         <span>// appears there at the moment that we load the module with
+</span><span></span>         <span>// `insmod`.
+</span><span></span>	<span>printk</span><span>(</span><span>KERN_INFO</span> <span>&#34;HELLO-WORLD: Hello world!</span><span>\n</span><span>&#34;</span><span>);</span>
+	<span>return</span> <span>0</span><span>;</span>
+<span>}</span>
+
+<span>static</span> <span>void</span>
+<span>hello_exit</span><span>(</span><span>void</span><span>)</span>
+<span>{</span>
+        <span>// similar to `init`, but for the removal time.
+</span><span></span>	<span>printk</span><span>(</span><span>KERN_INFO</span> <span>&#34;HELLO-WORLD: Bye bye world!</span><span>\n</span><span>&#34;</span><span>);</span>
+<span>}</span>
+
+<span>// registers the `hello_init` method as the method to run at module
+</span><span>// insertion time.
+</span><span></span><span>module_init</span><span>(</span><span>hello_init</span><span>);</span>
+
+<span>// similar, but for `removal`
+</span><span></span><span>module_exit</span><span>(</span><span>hello_exit</span><span>);</span>
+</code></pre></div>
+
+<p>Load the module, and there you go:</p>
+<div><pre><code data-lang="sh">dmesg <span>|</span> grep HELLO-WORLD
+<span>[</span>62076.224353<span>]</span> HELLO-WORLD: Hello world!
+</code></pre></div><h3 id="producing-logs-from-kmsg">Producing logs from kmsg</h3>
+<p><a href="https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg">https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg</a></p>
+<p>A standard interface that we can use to insert messages into the <code>printk</code> buffer is exactly the same that we can use to read the messages from it: <code>/dev/kmsg</code>.</p>
+<p>From the <a href="https://www.kernel.org/doc/Documentation/ABI/testing/dev-kmsg">kernel documentation</a>:</p>
+<blockquote>
+<p>Injecting messages: Every write() to the opened device node places a log entry in
+the kernel’s printk buffer.</p>
+</blockquote>
+<p>That is, whatever we <code>echo &#34;haha&#34;</code> as a single <code>write</code> to <code>/dev/kmsg</code> goes into the buffer.</p>
+<p>Let’s try it then:</p>
+<div><pre><code data-lang="sh"><span># Generate the message from my current unprivileged</span>
+<span># user and then pipe to the privileged `tee` which is</span>
+<span># able to write into `/dev/kmsg` (yep, /dev/kmsg can be</span>
+<span># see and read, but to write you need more privileges)</span>
+<span>echo</span> <span>&#34;haha&#34;</span> <span>|</span> sudo tee <span>&#34;/dev/kmsg&#34;</span>
+
+
+<span># Check that we can see our message is indeed there:</span>
+dmesg <span>|</span> grep haha
+<span>[</span>67030.010334<span>]</span> haha
+</code></pre></div><h3 id="seeing-kernel-logs-from-user-space">Seeing kernel logs from user space</h3>
+<p>Having already spoiled the blog post by mentioning <code>kmsg</code> in the section before, there’s not a bunch to talk now.</p>
+<p>The kernel provides to us <code>/dev/kmsg</code> in userspace, a special device that allows us to read from the ring buffer (with multitenancy in mind), and that’s what dmesg uses.</p>
+<div><pre><code data-lang="sh"><span># Trace the syscalls `openat` and `read` to verify</span>
+<span># that it reads from `/dev/kmsg`</span>
+strace -e openat,read -f dmesg &gt; /dev/null
+openat<span>(</span>AT_FDCWD, <span>&#34;/dev/kmsg&#34;</span>, O_RDONLY<span>|</span>O_NONBLOCK<span>)</span> <span>=</span> <span>3</span>
+read<span>(</span>3, <span>&#34;5,0,0,-;Linux version 4.15.0-34-&#34;</span>..., 8191<span>)</span> <span>=</span> <span>192</span>
+read<span>(</span>3, <span>&#34;6,1,0,-;Command line: BOOT_IMAGE&#34;</span>..., 8191<span>)</span> <span>=</span> <span>142</span>
+read<span>(</span>3, <span>&#34;6,2,0,-;KERNEL supported cpus:\n&#34;</span>, 8191<span>)</span> <span>=</span> <span>31</span>
+read<span>(</span>3, <span>&#34;6,3,0,-;  Intel GenuineIntel\n&#34;</span>, 8191<span>)</span> <span>=</span> <span>29</span>
+</code></pre></div><p>Going even deeper, whenever a <code>read(2)</code> syscall is emitted targetting such file, the kernel triggers <a href="https://elixir.bootlin.com/linux/v4.18.8/source/kernel/printk/printk.c#L823"><code>kernel/printk/devkmsg_read</code></a> internally, taking a message from the circular queue, formatting it and then sending back to the user.</p>
+<div><pre><code data-lang="sh"><span># We can use `iovisor/bcc#examples/trace/stacknoop.py` to</span>
+<span># gather the stack trace from the execution of `devkmsg_read`</span>
+<span># to verify that the `read` gets right there when `vfs_read`</span>
+<span># is called.</span>
+./stacksnoop.py -v devkmsg_read
+TIME<span>(</span>s<span>)</span>            COMM         PID    CPU FUNCTION
+1.875072956        tail         <span>1565</span>   <span>0</span>   devkmsg_read
+	devkmsg_read
+	vfs_read
+	sys_read
+	do_syscall_64
+	entry_SYSCALL_64_after_hwframe
+</code></pre></div><p>A similar path is followed when writing to the circular queue as well: whenever a <code>write(2)</code> is issued, at some point <a href="https://elixir.bootlin.com/linux/v4.18.8/source/kernel/printk/printk.c#L760"><code>devkmsg_write</code></a> is called.</p>
+<p><code>devkmsg</code> translates such call to the equivalent of a <code>printk</code>, which then takes the path of reaching <code>log_store</code>, the method that ends up finally taking a free space from the queue and adding the log message:</p>
+<div><pre><code data-lang="sh"><span># In one terminal</span>
+<span>echo</span> <span>&#34;haha&#34;</span> &gt; /dev/kmsg
+
+<span># In another terminal</span>
+./stacksnoop.py -v log_store
+TIME<span>(</span>s<span>)</span>            COMM         PID    CPU FUNCTION
+1.786375046        bash         <span>1450</span>   <span>2</span>   log_store
+	log_store
+	printk_emit
+	devkmsg_write
+	new_sync_write
+	__vfs_write
+	vfs_write
+	sys_write
+	do_syscall_64
+	entry_SYSCALL_64_after_hwframe
+</code></pre></div><p>By knowing that the kernel provides this interface, we can implement a simple program that constantly performs <code>read(2)</code>s against such device and then parses the contents (messages) that arrive.</p>
+<h3 id="interpreting-the-kmsg-messages">Interpreting the kmsg messages</h3>
+<p>Knowing that every <code>read(2)</code> syscall performed against <code>/dev/kmsg</code> returns us a single message, we’re left to:</p>
+<ul>
+<li>implementing a reader that continuously looks at <code>/dev/kmsg</code> and then extracts the raw messages from there; as well as</li>
+<li>implementing the parsing of those messages.</li>
+</ul>
+<p>The later is the most interesting, imo.</p>
+<p>Each message comes packed in the following format: a list of comma-separated info fields and a message (these, separated by a semicolon).</p>
+<div><pre><code data-lang="go"><span>//
+</span><span>//                  INFO		              MSG
+</span><span>//     .------------------------------------------. .------.
+</span><span>//    |                                            |        |
+</span><span>//    |	int	int      int      char, &lt;ignore&gt;   | string |
+</span><span>//    prefix,   seq, timestamp_us,flag[,..........];&lt;message&gt;
+</span><span>//
+</span></code></pre></div><p>There are four standard fields in the info section, leaving room for other fields in the future.</p>
+<p>From the <code>priority</code> field, we can extract two pieces of information: priority and facility.</p>
+<div><pre><code data-lang="go"><span>// DecodePrefix extracts both priority and facility from a given
+</span><span>// syslog(2) encoded prefix.
+</span><span>//
+</span><span>//	   facility    priority
+</span><span>//      .-----------.  .-----.
+</span><span>//      |           |  |     |
+</span><span>//	7  6  5  4  3  2  1  0    bits
+</span><span>//
+</span></code></pre></div><p>With the rest of the fields, we’re able to know when the message was produced and what ID does such message carry in the sequence of messages that have been put in the buffer.</p>
+<p>If you’re interested in seeing this parsing in the form of actual code, I wrote a Golang implementation that you can check here: <a href="https://github.com/cirocosta/dmesg_exporter/blob/fc7962f46d304c158f21cc71cf2049af7d183c0a/kmsg/kmsg.go#L178">github.com/cirocosta/dmesg_exporter/kmsg/kmsg.go</a>.</p>
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>It was great to have the opportunity of going deep into the stack and verifying how components from the kernel can communicate with userspace applications.</p>
+<p>That led me to create <a href="https://github.com/cirocosta/dmesg_exporter"><code>dmesg_exporter</code></a>, a tool for exporting “dmesg” logs metrics so that people can eventually alert messages marked as “critical” arriving from a specific facility.</p>
+<p>During the writing of this blog post, I made use of the following book: <a href="https://amzn.to/2QWyXp9">The Linux Programming Interface</a>. Please make sure you check it out! It’s definitely one of the best books on Linux out there.</p>
+
+<p>If you’ve had any questions, or have ideas for improvements, please let me know! I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter, and I’d love to hear from you!</p>
+<p>Have a good one!</p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

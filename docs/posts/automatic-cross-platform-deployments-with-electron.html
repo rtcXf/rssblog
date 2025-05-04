@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Automatic Cross-Platform Deployments with Electron | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/open-source/automatic-cross-platform-deployments-with-electron-on-a-ci-server-travis/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Automatic Cross-Platform Deployments with Electron</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>This is a tutorial on how to set up an Electron app on <a href="https://travis-ci.org/">Travis CI</a>, so that new versions are deployed to <a href="https://help.github.com/en/articles/creating-releases">GitHub Releases</a> with a simple pull request.</p>
+<h2 id="boilerplate">
+  <span> Boilerplate</span> <a href="#boilerplate">🔗</a></h2>
+<p>I created a <a href="https://github.com/lane-c-wagner/electron-ci-boilerplate">boilerplate repo</a> that has all the necessary configuration to deploy a minimalistic app to GitHub releases. If you get lost during the tutorial you can look to that as an example. Also, if you don’t have an electron app yet and just want to start with it as an example feel free.</p>
+<h2 id="electron-builder">
+  <span> Electron Builder</span> <a href="#electron-builder">🔗</a></h2>
+<p>We need a package that will handle packing the app into an executable and deploying to GitHub releases. <a href="https://github.com/electron-userland/electron-builder">Electron Builder</a> is a fantastic npm package that handles building, signing, notarizing, and deploying an electron app on all three operating systems. Add it using yarn (<a href="https://www.npmjs.com/package/electron-builder#installation">recommended by Electron Builder</a>):</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>yarn add electron-builder --dev
+</span></span></code></pre></div><p>Electron Builder uses your app’s package.json file for most configuration.</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;name&#34;</span><span>:</span> <span>&#34;{APP_NAME}&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;version&#34;</span><span>:</span> <span>&#34;{VERSION_NUMBER}&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;description&#34;</span><span>:</span> <span>&#34;A minimal Electron application that deploys on CI servers&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;main&#34;</span><span>:</span> <span>&#34;main.js&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;scripts&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;start&#34;</span><span>:</span> <span>&#34;electron .&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;release&#34;</span><span>:</span> <span>&#34;electron-builder&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;test&#34;</span><span>:</span> <span>&#34;echo success&#34;</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>&#34;repository&#34;</span><span>:</span> <span>&#34;https://github.com/{USER_NAME}/{REPO_NAME}&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;keywords&#34;</span><span>:</span> <span>[</span><span>&#34;electron&#34;</span><span>,</span> <span>&#34;ci&#34;</span><span>,</span> <span>&#34;travis&#34;</span><span>,</span> <span>&#34;tutorial&#34;</span><span>,</span> <span>&#34;demo&#34;</span><span>],</span>
+</span></span><span><span>  <span>&#34;author&#34;</span><span>:</span> <span>&#34;{USER_NAME}&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;build&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;appId&#34;</span><span>:</span> <span>&#34;{APP_ID}&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;publish&#34;</span><span>:</span> <span>&#34;github&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;dmg&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;contents&#34;</span><span>:</span> <span>[</span>
+</span></span><span><span>        <span>{</span>
+</span></span><span><span>          <span>&#34;x&#34;</span><span>:</span> <span>110</span><span>,</span>
+</span></span><span><span>          <span>&#34;y&#34;</span><span>:</span> <span>150</span>
+</span></span><span><span>        <span>},</span>
+</span></span><span><span>        <span>{</span>
+</span></span><span><span>          <span>&#34;x&#34;</span><span>:</span> <span>240</span><span>,</span>
+</span></span><span><span>          <span>&#34;y&#34;</span><span>:</span> <span>150</span><span>,</span>
+</span></span><span><span>          <span>&#34;type&#34;</span><span>:</span> <span>&#34;link&#34;</span><span>,</span>
+</span></span><span><span>          <span>&#34;path&#34;</span><span>:</span> <span>&#34;/Applications&#34;</span>
+</span></span><span><span>        <span>}</span>
+</span></span><span><span>      <span>]</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>    <span>&#34;appImage&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;license&#34;</span><span>:</span> <span>&#34;LICENSE&#34;</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>    <span>&#34;nsis&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>&#34;createDesktopShortcut&#34;</span><span>:</span> <span>&#34;always&#34;</span><span>,</span>
+</span></span><span><span>      <span>&#34;license&#34;</span><span>:</span> <span>&#34;LICENSE&#34;</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>&#34;devDependencies&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;electron&#34;</span><span>:</span> <span>&#34;^4.0.1&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;electron-builder&#34;</span><span>:</span> <span>&#34;^21.2.0&#34;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Replace all the configuration variables with your own values. The configuration variables are all caps in {BRACKETS}.</p>
+<p>You should have a license file named LICENSE at the root of your directory, as well as a copy called license_en.txt in your build folder (build/license_en.txt). Electron builder uses those licenses as the license agreement for the installers.</p>
+<p>Good practice for an appId is a reverse domain name. For example, ours is <em>dev.boot</em>.</p>
+<p>You can setup your test script to actually run tests if you want, the above just prints “success” to the screen. We will configure Travis to run those tests on the CI server.</p>
+<p>At this point you should be able to run</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>yarn release --publish never
+</span></span></code></pre></div><p>which will build and package your app locally into the <em>dist</em> directory. However, it will only build the package for your local operating system, which is expected.</p>
+<h2 id="travis-ci">
+  <span> Travis CI</span> <a href="#travis-ci">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/TravisCI-Full-Color.png" alt="travis ci"/></p>
+<p>Navigate to <a href="https://travis-ci.org/">https://travis-ci.org/</a> and sign up using your GitHub account. Once signed in you should be able to select which repository you want to connect to Travis.</p>
+<p>Copy this code into <em>.travis.yml</em> at the root of your repository:</p>
+<div><pre tabindex="0"><code data-lang="yaml"><span><span><span>language</span><span>:</span><span> </span><span>node_js</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>node_js</span><span>:</span><span>
+</span></span></span><span><span><span>  </span>- <span>&#34;11.6.0&#34;</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span># Always run two parallel builds: one on mac and one on linux</span><span>
+</span></span></span><span><span><span></span><span># the linux build will use wine to be able to build windows and</span><span>
+</span></span></span><span><span><span></span><span># linux apps</span><span>
+</span></span></span><span><span><span></span><span>matrix</span><span>:</span><span>
+</span></span></span><span><span><span>  </span><span>include</span><span>:</span><span>
+</span></span></span><span><span><span>    </span>- <span>os</span><span>:</span><span> </span><span>osx</span><span>
+</span></span></span><span><span><span>      </span><span>osx_image</span><span>:</span><span> </span><span>xcode10.2</span><span>
+</span></span></span><span><span><span>      </span><span>language</span><span>:</span><span> </span><span>node_js</span><span>
+</span></span></span><span><span><span>      </span><span>node_js</span><span>:</span><span> </span><span>&#34;11.6.0&#34;</span><span>
+</span></span></span><span><span><span>      </span><span>env</span><span>:</span><span>
+</span></span></span><span><span><span>        </span>- <span>ELECTRON_CACHE=$HOME/.cache/electron</span><span>
+</span></span></span><span><span><span>        </span>- <span>ELECTRON_BUILDER_CACHE=$HOME/.cache/electron-builder</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>    </span>- <span>os</span><span>:</span><span> </span><span>linux</span><span>
+</span></span></span><span><span><span>      </span><span>dist</span><span>:</span><span> </span><span>trusty</span><span>
+</span></span></span><span><span><span>      </span><span>sudo</span><span>:</span><span> </span><span>required</span><span>
+</span></span></span><span><span><span>      </span><span>services</span><span>:</span><span> </span><span>docker</span><span>
+</span></span></span><span><span><span>      </span><span>language</span><span>:</span><span> </span><span>generic</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>notifications</span><span>:</span><span>
+</span></span></span><span><span><span>  </span><span>email</span><span>:</span><span> </span><span>false</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span># cache some files for faster builds</span><span>
+</span></span></span><span><span><span></span><span>cache</span><span>:</span><span>
+</span></span></span><span><span><span>  </span><span>yarn</span><span>:</span><span> </span><span>true</span><span>
+</span></span></span><span><span><span>  </span><span>directories</span><span>:</span><span>
+</span></span></span><span><span><span>    </span>- <span>node_modules</span><span>
+</span></span></span><span><span><span>    </span>- <span>$HOME/.cache/electron</span><span>
+</span></span></span><span><span><span>    </span>- <span>$HOME/.cache/electron-builder</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span># add git lfs for large file support</span><span>
+</span></span></span><span><span><span></span><span>before_install</span><span>:</span><span>
+</span></span></span><span><span><span>  </span>- <span>|</span><span>
+</span></span></span><span><span><span>    if [ &#34;$TRAVIS_OS_NAME&#34; == &#34;osx&#34; ]; then
+</span></span></span><span><span><span>      mkdir -p /tmp/git-lfs &amp;&amp; curl -L https://github.com/github/git-lfs/releases/download/v2.3.1/git-lfs-$([ &#34;$TRAVIS_OS_NAME&#34; == &#34;linux&#34; ] &amp;&amp; echo &#34;linux&#34; || echo &#34;darwin&#34;)-amd64-2.3.1.tar.gz | tar -xz -C /tmp/git-lfs --strip-components 1
+</span></span></span><span><span><span>      export PATH=&#34;/tmp/git-lfs:$PATH&#34;
+</span></span></span><span><span><span>    fi</span><span>    
+</span></span></span><span><span><span></span><span>before_script</span><span>:</span><span>
+</span></span></span><span><span><span>  </span>- <span>git lfs pull</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span># on PRs and merges to master and prod run tests and build the app</span><span>
+</span></span></span><span><span><span></span><span>script</span><span>:</span><span>
+</span></span></span><span><span><span>  </span>- <span>|</span><span>
+</span></span></span><span><span><span>    if [ &#34;$TRAVIS_OS_NAME&#34; == &#34;linux&#34; ]; then
+</span></span></span><span><span><span>      docker run --rm \
+</span></span></span><span><span><span>        -v ${PWD}:/project \
+</span></span></span><span><span><span>        -v ~/.cache/electron:/root/.cache/electron \
+</span></span></span><span><span><span>        -v ~/.cache/electron-builder:/root/.cache/electron-builder \
+</span></span></span><span><span><span>        electronuserland/builder:wine \
+</span></span></span><span><span><span>        /bin/bash -c &#34;yarn --link-duplicates --pure-lockfile &amp;&amp; yarn test&#34;
+</span></span></span><span><span><span>    else
+</span></span></span><span><span><span>      yarn test
+</span></span></span><span><span><span>    fi</span><span>    
+</span></span></span><span><span><span></span><span># only deploy to github on a merge to the prod branch</span><span>
+</span></span></span><span><span><span></span><span>deploy</span><span>:</span><span>
+</span></span></span><span><span><span>  </span><span>provider</span><span>:</span><span> </span><span>script</span><span>
+</span></span></span><span><span><span>  </span><span>script</span><span>:</span><span> </span><span>bash deploy.travis.sh</span><span>
+</span></span></span><span><span><span>  </span><span>skip_cleanup</span><span>:</span><span> </span><span>true</span><span>
+</span></span></span><span><span><span>  </span><span>on</span><span>:</span><span>
+</span></span></span><span><span><span>    </span><span>branch</span><span>:</span><span> </span><span>prod</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>before_cache</span><span>:</span><span>
+</span></span></span><span><span><span>  </span>- <span>rm -rf $HOME/.cache/electron-builder/wine</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span># only run this script on pull requests and merges into</span><span>
+</span></span></span><span><span><span></span><span># the &#39;master&#39; and &#39;prod&#39; branches</span><span>
+</span></span></span><span><span><span></span><span>branches</span><span>:</span><span>
+</span></span></span><span><span><span>  </span><span>only</span><span>:</span><span>
+</span></span></span><span><span><span>    </span>- <span>master</span><span>
+</span></span></span><span><span><span>    </span>- <span>prod</span><span>
+</span></span></span></code></pre></div><p>The comments in the above file should explain what each step does, but the basic idea is to <em>yarn test</em> on each pull request to verify that a pull request doesn’t break the app. Then, once code is merged into the prod branch, we trigger the following deploy script to build and push our code to GitHub Releases:</p>
+<p>Copy this file to <em>deploy.travis.sh</em></p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span><span>#! /bin/bash
+</span></span></span><span><span><span></span><span>if</span> <span>[</span> <span>&#34;</span><span>$TRAVIS_OS_NAME</span><span>&#34;</span> <span>==</span> osx <span>]</span><span>;</span> <span>then</span>
+</span></span><span><span>    <span># deploy on mac</span>
+</span></span><span><span>    yarn release
+</span></span><span><span><span>else</span>
+</span></span><span><span>    <span># deploy on windows and linux</span>
+</span></span><span><span>    docker run --rm -e GH_TOKEN -v <span>&#34;</span><span>${</span><span>PWD</span><span>}</span><span>&#34;</span>:/project -v ~/.cache/electron:/root/.cache/electron -v ~/.cache/electron-builder:/root/.cache/electron-builder electronuserland/builder:wine /bin/bash -c <span>&#34;yarn --link-duplicates --pure-lockfile &amp;&amp; yarn release --linux AppImage --win&#34;</span>
+</span></span><span><span><span>fi</span>
+</span></span></code></pre></div><p>In order for your <em>.travis.yml</em> script to have permission to upload code to GitHub Releases, then you will need to set an environment variable that contains an API token.</p>
+<p>In GitHub Navigate to your personal settings / Developer Settings / Generate New Token. Then go to your repository settings in Travis and you can add an environment variable. The variable name is GH_TOKEN and the token is the one you created on GitHub. Make sure to keep the variable private (the default) on Travis so that it won’t print the token in the logs.</p>
+<h2 id="done">
+  <span> Done!</span> <a href="#done">🔗</a></h2>
+<p>Now all pull requests to master and prod should run tests, and all code merged into the prod branch should trigger a new release. The released assets and downloadable installers will be published to your GitHub repository under the <a href="https://github.com/lane-c-wagner/electron-ci-boilerplate/releases">releases tab</a>.</p>
+<p>The release will be a draft so after each deployment you need to go in manually and convert from a draft to a published release, which is just the click of a button.</p>
+<h2 id="confused">
+  <span> Confused?</span> <a href="#confused">🔗</a></h2>
+<p>If you get lost feel free to keep looking back at the <a href="https://github.com/lane-c-wagner/electron-ci-boilerplate">working example repo</a> and also make sure to look at the logged errors in Travis.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

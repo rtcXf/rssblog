@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BitBanged SPI in Go, An Explanation | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/bitbanged-spi-in-go-an-explanation/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>BitBanged SPI in Go, An Explanation</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I’m going to focus mostly on some design decisions and also how I went about writing an SPI interface using Go on a Raspberry Pi. I assume my readers have a basic understanding of what a Raspberry Pi is, and how basic electronics work. If not, read on anyway and I will be sure to include some valuable resources below.</p>
+<h2 id="why-go">
+  <span> Why Go?</span> <a href="#why-go">🔗</a></h2>
+<p>In a past life, I worked on hardware interfacing software. The first thing I can certainly tell you is that I hate C. Don’t get me wrong, I understand the appeal of having lightning-fast code. Also, the ability to manipulate memory and low-level functions is useful. I also understand the headache of writing concurrent C code, and anyone familiar with Go knows that this is where it shines.</p>
+<p><img src="https://blog.boot.dev/img/800/1_l-OnL3gWfBBOTceP8V-vXw.jpeg" alt="Raspberry Pi 3"/></p>
+<p><a href="https://www.raspberrypi.org/blog/compute-module-3-launch/">Compute Module 3 Launch Announcement</a></p>
+<p>The project that first got me interested in using Go for embedded applications was one where we decided to use a Raspberry Pi Compute Module 3 to interact with ADC (analog to digital converter) components, and collect data using several of these components.</p>
+<p>I quickly threw together a prototype in Python using the standard <a href="https://pypi.org/project/RPi.GPIO/">Python GPIO library</a>, and was satisfied with the initial results. It was apparent however that for a more industrial solution we needed an application that was:</p>
+<ul>
+<li><strong>Faster</strong> — Able to support more operations per second at lower memory and CPU usage.</li>
+<li><strong>Compiled</strong> — We didn’t want anyone to be able to pop out the Compute Module and steal our source code.</li>
+<li><strong>Maintainable</strong> — We had a very small team, and none of us were very experienced with firmware so we wanted to abstract up a bit if possible.</li>
+</ul>
+<p>I considered C++ at first. C++ is about as fast as it gets, and is a compiled language. I’m quite comfortable in C++ and have written many applications using it, but we ultimately decided on Go instead for the simple fact the concurrent programming in Go is as easy as it gets. C++ may run a bit faster, but we knew that if we wrote this particular program in Go, it would likely be about half the size (in lines of code) and we were more confident in our ability to keep the code clean and maintainable.</p>
+<p>It is important to note that the program in question was doing a lot more than just the data collection via SPI interface with an ADC component. There were user inputs, data displays, etc. It was to be a highly concurrent program.</p>
+<h2 id="what-is-spi">
+  <span> What is SPI?</span> <a href="#what-is-spi">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/1_5WD0gV6autEIzv8GMkc5gQ.png" alt="Master Slave SPI"/></p>
+<p>SPI stands for serial peripheral interface. I don’t want to get too far off track, but basically it is just a protocol for a master (your program) to communicate with the hardware (like a thermometer or analog to digital converter). If you want to learn more check out the link in the picture’s caption.</p>
+<p><a href="http://www.circuitbasics.com/basics-of-the-spi-communication-protocol/">SPI Protocol Details</a></p>
+<h2 id="my-environment">
+  <span> My Environment</span> <a href="#my-environment">🔗</a></h2>
+<ul>
+<li>Device: Raspberry Pi 3B (We used the compute module for production)</li>
+<li>IDE: VS Code</li>
+<li>Remote Editing: <a href="https://blog.technologee.co.uk/remote-editing-using-vs-code/">Check out this tutorial to edit code on the pi using VS Code remotely</a></li>
+<li>Hardware: Breadboard, jumper wires, an ADC that uses an SPI interface</li>
+<li>OS: <a href="https://www.raspberrypi.org/downloads/">Raspbian</a></li>
+</ul>
+<h2 id="implementation">
+  <span> Implementation</span> <a href="#implementation">🔗</a></h2>
+<p>First things first, I needed a great GPIO package. For this project, we built the code to be able to use any of the GPIO pins on the Pi. I used <a href="https://github.com/davecheney/gpio">Dave Cheney’s library</a></p>
+<p>The code below should build and run. Please keep in mind that if you are going to use this code, you will need to change the pin numbers to match the pins you used to connect your GPIOs to your ADC.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span>	<span>&#34;time&#34;</span>
+</span></span><span><span>
+</span></span><span><span>	<span>&#34;github.com/davecheney/gpio&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>// AdcRead represents the data needed to perform a read operation on the ADC component
+</span></span></span><span><span><span></span><span>type</span> <span>AdcRead</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>Cs</span>          <span>gpio</span><span>.</span><span>Pin</span>
+</span></span><span><span>	<span>Clock</span>       <span>gpio</span><span>.</span><span>Pin</span>
+</span></span><span><span>	<span>Miso</span>        <span>gpio</span><span>.</span><span>Pin</span>
+</span></span><span><span>	<span>NumBits</span>     <span>int</span>
+</span></span><span><span>	<span>ResultsChan</span> <span>chan</span> <span>uint32</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// Exec reads the current value stored in the ADC register
+</span></span></span><span><span><span></span><span>func</span> <span>(</span><span>reader</span> <span>AdcRead</span><span>)</span> <span>Exec</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>// Start the CS Low to begin the read
+</span></span></span><span><span><span></span>	<span>reader</span><span>.</span><span>Cs</span><span>.</span><span>Clear</span><span>()</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// Initialize an impty uint32 to store the value we are reading
+</span></span></span><span><span><span></span>	<span>var</span> <span>result</span> <span>uint32</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// Loop over each bit the the component sends back (The number depends varies from
+</span></span></span><span><span><span></span>	<span>// component to component, read the datasheet)
+</span></span></span><span><span><span></span>	<span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>reader</span><span>.</span><span>NumBits</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>
+</span></span><span><span>		<span>// Set the clock to logic high
+</span></span></span><span><span><span></span>		<span>reader</span><span>.</span><span>Clock</span><span>.</span><span>Set</span><span>()</span>
+</span></span><span><span>
+</span></span><span><span>		<span>// Read 1 bit in, if it is high, then add a &#34;1&#34; to our rightmost bit
+</span></span></span><span><span><span></span>		<span>bit</span> <span>:=</span> <span>reader</span><span>.</span><span>Miso</span><span>.</span><span>Get</span><span>()</span>
+</span></span><span><span>		<span>if</span> <span>bit</span> <span>{</span>
+</span></span><span><span>			<span>result</span> <span>|=</span> <span>0x1</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>
+</span></span><span><span>		<span>// Shift Left to get to the next bit to be read
+</span></span></span><span><span><span></span>		<span>if</span> <span>i</span> <span>!=</span> <span>reader</span><span>.</span><span>NumBits</span><span>-</span><span>1</span> <span>{</span>
+</span></span><span><span>			<span>result</span> <span>&lt;&lt;=</span> <span>1</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>
+</span></span><span><span>		<span>// The clock will pulse low, then high again to get the next bit
+</span></span></span><span><span><span></span>		<span>reader</span><span>.</span><span>Clock</span><span>.</span><span>Clear</span><span>()</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// Set chip select low to end the read
+</span></span></span><span><span><span></span>	<span>reader</span><span>.</span><span>Cs</span><span>.</span><span>Set</span><span>()</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// Send the result back through the channel to whatever part of our
+</span></span></span><span><span><span></span>	<span>// application cares about it
+</span></span></span><span><span><span></span>	<span>reader</span><span>.</span><span>ResultsChan</span> <span>&lt;-</span> <span>result</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>// Open necessary pins. The numbers here are examples, they should be changed based
+</span></span></span><span><span><span></span>	<span>// on which pins you use
+</span></span></span><span><span><span></span>	<span>const</span> <span>csPinNumber</span> <span>=</span> <span>5</span>
+</span></span><span><span>	<span>const</span> <span>clockPinNumber</span> <span>=</span> <span>6</span>
+</span></span><span><span>	<span>const</span> <span>misoPinNumber</span> <span>=</span> <span>7</span>
+</span></span><span><span>
+</span></span><span><span>	<span>csPin</span><span>,</span> <span>err</span> <span>:=</span> <span>gpio</span><span>.</span><span>OpenPin</span><span>(</span><span>csPinNumber</span><span>,</span> <span>gpio</span><span>.</span><span>ModeOutput</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>fmt</span><span>.</span><span>Printf</span><span>(</span><span>&#34;Error opening cs pin: %v\n&#34;</span><span>,</span> <span>err</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>clockPin</span><span>,</span> <span>err</span> <span>:=</span> <span>gpio</span><span>.</span><span>OpenPin</span><span>(</span><span>clockPinNumber</span><span>,</span> <span>gpio</span><span>.</span><span>ModeOutput</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>fmt</span><span>.</span><span>Printf</span><span>(</span><span>&#34;Error opening clock pin: %v\n&#34;</span><span>,</span> <span>err</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>misoPin</span><span>,</span> <span>err</span> <span>:=</span> <span>gpio</span><span>.</span><span>OpenPin</span><span>(</span><span>misoPinNumber</span><span>,</span> <span>gpio</span><span>.</span><span>ModeInput</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>fmt</span><span>.</span><span>Printf</span><span>(</span><span>&#34;Error opening miso pin: %v\n&#34;</span><span>,</span> <span>err</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>resultsChan</span> <span>:=</span> <span>make</span><span>(</span><span>chan</span> <span>uint32</span><span>,</span> <span>1</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span>	<span>adcReader</span> <span>:=</span> <span>AdcRead</span><span>{</span>
+</span></span><span><span>		<span>Cs</span><span>:</span>          <span>csPin</span><span>,</span>
+</span></span><span><span>		<span>Clock</span><span>:</span>       <span>clockPin</span><span>,</span>
+</span></span><span><span>		<span>Miso</span><span>:</span>        <span>misoPin</span><span>,</span>
+</span></span><span><span>		<span>NumBits</span><span>:</span>     <span>32</span><span>,</span> <span>// Our ADC component sends a 32 bit value
+</span></span></span><span><span><span></span>		<span>ResultsChan</span><span>:</span> <span>resultsChan</span><span>,</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// Execute each read at 10 Hz
+</span></span></span><span><span><span></span>	<span>c</span> <span>:=</span> <span>time</span><span>.</span><span>Tick</span><span>(</span><span>time</span><span>.</span><span>Duration</span><span>(</span><span>100</span><span>)</span> <span>*</span> <span>time</span><span>.</span><span>Millisecond</span><span>)</span>
+</span></span><span><span>	<span>go</span> <span>func</span><span>()</span> <span>{</span>
+</span></span><span><span>		<span>for</span> <span>range</span> <span>c</span> <span>{</span>
+</span></span><span><span>			<span>adcReader</span><span>.</span><span>Exec</span><span>()</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>	<span>}()</span>
+</span></span><span><span>
+</span></span><span><span>	<span>// Print everything that comes through the results channel
+</span></span></span><span><span><span></span>	<span>for</span> <span>true</span> <span>{</span>
+</span></span><span><span>		<span>result</span> <span>:=</span> <span>&lt;-</span><span>resultsChan</span>
+</span></span><span><span>		<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>result</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Take a look at the actual SPI repository: <a href="https://github.com/lane-c-wagner/spi">https://github.com/lane-c-wagner/spi</a></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

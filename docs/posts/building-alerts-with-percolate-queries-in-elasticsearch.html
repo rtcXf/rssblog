@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Building Alerts with Percolate Queries in ElasticSearch | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/open-source/percolate-queries-elasticsearch/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Building Alerts with Percolate Queries in ElasticSearch</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Once upon a time, a company I worked for had a problem, we had thousands of messages flowing through our data pipeline every second, and we wanted to be able to send real-time emails, SMS, and Slack alerts when messages matching specific criteria were found. A simple solution built using <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-percolate-query.html">ElasticSearch’s percolate queries</a> ended up being our saving grace.</p>
+<p>Our first failed attempt to build an alerting system utilized <a href="https://github.com/pipelinedb/pipelinedb">PipelineDB</a>. To make a long story short, not only was that architecture rigid and hard to make changes to, it didn’t scale well and was constantly having performance issues. We would get called out by users for not sending alerts that should have triggered.</p>
+<h2 id="enter-elasticsearch">
+  <span> Enter ElasticSearch</span> <a href="#enter-elasticsearch">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/elasticsearch-logo-300x139.png" alt="elasticsearch"/></p>
+<p>Elasticsearch is a NoSQL distributed database that is good for, well, <strong>searching</strong>. I would never recommend it as a transactional database for basic CRUD actions, but aggregations, metrics, and percolate queries are where it shines.</p>
+<h2 id="what-is-a-percolate-query">
+  <span> What is a percolate query?</span> <a href="#what-is-a-percolate-query">🔗</a></h2>
+<p>Percolate queries can be simply thought of as an inverse search. Instead of sending a <em>query</em> to an index and getting the <em>matching documents</em>, you send a <em>document</em> to an index and get the <em>matching queries</em>. This is exactly what most alerting systems need.</p>
+<h2 id="what-does-it-look-like">
+  <span> What does it look like?</span> <a href="#what-does-it-look-like">🔗</a></h2>
+<p>From <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-percolate-query.html#query-dsl-percolate-query">elastic’s documentation</a>, we will create an index with a mapping (which is basically a loosey-goosy SQL schema) for an index that holds percolating queries:</p>
+<pre tabindex="0"><code>PUT /my-index
+{
+    &#34;mappings&#34;: {
+        &#34;properties&#34;: {
+             &#34;threshold&#34;: {
+                 &#34;type&#34;: &#34;long&#34;
+             },
+             &#34;count&#34;: {
+                 &#34;type&#34;: &#34;long&#34;
+             },
+             &#34;query&#34;: {
+                 &#34;type&#34;: &#34;percolator&#34;
+             }
+        }
+    }
+}
+</code></pre><ul>
+<li><strong>my-index</strong> is the name of the index</li>
+<li><strong>threshold</strong> and <strong>count</strong> are fields that we plan on utilizing in either the queries or the documents. All fields should be defined in the mapping</li>
+</ul>
+<p>Now that we have an index that can store percolating queries, we can register a new query:</p>
+<pre tabindex="0"><code>PUT /my-index/my-doc/1?refresh
+{
+    &#34;threshold&#34;: 100,
+    &#34;query&#34; : {
+        &#34;bool&#34; : {
+            &#34;must&#34;: {
+                &#34;query_string&#34;: {
+                    &#34;default_field&#34;: &#34;query_string&#34;,
+                    &#34;query&#34;: &#34;count:&gt;100&#34;
+                }
+            }
+        }
+    }
+}
+</code></pre><p>The query object contains all the logic for percolation. If a document’s count field is greater than 100 then this query will be returned in the document’s result set. The only purpose of the <strong>threshold</strong> field is for convenience, that is, when we are doing <a href="https://en.wikipedia.org/wiki/Create,_read,_update_and_delete">CRUD</a> operations on our queries, we can manage the threshold in its own field instead of parsing the query string every time.</p>
+<p>Now, lets percolate a document and see if it matches:</p>
+<pre tabindex="0"><code>GET /my-index/_search
+{
+    &#34;query&#34; : {
+        &#34;percolate&#34; : {
+            &#34;field&#34; : &#34;query&#34;,
+            &#34;document&#34; : {
+                &#34;count&#34; : 101
+            }
+        }
+    }
+}
+</code></pre><p>Response:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;took&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>  <span>&#34;timed_out&#34;</span><span>:</span> <span>false</span><span>,</span>
+</span></span><span><span>  <span>&#34;_shards&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;total&#34;</span><span>:</span> <span>5</span><span>,</span>
+</span></span><span><span>    <span>&#34;successful&#34;</span><span>:</span> <span>5</span><span>,</span>
+</span></span><span><span>    <span>&#34;skipped&#34;</span><span>:</span> <span>0</span><span>,</span>
+</span></span><span><span>    <span>&#34;failed&#34;</span><span>:</span> <span>0</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>&#34;hits&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;total&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>    <span>&#34;max_score&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>    <span>&#34;hits&#34;</span><span>:</span> <span>[</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>&#34;_index&#34;</span><span>:</span> <span>&#34;my-index&#34;</span><span>,</span>
+</span></span><span><span>        <span>&#34;_type&#34;</span><span>:</span> <span>&#34;my-doc&#34;</span><span>,</span>
+</span></span><span><span>        <span>&#34;_id&#34;</span><span>:</span> <span>&#34;1&#34;</span><span>,</span>
+</span></span><span><span>        <span>&#34;_score&#34;</span><span>:</span> <span>1</span><span>,</span>
+</span></span><span><span>        <span>&#34;_source&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>          <span>&#34;threshold&#34;</span><span>:</span> <span>100</span><span>,</span>
+</span></span><span><span>          <span>&#34;query&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>            <span>&#34;bool&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>              <span>&#34;must&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>                <span>&#34;query_string&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>                  <span>&#34;default_field&#34;</span><span>:</span> <span>&#34;query_string&#34;</span><span>,</span>
+</span></span><span><span>                  <span>&#34;query&#34;</span><span>:</span> <span>&#34;count:&gt;100&#34;</span>
+</span></span><span><span>                <span>}</span>
+</span></span><span><span>              <span>}</span>
+</span></span><span><span>            <span>}</span>
+</span></span><span><span>          <span>}</span>
+</span></span><span><span>        <span>}</span>
+</span></span><span><span>      <span>}</span>
+</span></span><span><span>    <span>]</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Because the count was greater than the threshold, the percolate query was returned! As you can see, this works great for an alerting system because users can create “alerts” which we store as percolating queries. For example, a user can create a query that triggers when a twitter post mentions their name, or when a temperature in a city is above a certain threshold.</p>
+<h2 id="use-it">
+  <span> Use it</span> <a href="#use-it">🔗</a></h2>
+<p>Percolate queries are perfect for when you have an ever changing set of criteria (probably created by users) that many documents need to be checked against. I’ve used it for alerting and auto-tagging systems in the past. Let me know on twitter if you have questions or can think of another interesting use case for them!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

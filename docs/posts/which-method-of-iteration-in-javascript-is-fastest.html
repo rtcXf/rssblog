@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Which Method of Iteration in JavaScript is Fastest? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/benchmarking-array-traversal-in-javascript/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Which Method of Iteration in JavaScript is Fastest?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>There are many ways to traverse an array in Javascript. In this benchmark, we will look at five different ways and the pros and cons of each. Keep in mind that these benchmarks were run in a Chrome browser on Codepen.io. Results will vary by browser/interpreter.</p>
+<p>For a working example of these benchmarks, take a look at this <a href="https://codepen.io/lane-c-wagner/pen/GRRGryr">codepen</a>. All benchmarks we ran on an array of 1,000,000,000 items.</p>
+<h2 id="1st-vanilla-js---backwards">
+  <span> 1st: Vanilla JS - Backwards</span> <a href="#1st-vanilla-js---backwards">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>for</span> <span>(</span><span>let</span> <span>i</span> <span>=</span> <span>arr</span><span>.</span><span>length</span> <span>-</span> <span>1</span><span>;</span> <span>i</span> <span>&gt;=</span> <span>0</span><span>;</span> <span>i</span><span>--</span><span>)</span> <span>{}</span>
+</span></span></code></pre></div><p>~ 30 milliseconds</p>
+<p>Going <strong>backwards is faster</strong> than going forward! At each iteration the loop checks against a constant 0 zero value instead of calling the array’s <code>.length</code> property. I highly recommend NOT putting this optimization into practice however, it’s weird and results in hard to understand code.</p>
+<h2 id="2nd-vanilla-js---forwards">
+  <span> 2nd: Vanilla JS - Forwards</span> <a href="#2nd-vanilla-js---forwards">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>for</span> <span>(</span><span>let</span> <span>i</span> <span>=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>arr</span><span>.</span><span>length</span><span>;</span> <span>i</span><span>++</span><span>)</span> <span>{}</span>
+</span></span></code></pre></div><p>~39 milliseconds</p>
+<h2 id="3rd-es6-foreach">
+  <span> 3rd: ES6 forEach()</span> <a href="#3rd-es6-foreach">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>arr</span><span>.</span><span>forEach</span><span>(</span><span>function</span> <span>(</span><span>element</span><span>)</span> <span>{});</span>
+</span></span></code></pre></div><p>~180 milliseconds</p>
+<p>Slow but with a more convenient syntax, nothing surprising here.</p>
+<h2 id="4th-jquery-each">
+  <span> 4th: jQuery Each</span> <a href="#4th-jquery-each">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>$</span><span>.</span><span>each</span><span>(</span><span>arr</span><span>,</span> <span>function</span> <span>(</span><span>index</span><span>,</span> <span>value</span><span>)</span> <span>{});</span>
+</span></span></code></pre></div><p>~225 milliseconds</p>
+<p>Eeeeeew… jQuery. Convenient if you live in 2010. Very Slow.</p>
+<h2 id="wildcard-forof-es6">
+  <span> Wildcard: For..Of ES6</span> <a href="#wildcard-forof-es6">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>for</span> <span>(</span><span>const</span> <span>item</span> <span>of</span> <span>arr</span><span>)</span> <span>{</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>First and second time running: 153 Milliseconds</p>
+<p>Third+ times running : ~18 milliseconds</p>
+<p>This is weird, and I’m not sure how to explain it. Maybe someone smarter than me can tweet me the answer <a href="https://twitter.com/wagslane">@wagslane</a> . The first two times running this after a fresh browser load are quite slow, but then it gets blazingly fast. I’m assuming there are some es6 optimizations under the hood that kick in.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

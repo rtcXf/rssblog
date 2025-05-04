@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Navigating the Linux Kernel source tree with YouCompleteMe | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/gists/navigating-the-linux-kernel-source-with-youcompleteme/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Navigating the Linux Kernel source tree with YouCompleteMe</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>These days I’ve been doing some research that involves looking at the Linux kernel to figure things out.</p>
+<p>Since I’ve been using <a href="https://github.com/Valloric/YouCompleteMe">YouCompleteMe</a> for a reasonable amount of time, and that I love how simple it is to configure it, why not give a try to using it for inspecting the Linux kernel?</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/gists/-/images/function-search.png" alt="Example of YouCompleteMe searching available functions "/>
+
+    
+</figure>
+
+<blockquote>
+<p>Example of YouCompleteMe searching available functions.</p>
+</blockquote>
+<p>ps.: for a browser experience, <a href="https://elixir.bootlin.com/linux/latest/source">bootlin</a> is AMAZING. It lets you navigate through the code providing links to definitions and making you go back in time to previous versions of the source - it’s great! Here I focus on navigating the Kernel source using VIM and a terminal though.</p>
+<p>Check out how to tailor a YouCompleteMe configuration that suits the Linux kernel source code.</p>
+<h3 id="getting-youcompleteme-ready">Getting YouCompleteMe ready</h3>
+<p>The first thing to do is getting YCM ready.</p>
+<p>As I’m constantly doing some experiments in AWS and from time to time running a VM here and there, I automated the process using Ansible and Packer (with <code>Ansible</code> I describe how to get to the desired state, with <code>Packer</code> I build a base image) - check out <a href="https://github.com/cirocosta/mylinux">cirocosta/mylinux</a>.</p>
+<p>Below is how the YouCompleteMe part of it looks like:</p>
+<div><pre><code data-lang="yaml">- <span>name</span><span>:</span><span> </span><span>&#39;install ycm&#39;</span><span>
+</span><span>  </span><span>command</span><span>:</span><span> </span><span>&#39;./install.py --go-completer --clang-completer&#39;</span><span>
+</span><span>  </span><span>environment</span><span>:</span><span> 
+</span><span>    </span><span>PATH</span><span>:</span><span> </span><span>&#34;{{ ansible_env.PATH }}:/usr/local/go/bin&#34;</span><span>
+</span><span>  </span><span>args</span><span>:</span><span>
+</span><span>    </span><span>chdir</span><span>:</span><span> </span><span>&#39;{{ user_home }}/.vim/bundle/YouCompleteMe&#39;</span><span>
+</span></code></pre></div><p>ps.: You might notice that I also specify <code>--go-completer</code> there. That’s not needed for <code>C</code> code (like Linux), so you can get rid of that.</p>
+<p>pps.: Check out my <a href="https://github.com/cirocosta/mylinux/blob/ac976ef24b2ea4743dbd15da225f4f1ce469d6ac/ansible/roles/vim/tasks/main.yml">Vim Ansible role</a> to see the full installation of my Vim setup.</p>
+<p>As I use <a href="https://github.com/tpope/vim-pathogen">pathogen</a> to provide Vim plugins to my environment, there’s just the need to clone the repository to <code>.vim/bundle</code> (with submodules) and then running the installation script.</p>
+<h3 id="setting-up-the-youcompleteme-configuration">Setting up the YouCompleteMe configuration</h3>
+<p>Given that the Kernel does not make use of CMake or Ninja, we can’t make use of the compilation database that CMake would create (a database that tells which commands were used to compile a given file).</p>
+<p><em>Update (30 Jun, 2018): it turns out that you can get a full fidelity compilation database even without <code>cmake</code> - the <a href="https://github.com/rizsotto/Bear"><code>bear</code></a> utility takes the approach of intercepting the build calls, gather the relevant info and generate a complete compilation database. Having such database ready, you can either make full use of it and ignore an extra <code>.ycm_extra_conf.py</code> or gather flags you find useful from there and tailor your special config. Thanks <a href="https://www.reddit.com/r/programming/comments/8v2eg4/navigating_the_linux_kernel_source_tree_with/e1kd9t0/">lanzaio</a>!</em></p>
+<p>However, we can still have such mapping by providing a <code>.ycm_extra_conf.py</code> file that does the job of delivering the compilation flags for any given file. The whole point of this python file is to make the project owner implement the YCM interface for detecting flags for files:</p>
+<blockquote>
+<p>Given a source file, give me its compilation flags.</p>
+</blockquote>
+<p>As it’s common in C project to have a “catch all” target in a Makefile (like <code>%.o: %.c</code>) that provides the same flags to every file, we can have a pretty simplified <code>.ycm_extra_conf.py</code> file:</p>
+<div><pre><code data-lang="python"><span>def</span> <span>FlagsForFile</span><span>(</span><span>filename</span><span>,</span> <span>**</span><span>kwargs</span><span>):</span>
+  <span>return</span> <span>{</span> <span>&#39;flags&#39;</span><span>:</span> <span>[</span><span>&#39;-I/usr/include&#39;</span><span>,</span> <span>&#39;-std=gnu89&#39;</span><span>,</span> <span>&#39;-xc&#39;</span><span>]</span> <span>}</span>
+</code></pre></div><p>For Linux, that’s not very different - gather the flags used, supply them to <code>FlagsForFile</code> and we’re done.</p>
+<p>The necessary flags can be gathered by exposing two variables that get set in the Makefile: <code>LINUXINCLUDE</code> and <code>USERINCLUDE</code>. That’s because, for just autocompletion and source code navigation, includes and definitions are sufficient.</p>
+<p>To dump those variables, create an extra target in <code>./Makefile</code>:</p>
+<div><pre><code data-lang="diff"><span>diff --git a/Makefile b/Makefile
+</span><span>index 019a5a02..88e1ad10 100644
+</span><span></span><span>--- a/Makefile
+</span><span></span><span>+++ b/Makefile
+</span><span></span><span>@@ -1792,6 +1792,10 @@ endif    # skip-makefile
+</span><span></span> PHONY += FORCE
+ FORCE:
+ 
+<span>+show-includes:
+</span><span>+       @$(foreach include, $(LINUXINCLUDE), echo $(include);)
+</span><span>+       @$(foreach include, $(USERINCLUDE), echo $(include);)
+</span><span>+
+</span><span></span> # Declare the contents of the .PHONY variable as phony.  We keep that
+ # information in a v
+</code></pre></div><p>Then prepare the <code>.config</code> file that would be necessary for the tiniest possible kernel:</p>
+<p>With the configuration set, now, executing <code>make</code> specifying the <code>show-includes</code> target dumps the variables we need:</p>
+<div><pre><code data-lang="sh"><span># Piping it to `sort -u` to remove the duplicates</span>
+<span># and keep the list sorted.</span>
+make show-includes <span>|</span> sort -u
+-I./arch/x86/include
+-I./arch/x86/include/generated
+-I./arch/x86/include/generated/uapi
+-I./arch/x86/include/uapi
+-I./include
+-I./include/generated/uapi
+-I./include/uapi
+-include
+./include/linux/kconfig.h
+</code></pre></div><p>As the next step is to supply those variables to YouCompleteMe, we need first to realize that the daemon (<code>ycmd</code>) will not deal well with these relative paths.</p>
+<p>In our Python script we can deal with that though:</p>
+<div><pre><code data-lang="python"><span>import</span> <span>os</span>
+
+<span>CURRENT_DIR</span> <span>=</span> <span>os</span><span>.</span><span>path</span><span>.</span><span>dirname</span><span>(</span><span>os</span><span>.</span><span>path</span><span>.</span><span>abspath</span><span>(</span><span>__file__</span><span>))</span>
+
+<span>include_dirs</span> <span>=</span> <span>[</span>
+    <span>&#39;./arch/x86/include&#39;</span><span>,</span>
+    <span>&#39;./arch/x86/include/generated&#39;</span><span>,</span>
+    <span>&#39;./arch/x86/include/generated/uapi&#39;</span><span>,</span>
+    <span>&#39;./arch/x86/include/uapi&#39;</span><span>,</span>
+    <span>&#39;./include&#39;</span><span>,</span>
+    <span>&#39;./include/generated/uapi&#39;</span><span>,</span>
+    <span>&#39;./include/uapi&#39;</span><span>,</span>
+<span>]</span>
+
+
+<span>include_files</span> <span>=</span> <span>[</span>
+    <span>&#39;./include/linux/kconfig.h&#39;</span><span>,</span>
+<span>]</span>
+
+<span>flags</span> <span>=</span> <span>[</span>
+    <span>&#39;-D__KERNEL__&#39;</span><span>,</span>
+    <span>&#39;-std=gnu89&#39;</span><span>,</span>
+    <span>&#39;-xc&#39;</span><span>,</span>
+    <span>&#39;-nostdinc&#39;</span><span>,</span>
+<span>]</span>
+
+<span>def</span> <span>FlagsForFile</span><span>(</span> <span>filename</span><span>,</span> <span>**</span><span>kwargs</span> <span>):</span>
+    <span>&#34;&#34;&#34;
+</span><span>    Given a source file, retrieves the flags necessary for compiling it.
+</span><span>    &#34;&#34;&#34;</span>
+    <span>for</span> <span>dir</span> <span>in</span> <span>include_dirs</span><span>:</span>
+        <span>flags</span><span>.</span><span>append</span><span>(</span><span>&#39;-I&#39;</span> <span>+</span> <span>os</span><span>.</span><span>path</span><span>.</span><span>join</span><span>(</span><span>CURRENT_DIR</span><span>,</span> <span>dir</span><span>))</span>
+
+    <span>for</span> <span>file</span> <span>in</span> <span>include_files</span><span>:</span>
+        <span>flags</span><span>.</span><span>append</span><span>(</span><span>&#39;-include&#39;</span> <span>+</span> <span>os</span><span>.</span><span>path</span><span>.</span><span>join</span><span>(</span><span>CURRENT_DIR</span><span>,</span> <span>file</span><span>))</span>
+
+    <span>return</span> <span>{</span> <span>&#39;flags&#39;</span><span>:</span> <span>flags</span> <span>}</span>
+</code></pre></div><p>Now, open a file (like, <code>./net/socket.c</code>) and check the autocompletion working! You can also check how “jump to” declarations and definitions also work.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/gists/-/images/struct-autocompletion.png" alt="Example of YouCompleteMe autocompleting a kernel struct "/>
+
+    
+</figure>
+
+<blockquote>
+<p>Example of YouCompleteMe autocompleting a kernel struct.</p>
+</blockquote>
+<p>If you have any questions or found any error, please let me know! I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

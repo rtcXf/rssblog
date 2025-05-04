@@ -39,12 +39,12 @@
 <div><pre tabindex="0"><code data-lang="go"><span><span><span>dat</span><span>,</span> <span>_</span> <span>:=</span> <span>json</span><span>.</span><span>Marshal</span><span>(</span><span>User</span><span>{</span>
 </span></span><span><span>    <span>FirstName</span><span>:</span> <span>&#34;Lane&#34;</span><span>,</span>
 </span></span><span><span>    <span>BirthYear</span><span>:</span> <span>1990</span><span>,</span>
-</span></span><span><span>    <span>Email</span><span>:</span>     <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="f3968b929e839f96b3949e929a9fdd909c9e">[email protected]</a>&#34;</span><span>,</span>
+</span></span><span><span>    <span>Email</span><span>:</span>     <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="c2a7baa3afb2aea782a5afa3abaeeca1adaf">[email protected]</a>&#34;</span><span>,</span>
 </span></span><span><span><span>})</span>
 </span></span><span><span><span>fmt</span><span>.</span><span>Println</span><span>(</span><span>string</span><span>(</span><span>dat</span><span>))</span>
 </span></span><span><span>
 </span></span><span><span><span>// prints:
-</span></span></span><span><span><span>// {&#34;first_name&#34;:&#34;Lane&#34;,&#34;birth_year&#34;:1990,&#34;Email&#34;:&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="492c31282439252c092e24282025672a2624">[email protected]</a>&#34;}
+</span></span></span><span><span><span>// {&#34;first_name&#34;:&#34;Lane&#34;,&#34;birth_year&#34;:1990,&#34;Email&#34;:&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="7f1a071e120f131a3f18121e1613511c1012">[email protected]</a>&#34;}
 </span></span></span></code></pre></div><h3 id="example-unmarshal-json-to-struct-decode">
   <span> Example unmarshal JSON to struct (decode)</span> <a href="#example-unmarshal-json-to-struct-decode">🔗</a></h3>
 <div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>Unmarshal</span><span>(</span><span>data</span> <span>[]</span><span>byte</span><span>,</span> <span>v</span> <span>interface</span><span>{})</span> <span>error</span>
@@ -52,7 +52,7 @@
 <div><pre tabindex="0"><code data-lang="go"><span><span><span>dat</span> <span>:=</span> <span>[]</span><span>byte</span><span>(</span><span>`{
 </span></span></span><span><span><span>    &#34;first_name&#34;:&#34;Lane&#34;,
 </span></span></span><span><span><span>    &#34;birth_year&#34;:1990,
-</span></span></span><span><span><span>    &#34;Email&#34;:&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="86e3fee7ebf6eae3c6e1ebe7efeaa8e5e9eb">[email protected]</a>&#34;
+</span></span></span><span><span><span>    &#34;Email&#34;:&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="66031e070b160a0326010b070f0a4805090b">[email protected]</a>&#34;
 </span></span></span><span><span><span>}`</span><span>)</span>
 </span></span><span><span><span>user</span> <span>:=</span> <span>User</span><span>{}</span>
 </span></span><span><span><span>err</span> <span>:=</span> <span>json</span><span>.</span><span>Unmarshal</span><span>(</span><span>dat</span><span>,</span> <span>&amp;</span><span>user</span><span>)</span>
@@ -61,7 +61,7 @@
 </span></span><span><span><span>}</span>
 </span></span><span><span><span>fmt</span><span>.</span><span>Println</span><span>(</span><span>user</span><span>)</span>
 </span></span><span><span><span>// prints:
-</span></span></span><span><span><span>// {Lane 1990 <a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="75100d1418051910351218141c195b161a18">[email protected]</a>}
+</span></span></span><span><span><span>// {Lane 1990 <a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="d8bda0b9b5a8b4bd98bfb5b9b1b4f6bbb7b5">[email protected]</a>}
 </span></span></span></code></pre></div><h3 id="example---go-json-http-server">
   <span> Example - Go JSON HTTP server</span> <a href="#example---go-json-http-server">🔗</a></h3>
 <p>Building a JSON API in Go is simple, you don’t even need a framework to get access to convenient high-level HTTP support. I typically start by writing two little helper functions, <code>respondWithJSON</code> and <code>respondWithError</code>.</p>

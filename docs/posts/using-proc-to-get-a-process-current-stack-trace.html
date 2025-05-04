@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Using /proc to get a process&#39; current stack trace | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/using-procfs-to-get-process-stack-trace/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Using /proc to get a process&#39; current stack trace</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>The file covered in this article, <code>/proc/&lt;pid&gt;/stack</code>, is the one that motivated me to learn more about <code>/proc</code> and get <a href="https://ops.tips/blog/a-month-of-proc"><code>The Month of Proc</code></a>.</p>
+<p>It’s such a useful thing when you’re unaware of what is the state of a given process. Meanwhile, I’ve noticed that it’s not very well known by people getting started with Linux.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/procfs-capturing-stack.svg" alt="Illustration of how the process stack can be inspected "/>
+
+    
+</figure>
+
+<p>Here in this post, you’ll get to know more about how procfs can gather a process&#39; stack trace, as well as get an idea of its usefulness.</p>
+
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ul>
+<li><a href="#a-process-that-blocks">A process that blocks</a></li>
+<li><a href="#viewing-the-process-kernel-stack-trace">Viewing the process kernel stack trace</a></li>
+<li><a href="#when-the-stack-does-not-help-much">When the stack does not help much</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h3 id="a-process-that-blocks">A process that blocks</h3>
+<p>To kick things off, let’s start with the tailoring of a process that blocks - a TCP server.</p>
+<p>In its most simplistic form, we can have a single-threaded TCP server that just receives traffic in a given thread and then processes its results.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/tcp-server-blocking-main-thread.svg" alt="Illustration of TCP server blocking the main thread "/>
+
+    
+</figure>
+
+<p>Naturally, there are two places where we can see the server blocking: at the <code>accept(2)</code> phase, of the <code>read(2)</code> phase - the first blocks until a client finishes the TCP handshake; the second, until data is available for read.</p>
+<p>Here’s how a simplistic implementation in C would look like considering just the first blocking part (<code>accept</code>ing):</p>
+<div><pre><code data-lang="c"><span>/**
+</span><span> * server_listen takes care of setting up the
+</span><span> * passive socket that receives incoming TCP
+</span><span> * connections.
+</span><span> *
+</span><span> * Returns the file descriptor corresponding to
+</span><span> * the passive socket, of -1 in the case of
+</span><span> * error.
+</span><span> *
+</span><span> * See https://ops.tips/blog/a-tcp-server-in-c/#creating-a-socket
+</span><span> * for a reference implementation.
+</span><span> */</span>
+<span>int</span>
+<span>server_listen</span><span>();</span>
+
+<span>/**
+</span><span> * server_accept_and_close accepts connections that
+</span><span> * finish their TCP handshake through the provided
+</span><span> * @listen_fd argument.
+</span><span> *
+</span><span> * Once the connection is `accept`ed, it gets closed
+</span><span> * immediately.
+</span><span> */</span>
+<span>int</span>
+<span>server_accept_and_close</span><span>(</span><span>int</span> <span>listen_fd</span><span>)</span>
+<span>{</span>
+	<span>int</span>                <span>conn_fd</span><span>;</span>
+	<span>int</span>                <span>err</span><span>;</span>
+	<span>socklen_t</span>          <span>client_len</span><span>;</span>
+	<span>struct</span> <span>sockaddr_in</span> <span>client_addr</span><span>;</span>
+
+	<span>client_len</span> <span>=</span> <span>sizeof</span><span>(</span><span>client_addr</span><span>);</span>
+
+	<span>printf</span><span>(</span><span>&#34;Accepting connections ...</span><span>\n</span><span>&#34;</span><span>);</span>
+
+	<span>// Accept connections from the completed
+</span><span></span>	<span>// connection queue (pops the latest conn
+</span><span></span>	<span>// that succesfully finished the 3-way
+</span><span></span>	<span>// handshake).
+</span><span></span>	<span>//
+</span><span></span>	<span>// Given that the queue might be empty, it
+</span><span></span>	<span>// waits (i.e., blocks) until there&#39;s a connection
+</span><span></span>	<span>// there.
+</span><span></span>	<span>err</span> <span>=</span> <span>(</span><span>conn_fd</span> <span>=</span> <span>accept</span><span>(</span>
+	         <span>listen_fd</span><span>,</span> <span>(</span><span>struct</span> <span>sockaddr</span><span>*</span><span>)</span><span>&amp;</span><span>client_addr</span><span>,</span> <span>&amp;</span><span>client_len</span><span>));</span>
+	<span>if</span> <span>(</span><span>err</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+		<span>perror</span><span>(</span><span>&#34;accept&#34;</span><span>);</span>
+		<span>return</span> <span>err</span><span>;</span>
+	<span>}</span>
+
+	<span>printf</span><span>(</span><span>&#34;Client connected! Going to close now.</span><span>\n</span><span>&#34;</span><span>);</span>
+
+	<span>// Mark the connection as closed so that we
+</span><span></span>	<span>// can get back to accepting new connections.
+</span><span></span>	<span>err</span> <span>=</span> <span>close</span><span>(</span><span>conn_fd</span><span>);</span>
+	<span>if</span> <span>(</span><span>err</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+		<span>perror</span><span>(</span><span>&#34;close&#34;</span><span>);</span>
+		<span>return</span> <span>err</span><span>;</span>
+	<span>}</span>
+
+	<span>return</span> <span>0</span><span>;</span>
+<span>}</span>
+
+<span>/**
+</span><span> * main execution - creates a passive socket
+</span><span> * bound to a specific port that keeps receiving
+</span><span> * incoming connections, accepting them and then
+</span><span> * marking them as closed immediately.
+</span><span> */</span>
+<span>int</span>
+<span>main</span><span>(</span><span>int</span> <span>argc</span><span>,</span> <span>char</span><span>**</span> <span>argv</span><span>)</span>
+<span>{</span>
+	<span>int</span> <span>err</span><span>;</span>
+	<span>int</span> <span>listen_fd</span> <span>=</span> <span>server_listen</span><span>();</span>
+
+	<span>if</span> <span>(</span><span>listen_fd</span> <span>==</span> <span>-</span><span>1</span><span>)</span>
+		<span>return</span> <span>1</span><span>;</span>
+
+	<span>for</span> <span>(;;)</span> <span>{</span>
+		<span>err</span> <span>=</span> <span>server_accept_and_close</span><span>(</span><span>listen_fd</span><span>);</span>
+		<span>if</span> <span>(</span><span>err</span> <span>==</span> <span>-</span><span>1</span><span>)</span>
+			<span>return</span> <span>1</span><span>;</span>
+	<span>}</span>
+
+	<span>return</span> <span>0</span><span>;</span>
+<span>}</span>
+</code></pre></div><p>If you’re not into how a TCP server can be implemented in C, make sure you check <a href="https://ops.tips/blog/a-tcp-server-in-c"><strong>A TCP Server in C</strong></a> for a complete description of it.</p>
+
+<p>Run the server, and then see it blocking!</p>
+<h3 id="viewing-the-process-kernel-stack-trace">Viewing the process kernel stack trace</h3>
+<p>Once the server is blocked, we can jump into <code>/proc</code> and check out what’s going on in the Kernel and figure out that it’s blocked on the <code>accept</code> syscall:</p>
+<div><pre><code data-lang="sh"><span># Gather the in-kernel stack trace of</span>
+<span># the `accept.out` process (the simplistic</span>
+<span># TCP server that we&#39;re running).</span>
+cat /proc/<span>$(</span>pidof accept.out<span>)</span>/stack
+<span>[</span>&lt;0&gt;<span>]</span> inet_csk_accept+0x246/0x380
+<span>[</span>&lt;0&gt;<span>]</span> inet_accept+0x45/0x170
+<span>[</span>&lt;0&gt;<span>]</span> SYSC_accept4+0xff/0x210
+<span>[</span>&lt;0&gt;<span>]</span> SyS_accept+0x10/0x20
+<span>[</span>&lt;0&gt;<span>]</span> do_syscall_64+0x73/0x130
+<span>[</span>&lt;0&gt;<span>]</span> entry_SYSCALL_64_after_hwframe+0x3d/0xa2
+<span>[</span>&lt;0&gt;<span>]</span> 0xffffffffffffffff
+</code></pre></div><p>Although it might look like a weird stack trace at first, the structure is very straightforward to reason about.</p>
+<p>Each line represents a function that was called (from looking at the stack calls), having the first part, that <code>[&lt;0&gt;]</code> thing, being the kernel address of the function, while the second, that <code>do_syscall_64+...</code> being the symbol name with the corresponding offset.</p>
+<p>If <code>[&lt;0&gt;]</code> looks weird (like, not an actual address at all), it’s because it’s intended to be like that.</p>
+<p>When <a href="https://github.com/torvalds/linux/blob/d8a5b80568a9cb66810e75b182018e9edb68e8ff/fs/proc/base.c#L424-L453"><code>fs/proc/base.c#proc_pid_stack</code></a> (the method that gets called by the <code>/proc</code> implementation of the virtual filesystem) iterates over the stack frames, we can see that it hardcodes <code>[&lt;0&gt;]</code> as the address to be displayed:</p>
+<div><pre><code data-lang="c"><span>/**
+</span><span> * Iterates through the kernel stack frames of
+</span><span> * the current task, displaying the kernel 
+</span><span> * addresses of each function, as well as
+</span><span> * their symbol name and offset.
+</span><span> */</span>
+<span>static</span> <span>int</span> <span>proc_pid_stack</span><span>(</span><span>struct</span> <span>seq_file</span> <span>*</span><span>m</span><span>,</span> <span>struct</span> <span>pid_namespace</span> <span>*</span><span>ns</span><span>,</span>
+			  <span>struct</span> <span>pid</span> <span>*</span><span>pid</span><span>,</span> <span>struct</span> <span>task_struct</span> <span>*</span><span>task</span><span>)</span>
+<span>{</span>
+	<span>struct</span> <span>stack_trace</span> <span>trace</span><span>;</span>
+	<span>unsigned</span> <span>long</span> <span>*</span><span>entries</span><span>;</span>
+	<span>int</span> <span>err</span><span>;</span>
+	<span>int</span> <span>i</span><span>;</span>
+
+
+        <span>// Allocate some memory so that we can have
+</span><span></span>        <span>// in our execution the whole stack of the
+</span><span></span>        <span>// process (up to a given depth).
+</span><span></span>        <span>//
+</span><span></span>	<span>// The first argument to the kmalloc
+</span><span></span>	<span>// is the size of the block to be allocated.
+</span><span></span>        <span>//
+</span><span></span>	<span>// The second argument is allocation flag.
+</span><span></span>        <span>//
+</span><span></span>	<span>// GFP_KERNEL means that allocation is performed on
+</span><span></span>	<span>// behalf of a process running in the kernel space.
+</span><span></span>	<span>//
+</span><span></span>	<span>// This means that the calling function is executing
+</span><span></span>	<span>// a system call on behalf of a process.
+</span><span></span>	<span>//
+</span><span></span>	<span>// Using GFP_KERNEL means that kmalloc can put the
+</span><span></span>	<span>// current process to sleep waiting for a page when
+</span><span></span>	<span>// called in low-memory situations.
+</span><span></span>        <span>// 
+</span><span></span>	<span>// See https://elixir.bootlin.com/linux/v4.15/source/include/linux/gfp.h#L219
+</span><span></span>	<span>entries</span> <span>=</span> <span>kmalloc</span><span>(</span><span>MAX_STACK_TRACE_DEPTH</span> <span>*</span> <span>sizeof</span><span>(</span><span>*</span><span>entries</span><span>),</span> <span>GFP_KERNEL</span><span>);</span>
+	<span>if</span> <span>(</span><span>!</span><span>entries</span><span>)</span>
+		<span>return</span> <span>-</span><span>ENOMEM</span><span>;</span>
+
+
+        <span>// With the space properly allocated, we can now
+</span><span></span>        <span>// prepare the `stack_trace` struct and pass
+</span><span></span>        <span>// it down to the function that will get that
+</span><span></span>        <span>// for us.
+</span><span></span>	<span>trace</span><span>.</span><span>nr_entries</span>	<span>=</span> <span>0</span><span>;</span>
+	<span>trace</span><span>.</span><span>max_entries</span>	<span>=</span> <span>MAX_STACK_TRACE_DEPTH</span><span>;</span>
+	<span>trace</span><span>.</span><span>entries</span>		<span>=</span> <span>entries</span><span>;</span>
+	<span>trace</span><span>.</span><span>skip</span>		<span>=</span> <span>0</span><span>;</span>
+
+
+        <span>// Make sure that we have mutual exclusion in
+</span><span></span>        <span>// place.
+</span><span></span>	<span>err</span> <span>=</span> <span>lock_trace</span><span>(</span><span>task</span><span>);</span>
+	<span>if</span> <span>(</span><span>!</span><span>err</span><span>)</span> <span>{</span>
+                <span>// Capture the stack trace!
+</span><span></span>		<span>// https://elixir.bootlin.com/linux/v4.15/source/arch/x86/kernel/stacktrace.c#L69
+</span><span></span>		<span>save_stack_trace_tsk</span><span>(</span><span>task</span><span>,</span> <span>&amp;</span><span>trace</span><span>);</span>
+
+                <span>// Iterate over each frame captured.
+</span><span></span>                <span>//
+</span><span></span>                <span>// *************************
+</span><span></span>                <span>// HERE is where the `[&lt;0&gt;]` is hardcoded.
+</span><span></span>                <span>// *************************
+</span><span></span>		<span>for</span> <span>(</span><span>i</span> <span>=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>trace</span><span>.</span><span>nr_entries</span><span>;</span> <span>i</span><span>++</span><span>)</span> <span>{</span>
+			<span>seq_printf</span><span>(</span><span>m</span><span>,</span> <span>&#34;[&lt;0&gt;] %pB</span><span>\n</span><span>&#34;</span><span>,</span> <span>(</span><span>void</span> <span>*</span><span>)</span><span>entries</span><span>[</span><span>i</span><span>]);</span>
+		<span>}</span>
+		<span>unlock_trace</span><span>(</span><span>task</span><span>);</span>
+	<span>}</span>
+	<span>kfree</span><span>(</span><span>entries</span><span>);</span>
+
+	<span>return</span> <span>err</span><span>;</span>
+<span>}</span>
+</code></pre></div><p>Looking at the file where the function is defined, we can <code>git blame</code> that <code>seq_printf</code> and see who’s there to blame for putting that hardcoded <code>[&lt;0&gt;]</code>.</p>
+<p>Guess what - Torvalds did the change!</p>
+<div><pre><code data-lang="diff">Author: Linus Torvalds &lt;torvalds@linux-foundation.org&gt;
+Date:   Mon Nov 27 16:45:56 2017 -0800
+
+    proc: don&#39;t report kernel addresses in /proc/&lt;pid&gt;/stack
+
+    This just changes the file to report them as zero, although maybe even
+    that could be removed.  I checked, and at least procps doesn&#39;t actually
+    seem to parse the &#39;stack&#39; file at all.
+
+    And since the file doesn&#39;t necessarily even exist (it requires
+    CONFIG_STACKTRACE), possibly other tools don&#39;t really use it either.
+
+    That said, in case somebody parses it with tools, just having that zero
+    there should keep such tools happy.
+
+    Signed-off-by: Linus Torvalds &lt;torvalds@linux-foundation.org&gt;
+
+<span>diff --git a/fs/proc/base.c b/fs/proc/base.c
+</span><span>index 31934cb9dfc8..28fa85276eec 100644
+</span><span></span><span>--- a/fs/proc/base.c
+</span><span></span><span>+++ b/fs/proc/base.c
+</span><span></span><span>@@ -443,8 +443,7 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+</span><span></span>                save_stack_trace_tsk(task, &amp;trace);
+
+                for (i = 0; i &lt; trace.nr_entries; i++) {
+<span>-                       seq_printf(m, &#34;[&lt;%pK&gt;] %pB\n&#34;,
+</span><span>-                                  (void *)entries[i], (void *)entries[i]);
+</span><span></span><span>+                       seq_printf(m, &#34;[&lt;0&gt;] %pB\n&#34;, (void *)entries[i]);
+</span><span></span>                }
+                unlock_trace(task);
+        }
+</code></pre></div><p>Not being a Kernel expert (at all!), I tried to understand what that <code>%pB</code> and <code>%pK</code> are all about - I’ve never used such kind of formatting with <code>printf</code> after all.</p>
+<p>Looking at the <a href="https://www.kernel.org/doc/Documentation/printk-formats.txt">docs for <code>printk</code> format specifiers</a>, we can see what that very specialized formatting is all about:</p>
+<blockquote>
+<p>The <code>B</code> specifier results in the symbol name with offsets and should be used when printing stack backtraces.</p>
+</blockquote>
+<blockquote>
+<p>[The <code>K</code> specifier is used …] For printing kernel pointers which should be hidden from unprivileged users.</p>
+</blockquote>
+<p>Meaning that yeah, previously you <em>could</em> retrieve the kernel addresses, but not anymore, for the reasons presented by Linus.</p>
+<h3 id="when-the-stack-does-not-help-much">When the stack does not help much</h3>
+<p>While it’s very clear why knowing the in-kernel stack trace in the example above was useful, it’s not all that much when it comes to servers that make use of async io (like most of the modern web servers do).</p>
+<p>Here’s how a code that is very similar to the TCP acceptor we wrote above in C looks like in Go:</p>
+<div><pre><code data-lang="go"><span>package</span> <span>main</span>
+
+<span>import</span> <span>(</span>
+	<span>&#34;net&#34;</span>
+<span>)</span>
+
+<span>func</span> <span>main</span> <span>()</span> <span>{</span>
+        <span>// Create the necessary underlying data
+</span><span></span>        <span>// structures for listening on port 1337
+</span><span></span>        <span>// on all interfaces.
+</span><span></span>	<span>listener</span><span>,</span> <span>err</span> <span>:=</span> <span>net</span><span>.</span><span>Listen</span><span>(</span><span>&#34;tcp&#34;</span><span>,</span> <span>&#34;:1337&#34;</span><span>)</span>
+	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+		<span>panic</span><span>(</span><span>err</span><span>)</span>
+	<span>}</span>
+
+        <span>// Release all the resources when leaving
+</span><span></span>	<span>defer</span> <span>listener</span><span>.</span><span>Close</span><span>()</span>
+
+	<span>for</span> <span>{</span>
+                <span>// Accept a connection from the
+</span><span></span>                <span>// backlog of connections that
+</span><span></span>                <span>// finalized the 3-way handshake
+</span><span></span>		<span>conn</span><span>,</span> <span>err</span> <span>:=</span> <span>listener</span><span>.</span><span>Accept</span><span>()</span>
+		<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+			<span>panic</span><span>(</span><span>err</span><span>)</span>
+		<span>}</span>
+
+                <span>// Close them right away
+</span><span></span>		<span>conn</span><span>.</span><span>Close</span><span>()</span>
+	<span>}</span>
+<span>}</span>
+</code></pre></div><p>Although in the code above we spawn no goroutines other than the main one, under the hood, the Go runtime ends up setting a single event pool file that allows us to monitor multiple file descriptors and not block on them individually.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/epoll-notifying.svg" alt="Illustration of the process of Epoll notifying events "/>
+
+    
+</figure>
+
+
+
+<p>We can notice that by looking at which syscall the Kernel is blocked at when our process runs:</p>
+<div><pre><code data-lang="sh"><span># Display the stack of every thread that</span>
+<span># pertains to the `go_accept` command that</span>
+<span># is running.</span>
+find /proc/<span>$(</span>pidof go_accept<span>)</span>/task -name <span>&#34;stack&#34;</span> <span>|</span> <span>\
+</span><span></span>        xargs -I<span>{}</span> /bin/sh -c <span>&#39;echo {} ; cat {}&#39;</span>
+
+/proc/17019/task/17019/stack
+<span>[</span>&lt;0&gt;<span>]</span> ep_poll+0x29c/0x3a0
+<span>[</span>&lt;0&gt;<span>]</span> SyS_epoll_pwait+0x19e/0x220
+<span>[</span>&lt;0&gt;<span>]</span> do_syscall_64+0x73/0x130
+<span>[</span>&lt;0&gt;<span>]</span> entry_SYSCALL_64_after_hwframe+0x3d/0xa2
+<span>[</span>&lt;0&gt;<span>]</span> 0xffffffffffffffff
+
+/proc/17019/task/17020/stack
+<span>[</span>&lt;0&gt;<span>]</span> futex_wait_queue_me+0xc4/0x120
+<span>[</span>&lt;0&gt;<span>]</span> futex_wait+0x10a/0x250
+<span>[</span>&lt;0&gt;<span>]</span> do_futex+0x325/0x500
+<span>[</span>&lt;0&gt;<span>]</span> SyS_futex+0x13b/0x180
+<span>[</span>&lt;0&gt;<span>]</span> do_syscall_64+0x73/0x130
+<span>[</span>&lt;0&gt;<span>]</span> entry_SYSCALL_64_after_hwframe+0x3d/0xa2
+<span>[</span>&lt;0&gt;<span>]</span> 0xffffffffffffffff
+
+/proc/17019/task/17021/stack
+<span>[</span>&lt;0&gt;<span>]</span> futex_wait_queue_me+0xc4/0x120
+...
+
+/proc/17019/task/17022/stack
+<span>[</span>&lt;0&gt;<span>]</span> futex_wait_queue_me+0xc4/0x120
+...
+
+/proc/17019/task/17023/stack
+<span>[</span>&lt;0&gt;<span>]</span> futex_wait_queue_me+0xc4/0x120
+...
+
+/proc/17019/task/17024/stack
+<span>[</span>&lt;0&gt;<span>]</span> futex_wait_queue_me+0xc4/0x120
+...
+</code></pre></div><p>Notice that differently from the C code, here I’m looking at the stack of each task under the task group identified by the PID of the <code>go_accept</code> command.</p>
+<p>Given that Go will run more than one thread when it starts (so that we can schedule goroutines to run across the poll of actual threads), we can take a look at the stack across all of the threads and see their stack (in the end, each thread is a <code>task</code>, so we can take the stack of each of them).</p>
+<p>If we use <a href="https://github.com/derekparker/delve"><code>dlv</code></a>, we can see why it’s the case that we have those 5 threads just waiting with a <code>futex_wait</code>, while there’s another one blocked on <code>ep_poll</code> (the actual block on async IO):</p>
+<div><pre><code data-lang="sh"><span># Attach to the currently running Go</span>
+<span># process with delve so that we can</span>
+<span># check from the userspace perspective</span>
+<span># what is going on with the Go runtime</span>
+dlv attach <span>$(</span>pidof go_accept<span>)</span>
+
+
+<span># Check the thread pool</span>
+<span>(</span>dlv<span>)</span> threads
+* Thread <span>17019</span> at .../sys_linux_amd64.s:671 runtime.epollwait
+  Thread <span>17020</span> at .../sys_linux_amd64.s:532 runtime.futex
+  Thread <span>17021</span> at .../sys_linux_amd64.s:532 runtime.futex
+  Thread <span>17022</span> at .../sys_linux_amd64.s:532 runtime.futex
+  Thread <span>17023</span> at .../sys_linux_amd64.s:532 runtime.futex
+  Thread <span>17024</span> at .../sys_linux_amd64.s:532 runtime.futex
+
+
+<span># Check the pool of goroutines</span>
+<span>(</span>dlv<span>)</span> goroutines
+<span>[</span><span>4</span> goroutines<span>]</span>
+  Goroutine <span>1</span> - ...netpoll.go:173 internal/poll.runtime_pollWait <span>(</span>0x427146<span>)</span>
+  Goroutine <span>2</span> - ...proc.go:303 runtime.gopark <span>(</span>0x42c74b<span>)</span>
+  Goroutine <span>3</span> - ...proc.go:303 runtime.gopark <span>(</span>0x42c74b<span>)</span>
+  Goroutine <span>4</span> - ...proc.go:303 runtime.gopark <span>(</span>0x42c74b<span>)</span>
+
+
+<span># Switch to goroutine 1</span>
+<span>(</span>dlv<span>)</span> goroutine 
+
+
+<span># See the userspace stack that got us</span>
+<span># to being parked at `epoll wait`</span>
+<span>(</span>dlv<span>)</span> stack
+ <span>0</span>  0x000000000042c74b in runtime.gopark
+    at /usr/local/go/src/runtime/proc.go:303
+ <span>1</span>  0x0000000000427a99 in runtime.netpollblock
+    at /usr/local/go/src/runtime/netpoll.go:366
+ <span>2</span>  0x0000000000427146 in internal/poll.runtime_pollWait
+    at /usr/local/go/src/runtime/netpoll.go:173
+ <span>3</span>  0x000000000048e81a in internal/poll.<span>(</span>*pollDesc<span>)</span>.wait
+    at /usr/local/go/src/internal/poll/fd_poll_runtime.go:85
+ <span>4</span>  0x000000000048e92d in internal/poll.<span>(</span>*pollDesc<span>)</span>.waitRead
+    at /usr/local/go/src/internal/poll/fd_poll_runtime.go:90
+ <span>5</span>  0x000000000048fc20 in internal/poll.<span>(</span>*FD<span>)</span>.Accept
+    at /usr/local/go/src/internal/poll/fd_unix.go:384
+ <span>6</span>  0x00000000004b6572 in net.<span>(</span>*netFD<span>)</span>.accept
+    at /usr/local/go/src/net/fd_unix.go:238
+ <span>7</span>  0x00000000004c972e in net.<span>(</span>*TCPListener<span>)</span>.accept
+    at /usr/local/go/src/net/tcpsock_posix.go:139
+ <span>8</span>  0x00000000004c86c7 in net.<span>(</span>*TCPListener<span>)</span>.Accept
+    at /usr/local/go/src/net/tcpsock.go:260
+ <span>9</span>  0x00000000004d55f4 in main.main
+    at /tmp/tcp/main.go:16
+<span>10</span>  0x000000000042c367 in runtime.main
+    at /usr/local/go/src/runtime/proc.go:201
+<span>11</span>  0x0000000000456391 in runtime.goexit
+    at /usr/local/go/src/runtime/asm_amd64.s:1333
+</code></pre></div><p>Having now both the userspace and kernelspace stacks, we can properly identify what’s going on with the Go application.</p>
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>The conclusion? IMO, <code>/proc/&lt;pid&gt;/stack</code> (or the equivalent <code>/proc/&lt;pid&gt;/task/&lt;task_id&gt;/stack</code>) is great, but it only takes us so far.</p>
+<p>In the end, we need a mix of userspace and kernel space tools that can help us debug the state in which a system is present.</p>
+<p>Luckily, from time to time new tools like <code>dlv</code> show up, <code>pprof</code> improves, and even more powerful tools to inspect the Kernel emerge.</p>
+<p>I hope this article was useful for you! Please let me know if you have any questions.</p>
+<p>I’m <a href="https://twitter.com/cirowrc">@cirowrc</a> on Twitter, and I’d love to chat!</p>
+<p>Have a good one!</p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

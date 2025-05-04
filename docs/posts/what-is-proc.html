@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What is /proc? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/what-is-slash-proc/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>What is /proc?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>Although many people that are accustomed to Linux are aware of the existence of <code>/proc</code> and what some files over there can do, many lack the understanding of what goes behind the scenes to power such filesystem (myself included before writing this article).</p>
+<p>If you’ve been wondering about how <code>/proc</code> works under the hood, stay tuned!</p>
+
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ul>
+<li><a href="#what-is-procfs">What is procfs</a></li>
+<li><a href="#contrasting-procfs-with-a-regular-filesystem">Contrasting Procfs with a regular filesystem</a></li>
+<li><a href="#reading-from-and-writing-to-procfs">Reading from and writing to procfs</a></li>
+<li><a href="#translating-a-file-read-to-an-internal-kernel-method">Translating a file read to an internal kernel method</a></li>
+<li><a href="#getting-proc-in-your-tree">Getting <code>/proc</code> in your tree</a></li>
+<li><a href="#procfs-after-vfs">Procfs after VFS</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+<li><a href="#resources">Resources</a></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h3 id="what-is-procfs">What is procfs</h3>
+<p><a href="https://www.kernel.org/doc/Documentation/filesystems/proc.txt"><code>Procfs</code></a> is a special virtual filesystem that can be mounted in your directory tree, allowing processes in userspace to read kernel information conveniently - using regular file I/O operations (like <code>read(2)</code> and <code>write(2)</code>).</p>
+<pre><code>           process 123: how many files do proc321
+                  |          has open?
+                  | 
+(userspace)       *---&gt; ls /proc/321/fd
+                         \----+------/
+                              |    ^
+------------------------------|----|------------
+                              |    |
+                      .---&lt;---*    |
+                      |            |
+                     kernel        *-----------&lt;------. 
+(kernelspace)         |                               |
+                      *--&gt; list number of open file   |
+                           descriptors for proc `321` |
+                           in the root namespace      |
+                                 |                    |
+                                 *------------&gt;-------&#39;
+                                     there you go! 
+                                        
+</code></pre><p>The “virtual” comes from the fact that there’s not really a block device (like a solid-state drive - SSD) that serves the files that we can access under the place where you mount <code>procfs</code> (usually <code>/proc</code>).</p>
+<p>Instead, there’s just some code implementing the filesystem interface that gets called whenever you issue reads and writes against those particular locations.</p>
+<p>For instance, when a user asks for the limits that apply to a given process, the following path gets followed under the hood:</p>
+<pre><code>        cat /proc/13323/limits
+
+                
+(userspace)     fd = open(&#34;/proc/13323/limits&#34;)
+                n = read(fd, buf, bufsize)
+                     |
+---------------------|--------------
+                    vfs (common interface for interacting with
+                     |   any filesystem)
+                     |
+                     *-&gt; who&#39;s responsible for this `/proc`
+                         mount?
+                         procfs! let it handle the call.
+                          |
+                          |
+(kernelspace)             *-&gt; hey procfs, take this `read` call
+                              for `/proc/13323/limits` please!
+                                 |
+                   sure! &lt;-------*
+                   I&#39;ll write the response
+                   to the file.
+                     |
+                     *---&gt; linux/fs/proc/base.c#proc_pid_limits
+                           for limit := range limits {
+                                fprintf(file, limit)
+                           }
+</code></pre><p>Using a tracer like <a href="https://github.com/iovisor/bcc/blob/master/tools/trace.py">bcc’s trace.py</a>, we can see the kernel stack getting the <a href="https://elixir.bootlin.com/linux/v4.15.18/source/fs/proc/base.c#L573"><code>proc_pid_limit</code></a> command getting called:</p>
+<div><pre><code data-lang="sh">PID     TID     COMM            FUNC
+<span>21450</span>   <span>21450</span>   cat             proc_pid_limits
+        proc_pid_limits+0x1 
+        seq_read+0xe5 
+        __vfs_read+0x1b 
+        vfs_read+0x8e 
+        sys_read+0x55 
+        do_syscall_64+0x73 
+        entry_SYSCALL_64_after_hwframe+0x3d 
+</code></pre></div><h3 id="contrasting-procfs-with-a-regular-filesystem">Contrasting Procfs with a regular filesystem</h3>
+<p>A nice way of viewing the difference between the two is looking at how does the kernel path compare.</p>
+<p>Let’s say we have a file <code>/myfile.txt</code> that lives on a disk that makes use of <a href="https://ext4.wiki.kernel.org/index.php/Main_Page">EXT4</a> as a filesystem.</p>
+<p>If we were to read this file (making that that it’s not cached), this is how it’d look like:</p>
+<pre><code>        cat /myfile.txt
+
+                
+(userspace)     fd = open(&#34;/myfile.txt&#34;)
+                n = read(fd, buf, bufsize)
+                     |
+---------------------|--------------
+                    vfs (common interface for interacting with
+                     |   any filesystem)
+                     |
+                     *-&gt; who&#39;s responsible for this `/` mount?
+                         ext4! let it handle the call.
+                          |
+                          |
+(kernelspace)             *-&gt; hey ext4, take this `read` call
+                              for `/myfile.txt` please!
+                                 |
+                   sure! &lt;-------*
+                   Oh, I know that this file exists in the disk!
+                   Let me request the underlying block device driver
+                   for it.
+                     |
+                     *---&gt; hey whoever is in charge of /dev/sda1, 
+                        please hand me the contents of my file!
+                                |
+          Oh, this is not ------*
+          in my cache; let me ask the disk for what
+          is in the blocks where this file exists.
+</code></pre><p>We can see that in the case of the regular file, the <code>read(2)</code> call ends up getting down to the block device driver that issues the read against a real device.</p>
+<p>Using the same tracer that we used before, we can check that, differently from when <code>read</code>ing from <code>/proc</code>, at this time, the path is much longer (goes deep down to the actual <code>blk_*</code> methods that handle block devices):</p>
+<div><pre><code data-lang="sh"><span># Drop the caches so that the call ends up in</span>
+<span># a very low-level call to the block device </span>
+<span># driver.</span>
+<span>echo</span> <span>&#34;3&#34;</span> &gt; /proc/sys/vm/drop_caches
+
+<span># Perform a read</span>
+cat ./myfile.txt
+
+<span># See the trace results:</span>
+PID     TID     COMM            FUNC
+<span>28653</span>   <span>28653</span>   cat             blk_start_request
+        blk_start_request+0x1 
+        scsi_request_fn+0xf5 
+        __blk_run_queue+0x43 
+        queue_unplugged+0x2a 
+        blk_flush_plug_list+0x20a 
+        blk_finish_plug+0x2c 
+        __do_page_cache_readahead+0x1da 
+        ondemand_readahead+0x11a 
+        page_cache_sync_readahead+0x2e 
+        generic_file_read_iter+0x7fb 
+        ext4_file_read_iter+0x56 
+        new_sync_read+0xe4 
+        __vfs_read+0x29 
+        vfs_read+0x8e 
+        sys_read+0x55 
+        do_syscall_64+0x73 
+        entry_SYSCALL_64_after_hwframe+0x3d 
+</code></pre></div><p>Although they look very different after <code>vfs_read</code>, everything feels the same for those consuming the <code>vfs</code> interface.</p>
+<p>If you’d like to refresh some concepts around Linux in general (including filesystems), I recommend reading <a href="https://amzn.to/2QWyXp9">The Linux Programming Interface</a> (chapter 12 covers <code>/proc</code> a bit, and chapter 14 is about filesystems!)</p>
+
+<h3 id="reading-from-and-writing-to-procfs">Reading from and writing to procfs</h3>
+<p>Not only being able to give you some introspection into what is the current state of a given process or the system as a while, <code>/proc</code> is also able to let you modify some of the behaviors of the system.</p>
+<p>For instance, in the example above, we dropped the caches by performing a <code>write(2)</code> operation against <code>/proc/sys/vm/drop_caches</code> from the userspace.</p>
+<p>To summarize:</p>
+<ul>
+<li>
+<p>when it comes to <code>read(2)</code> operations, it can be seen as an interface to introspect kernel data structures associated with either the whole system or a particular process; and</p>
+</li>
+<li>
+<p>when it comes to <code>write(2)</code>, it can be used to change some kernel parameters at runtime.</p>
+</li>
+</ul>
+<h3 id="translating-a-file-read-to-an-internal-kernel-method">Translating a file read to an internal kernel method</h3>
+<p>Coming back to the interaction between user space and kernel space, you might’ve noticed in the previous sections that there was a common thing sitting between the EXT4 filesystem and procfs: the virtual filesystem (<code>vfs</code>).</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/vfs-abstraction.svg" alt="illustration of read being directed to ext4 or procfs via vfs "/>
+
+    
+</figure>
+
+<p>By having this layer that sits between any syscall related to a filesystem, <code>vfs</code> is able to present a consistent API while letting different implementations to provide their functionality behind the scenes. No need for user programs to know about what’s the filesystem under the hood.</p>
+<p>The way that the Kernel does this translation is pretty nifty.</p>
+<p>Here’s an overview of how a <code>read(2)</code> from userspace gets down to a filesystem-specific implementation of a read:</p>
+<div><pre><code data-lang="sh">        <span>fd</span> <span>=</span> open<span>(</span><span>&#34;file&#34;</span>, flags<span>)</span><span>;</span>
+        read<span>(</span>fd, buf, bufsize<span>)</span>
+           <span>|</span>
+ ----------+-------------------------- <span>(</span>userspace boundary<span>)</span>
+           <span>|</span>
+  .-------*
+  <span>|</span>
+  *-&gt; ksys_read<span>(</span>fd, buf, bufsize<span>)</span>
+         <span>|</span>                        .--&gt; performs a file lookup,
+         <span>|</span>                        <span>|</span>    gathering file information
+         <span>|</span>                        <span>|</span>    from a given file descriptor <span>(</span>per-process<span>)</span>
+         <span>|</span>                        <span>|</span>    to get a file description <span>(</span>system-wide<span>)</span>
+         <span>|</span>                        <span>|</span>
+         *-&gt; struct fd <span>f</span> <span>=</span> fdget_pos<span>(</span>fd<span>)</span> 
+             vfs_read<span>(</span>f.file, buf, bufsize<span>)</span> -&gt; performs the actual
+                       <span>|</span>                     <span>read</span> utilizing the info
+                       <span>|</span>                   from the file gathered before.
+             .---------*
+             <span>|</span>                   
+             *-&gt; f.file contains a pointer to a <span>`</span>file_operations<span>`</span> struct,
+                which can be thought as an interface that specifies file
+                operations like <span>`</span><span>read</span><span>`</span>, <span>`</span>write<span>`</span>, etc
+                <span>|</span>
+                *--&gt; depending on the mount, a specific implementation of
+                     such interface is referenced there.
+                     <span>|</span>
+                     *--&gt; f.file-&gt;f_op-&gt;read<span>(</span>...<span>)</span>
+                                   ^     ^
+                                   <span>|</span>     <span>|</span>
+                                   <span>|</span>     *-- implementation
+                                   <span>|</span>      
+                                interface
+</code></pre></div><p>Whenever a file is opened, the userspace program receives a reference to the open file - the “file descriptor”.</p>
+<p>For instance, in the following program, a file descriptor is retrieved after openning the file , being printed to <code>stdout</code> and then closed:</p>
+<div><pre><code data-lang="c"><span>#include</span> <span>&lt;fcntl.h&gt;</span><span>
+</span><span>#include</span> <span>&lt;stdio.h&gt;</span><span>
+</span><span>#include</span> <span>&lt;unistd.h&gt;</span><span>
+</span><span></span>
+<span>// Compile with `gcc -Wall ./main.c
+</span><span>//
+</span><span>// ps.: assumes `/tmp/file.txt` has been created before.
+</span><span></span><span>int</span> <span>main</span> <span>(</span><span>int</span> <span>argc</span><span>,</span> <span>char</span><span>**</span> <span>argv</span><span>)</span> <span>{</span>
+	<span>int</span> <span>fd</span> <span>=</span> <span>open</span><span>(</span><span>&#34;/tmp/file.txt&#34;</span><span>,</span> <span>0</span><span>);</span>
+	<span>if</span> <span>(</span><span>fd</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+		<span>perror</span><span>(</span><span>&#34;open&#34;</span><span>);</span>
+		<span>return</span> <span>1</span><span>;</span>
+	<span>}</span>
+
+        <span>// result: fd=3
+</span><span></span>        <span>printf</span><span>(</span><span>&#34;fd=%d</span><span>\n</span><span>&#34;</span><span>,</span> <span>fd</span><span>)</span>
+
+        <span>close</span><span>(</span><span>fd</span><span>);</span>
+
+	<span>return</span> <span>0</span><span>;</span>
+<span>}</span>
+</code></pre></div><p>This file descriptor points to an <em>open file description</em>, a system-wide entry that is the thing in the kernel that contains the implementation of the <a href="https://elixir.bootlin.com/linux/v4.15.18/source/include/linux/fs.h#L1693">file operations interface</a> depending on the file system that such file resides (see <a href="https://elixir.bootlin.com/linux/v4.14/source/include/linux/fs.h#L852"><code>struct file</code> in <code>include/linux/fs.h</code></a>), as well as keeping track of other details.</p>
+<div><pre><code data-lang="c"><span>/**
+</span><span> * The file description that gets created when an
+</span><span> * `open(2)` is called from userspace.
+</span><span> */</span>
+<span>struct</span> <span>file</span> <span>{</span>
+	<span>// f_count keep track of the number of references
+</span><span></span>        <span>// being hold for this file.
+</span><span></span>        <span>atomic_long_t</span>		<span>f_count</span><span>;</span>
+
+        <span>// f_pos records the current file offset
+</span><span></span>        <span>// (a.k.a. file pointer)
+</span><span></span>        <span>loff_t</span>	<span>f_pos</span><span>;</span> 
+
+
+        <span>// f_op contains a pointer to an implementation
+</span><span></span>        <span>// of the `file_operations` interface - a file
+</span><span></span>        <span>// operation table.
+</span><span></span>	<span>const</span> <span>struct</span> <span>file_operations</span> <span>*</span><span>f_op</span><span>;</span>
+
+	<span>// ... many more
+</span><span></span><span>}</span>
+
+
+<span>/**
+</span><span> * Interface for vfs to interfact with.
+</span><span> * 
+</span><span> * This is meant to be implemented by the filesystems
+</span><span> * so that VFS can transparentely interact with them.
+</span><span> */</span>
+<span>struct</span> <span>file_operations</span> <span>{</span>
+	<span>struct</span> <span>module</span> <span>*</span><span>owner</span><span>;</span>
+	<span>loff_t</span> <span>(</span><span>*</span><span>llseek</span><span>)</span> <span>(</span><span>struct</span> <span>file</span> <span>*</span><span>,</span> <span>loff_t</span><span>,</span> <span>int</span><span>);</span>
+	<span>ssize_t</span> <span>(</span><span>*</span><span>read</span><span>)</span> <span>(</span><span>struct</span> <span>file</span> <span>*</span><span>,</span> <span>char</span> <span>__user</span> <span>*</span><span>,</span> <span>size_t</span><span>,</span> <span>loff_t</span> <span>*</span><span>);</span>
+	<span>ssize_t</span> <span>(</span><span>*</span><span>write</span><span>)</span> <span>(</span><span>struct</span> <span>file</span> <span>*</span><span>,</span> <span>const</span> <span>char</span> <span>__user</span> <span>*</span><span>,</span> <span>size_t</span><span>,</span> <span>loff_t</span> <span>*</span><span>);</span>
+	<span>ssize_t</span> <span>(</span><span>*</span><span>read_iter</span><span>)</span> <span>(</span><span>struct</span> <span>kiocb</span> <span>*</span><span>,</span> <span>struct</span> <span>iov_iter</span> <span>*</span><span>);</span>
+	<span>ssize_t</span> <span>(</span><span>*</span><span>write_iter</span><span>)</span> <span>(</span><span>struct</span> <span>kiocb</span> <span>*</span><span>,</span> <span>struct</span> <span>iov_iter</span> <span>*</span><span>);</span>
+	<span>// ...
+</span><span></span><span>}</span> <span>__randomize_layout</span><span>;</span>
+</code></pre></div><p>To see that a file description (<code>struct file</code>) gets created when an <code>open</code> (or <code>openat</code>) is issued, we can trace <a href="https://elixir.bootlin.com/linux/v4.14/source/fs/file_table.c#L104"><code>get_empty_filp</code></a>, the function that gets called to allocate a new object.</p>
+<div><pre><code data-lang="sh"><span>32648</span>   <span>32648</span>   a.out           get_empty_filp
+        get_empty_filp+0x1      <span># finds an unused file structure </span>
+                                <span># and returns a pointer to it</span>
+        do_filp_open+0x9b 
+        do_sys_open+0x1bb 
+        sys_openat+0x14 
+        do_syscall_64+0x73 
+        entry_SYSCALL_64_after_hwframe+0x3d 
+</code></pre></div><p>After retrieving a file object, it then starts initializing the struct, filling the fields as they need.</p>
+<p>Given that at this moment the kernel has already loaded the <code>inode</code> related to this file into memory, and knowing that the <code>inode</code> holds the pointer to the implementation of the <code>file_operations</code> interface for the underlying filesystem, <code>vfs</code> is then able to set the file operations accordingly, such that whenever a further file operations come, it just follows the pointers: <code>f.file-&gt;f_op-&gt;read(...)</code></p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/kernel-open-and-read.svg" alt="Representation of what goes behind the scenes when openning and reading a file in Linux "/>
+
+    
+</figure>
+
+<p>Now, if that file lived under an <code>xfs</code> filesystem, pretty much the same would happen, except that the inode would be loaded for <code>xfs</code>, which would have <code>xfs</code> file operations, which would then be called when reading through <code>f.file-&gt;f_op-&gt;read</code> (<code>read</code> would now be an <code>xfs</code> read).</p>
+<p>In the case of <code>procfs</code>, <code>f.file-&gt;f_op-&gt;read</code> is a <code>procfs</code> read.</p>
+<div>
+
+<p>If you’d like to know more about this area, make sure you get a copy of <a href="https://amzn.to/2QD0kU4">Understanding the Linux Kernel, 3rd Ed</a>. You can get more insights into VFS from the chapter 12 (The Virtual Filesystem).</p>
+<p>Tip: To look around the Linux source code, check the <a href="https://elixir.bootlin.com/linux/latest/source">Elixir Cross Referencer</a>. It allows you to search references and find definitions around the code base across different Linux releases.  Check out how <a href="https://elixir.bootlin.com/linux/v4.15.16/source/fs/open.c"><code>linux#fs/open.c</code></a> looks like.</p>
+
+</div>
+
+<h3 id="getting-proc-in-your-tree">Getting <code>/proc</code> in your tree</h3>
+<p>Although in most modern Linux distributions <code>procfs</code> is probably already mounted under <code>/proc</code>, it’s possible that it is not.</p>
+<p>In such case, mounting it requires only the necessary privileges and executing <code>mount</code> with the right type (<code>proc</code>):</p>
+<div><pre><code data-lang="sh"><span># Mount the `proc` device under `/proc`</span>
+<span># with the filesystem type specified as</span>
+<span># `proc`.</span>
+<span>#</span>
+<span># note.: you could mount procfs pretty much</span>
+<span>#        anywhere you want and specify any</span>
+<span>#        device name.</span>
+<span>#</span>
+<span>#</span>
+<span>#         .------------&gt; fs type</span>
+<span>#         |    </span>
+<span>#         |     .------&gt; device (dummy identifier</span>
+<span>#         |    |         in this case - anything)</span>
+<span>#         |    |</span>
+<span>#         |    |     .-&gt; location</span>
+<span>#         |    |     |</span>
+<span>#         |    |     |</span>
+mount -t proc proc /proc
+</code></pre></div><p>Once the mount point is there, we can now access it:</p>
+<div><pre><code data-lang="sh"><span># Search for the `meminfo` file in the</span>
+<span># procfs mountpoint</span>
+ls /proc <span>|</span> grep meminfo
+meminfo
+</code></pre></div><div>
+
+<p>If you’d like to know more about mounting things in a directory tree, make sure you check out <a href="https://amzn.to/2QWyXp9">The Linux Programming Interface</a>.</p>
+<p>This is a <strong>great</strong> book to have - I’m always consulting it from time to time.</p>
+
+</div>
+
+<h3 id="procfs-after-vfs">Procfs after VFS</h3>
+<p>Once we got our <code>/proc</code> mountpoint set up, we can start looking at what happens once we start interacting with it.</p>
+<p>After understanding the functionality of <code>vfs</code> (and how it can trigger the specific <code>read</code> of a given filesystem by following the <code>file-&gt;f_op-&gt;read</code> pointers), it’s a matter of looking at how the file operations implementation of <code>procfs</code> looks like.</p>
+<p>Differently from a regular filesystem (like <code>ext4</code>), <code>procfs</code> needs to set different handlers for different files, given that each file ends up in the execution of a different method in the kernel.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/procfs-file-operations.svg" alt="Illustration of different procfs methods being used depending on the path accessed "/>
+
+    
+</figure>
+
+<p>Taking the example of reading from <code>/proc/&lt;pid&gt;/limits</code> (from the beginning of the article) and a different file, like <code>/proc/&lt;pid&gt;/wchan</code>, we can see how they differ:</p>
+<div><pre><code data-lang="diff"><span>@@ -1,4 +1,4 @@
+</span><span></span><span>-        proc_pid_limits+0x1 [kernel]
+</span><span></span><span>+        proc_pid_wchan+0x1 [kernel]
+</span><span></span>        seq_read+0xe5 [kernel]
+        __vfs_read+0x1b [kernel]
+        vfs_read+0x8e [kernel]
+        sys_read+0x55 [kernel]
+        do_syscall_64+0x73 [kernel]
+        entry_SYSCALL_64_after_hwframe+0x3d [kernel]
+</code></pre></div><p>Now, what happens inside <code>proc_pid_limits</code>, or what <code>/proc/&lt;pid&gt;/limits</code> is all about … that’s something for another article!</p>
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>It’s very interesting how flexible VFS ends up being.</p>
+<p>The way that it presents a consistent interface for applications, letting different filesystem implementions deal with adapting themselves to such interface is pretty interesting.</p>
+<p>Coming from a Golang background, I found pretty neat the way that the concept of an interface is applied in this Kernel code (which is all in C, as you might’ve noticed).</p>
+<p>In the following articles I’ll go on with exploring some files under <code>/proc</code>, getting deep down into what are those methods doing, so, stay tuned!</p>
+<p>If you have any questions or would like to drop some feedback for me, feel free to reach me on Twitter! I’m <a href="https://twitter.com/cirowrc">@cirowrc</a> over there.</p>
+<p>Have a good one!</p>
+<h3 id="resources">Resources</h3>
+<p>Aside from regular <code>man</code> pages, two books were referenced in the article (and used during the research):</p>
+<ul>
+<li><a href="https://amzn.to/2QWyXp9">The Linux Programming Interface</a>: Ch. 12 covering <code>/proc</code>, and Ch. 14 on Filesystems; and</li>
+<li><a href="https://amzn.to/2QD0kU4">Understanding the Linux Kernel, 3rd Ed</a>. Ch 12 on VFS (The Virtual Filesystem).</li>
+</ul>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

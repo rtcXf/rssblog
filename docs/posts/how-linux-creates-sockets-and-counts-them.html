@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How Linux creates sockets and counts them | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/how-linux-creates-sockets/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How Linux creates sockets and counts them</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>If you’ve been working with web servers for a little while, you certainly have already hit the classic “<em>address already in use</em>” (EADDRINUSE).</p>
+<p>Here in this article, we go through not only how to see whether such condition as conditioned to happen (by looking at the list of open sockets), but also verify in the actual Kernel code paths where that check happens.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/socket-how-does-it-work.svg" alt="Illustration of someone wondering about how does the socket syscall work "/>
+
+    
+</figure>
+
+<p>In case you’ve been wondering about how the <a href="http://man7.org/linux/man-pages/man2/socket.2.html"><code>socket(2)</code></a> syscall works where are these sockets stored, make sure you stick to the end!</p>
+
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ul>
+<li><a href="#what-are-these-sockets-about">What are these sockets about?</a></li>
+<li><a href="#where-to-look-for-the-list-of-sockets-in-my-system">Where to look for the list of sockets in my system?</a></li>
+<li><a href="#what-happens-under-the-hood-when-the-socket-syscall-gets-called">What happens under the hood when the socket syscall gets called?</a></li>
+<li><a href="#sockets-and-resource-limits">Sockets and resource limits</a></li>
+<li><a href="#counting-the-number-of-sockets-in-the-system">Counting the number of sockets in the system</a></li>
+<li><a href="#what-about-namespaces">What about namespaces?</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+<li><a href="#resources">Resources</a></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h3 id="what-are-these-sockets-about">What are these sockets about?</h3>
+<p>Sockets are the constructs that allow processes on different machines to communicate through an underlying network, being also possibly used as a way of communicating with other processes in the same host (through Unix sockets).</p>
+<p>The analogy that really stuck with me is the one presented in the book <a href="https://amzn.to/2DEiNOG"><strong>Computer Networking: A top-down approach</strong></a>.</p>
+<p>At a <em>very</em> high-level, we can think of the server machine as this “house” with a set of doors.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/house-sockets-overview.svg" alt="A house that represents a server with a door that represents the socket "/>
+
+    
+</figure>
+
+<p>With each door corresponding to a socket, the client can arrive at the door of the house and “knock” at it.</p>
+<p>Right after knocking (sending the <code>SYN</code> packet), the house then automatically responds back with a response (<code>SYN+ACK</code>), which is then acknowledged by the house (yep, smart house with a “smart door”).</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/client-server-boundary.svg" alt="The interaction between the client and the house when the client is still being greeted by the house "/>
+
+    
+</figure>
+
+<p>Meanwhile, while the process just sits there within the house, the clients get organized by the “smart house”, which creates two lines: one for those that the house is still greeting, and another one for those that it finished greeting.</p>
+<p>Whenever new clients land in the second line, the process can then let it come in.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/server-accepting.svg" alt="The server process accepting incoming connections from the two queues formed "/>
+
+    
+</figure>
+
+<p>Once this connection gets accepted (the client is told to come in), the server is then able to communicate with it, transmitting and receiving data at wish.</p>
+<p>One detail to note is that the client doesn’t really “get in” - the server creates a “private door” in the house (a client socket) and then communicates with the client from there.</p>
+<p>If you’d like to follow the step by step of implementing a TCP server in C, make sure you check this article! <a href="https://ops.tips/blog/a-tcp-server-in-c/"><strong>Implementing a TCP server</strong></a>.</p>
+
+<h3 id="where-to-look-for-the-list-of-sockets-in-my-system">Where to look for the list of sockets in my system?</h3>
+<p>Having the mental model of how the TCP connection establishment looks like, we can now “get into the house” and explore how the machine is creating these “doors” (the sockets), how many doors our house has and in which state they are (are they closed? are they opened?).</p>
+<p>For doing so, let’s consider the example of a server that just creates a socket (the door!) and does nothing with it.</p>
+<div><pre><code data-lang="c"><span>// socket.c - creates a socket and then sleeps.
+</span><span></span><span>#include</span> <span>&lt;stdio.h&gt;</span><span>
+</span><span>#include</span> <span>&lt;sys/socket.h&gt;</span><span>
+</span><span></span>
+
+<span>/**
+</span><span> * Creates a TCP IPv4 socket and then just
+</span><span> * waits.
+</span><span> */</span>
+<span>int</span>
+<span>main</span><span>(</span><span>int</span> <span>argc</span><span>,</span> <span>char</span><span>**</span> <span>argv</span><span>)</span>
+<span>{</span>
+	<span>// The `socket(2)` syscall creates an endpoint for communication
+</span><span></span>	<span>// and returns a file descriptor that refers to that endpoint.
+</span><span></span>	<span>//
+</span><span></span>	<span>// It takes three arguments (the last being just to provide greater
+</span><span></span>	<span>// specificity):
+</span><span></span>	<span>// -    domain (communication domain)
+</span><span></span>	<span>//      AF_INET              IPv4 Internet protocols
+</span><span></span>	<span>//
+</span><span></span>	<span>// -    type (communication semantics)
+</span><span></span>	<span>//      SOCK_STREAM          Provides sequenced, reliable,
+</span><span></span>	<span>//                           two-way, connection-based byte
+</span><span></span>	<span>//                           streams.
+</span><span></span>	<span>int</span> <span>listen_fd</span> <span>=</span> <span>socket</span><span>(</span><span>AF_INET</span><span>,</span> <span>SOCK_STREAM</span><span>,</span> <span>0</span><span>);</span>
+	<span>if</span> <span>(</span><span>err</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+		<span>perror</span><span>(</span><span>&#34;socket&#34;</span><span>);</span>
+		<span>return</span> <span>err</span><span>;</span>
+	<span>}</span>
+
+
+        <span>// Just wait ...
+</span><span></span>        <span>sleep</span><span>(</span><span>3600</span><span>);</span>
+
+	<span>return</span> <span>0</span><span>;</span>
+<span>}</span>
+</code></pre></div><p>Under the hood, such simple syscall ends up triggering a whole bunch of internal methods (more on that in the next session) that at some point allows us to seek for information about active sockets under three different files: <code>/proc/&lt;pid&gt;/net/tcp</code>, <code>/proc/&lt;pid&gt;/fd</code>, and <code>/proc/&lt;pid&gt;/net/sockstat</code>.</p>
+<p>While the <code>fd</code> directory presents us a list of files opened by the process, <code>/proc/&lt;pid&gt;/net/tcp</code> file gives us information regarding currently active TCP connections (in their various states) under the process network namespace. <code>sockstat</code>, on the other hand, acts more like a summary.</p>
+<p>Starting with the <code>fd</code> directory, we can see that after the <code>socket(2)</code> call we can see the socket file descriptor in the list of file descriptors:</p>
+<div><pre><code data-lang="sh"><span># Run socket.out (gcc -Wall -o socket.out socket.c)</span>
+<span># and leave it running in the background</span>
+./socket.out <span>&amp;</span>
+<span>[</span>2<span>]</span> <span>21113</span>
+ 
+<span># Check out that are the open files that the process has.</span>
+ls -lah /proc/21113/fd
+dr-x------ <span>2</span> ubuntu ubuntu  <span>0</span> Oct <span>16</span> 12:27 .
+dr-xr-xr-x <span>9</span> ubuntu ubuntu  <span>0</span> Oct <span>16</span> 12:27 ..
+lrwx------ <span>1</span> ubuntu ubuntu <span>64</span> Oct <span>16</span> 12:27 <span>0</span> -&gt; /dev/pts/0
+lrwx------ <span>1</span> ubuntu ubuntu <span>64</span> Oct <span>16</span> 12:27 <span>1</span> -&gt; /dev/pts/0
+lrwx------ <span>1</span> ubuntu ubuntu <span>64</span> Oct <span>16</span> 12:27 <span>2</span> -&gt; /dev/pts/0
+lrwx------ <span>1</span> ubuntu ubuntu <span>64</span> Oct <span>16</span> 12:27 <span>3</span> -&gt; <span>&#39;socket:[301666]&#39;</span>
+</code></pre></div><p>Given that from a simple call to <code>socket(2)</code> we don’t have a TCP connection, there’s no relevant information to be gathered from <code>/proc/&lt;pid&gt;/net/tcp</code>.</p>
+<p>From the summary (<code>sockstat</code>), we can guess that we’re increasing the number of allocated TCP sockets:</p>
+<div><pre><code data-lang="sh"><span># Check the summary regarding socket.</span>
+cat /proc/21424/net/sockstat
+sockets: used <span>296</span>
+TCP: inuse <span>3</span> orphan <span>0</span> tw <span>4</span> alloc <span>106</span> mem <span>1</span>
+UDP: inuse <span>1</span> mem <span>0</span>
+UDPLITE: inuse <span>0</span>
+RAW: inuse <span>0</span>
+FRAG: inuse <span>0</span> memory <span>0</span>
+</code></pre></div><p>To make sure that we’re really increasing the <code>alloc</code> number, we can modify the source code above and allocate 100 sockets instead:</p>
+<div><pre><code data-lang="diff"><span>+ for (int i = 0; i &lt; 100; i++) {
+</span><span></span>      int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+      if (err == -1) {
+          perror(&#34;socket&#34;);
+          return err;
+      }
+<span>+ }
+</span></code></pre></div><p>Now, checking that again, we can see the <code>alloc</code> at a higher number:</p>
+<div><pre><code data-lang="sh">cat /proc/21456/net/sockstat
+
+                   bigger than before!
+                                <span>|</span>
+sockets: used <span>296</span>          .----------.
+TCP: inuse <span>3</span> orphan <span>0</span> tw <span>4</span> <span>|</span> alloc 207<span>|</span> mem <span>1</span>
+UDP: inuse <span>1</span> mem <span>0</span>         *----------*
+UDPLITE: inuse <span>0</span>
+RAW: inuse <span>0</span>
+FRAG: inuse <span>0</span> memory <span>0</span>
+</code></pre></div><p>Now, the question is - how does the socket gets created under the hood?</p>
+<h3 id="what-happens-under-the-hood-when-the-socket-syscall-gets-called">What happens under the hood when the socket syscall gets called?</h3>
+<p><code>socket(2)</code> is pretty much a factory that produces the underlying structures for handling operations on such socket.</p>
+<p>Making use of <a href="https://github.com/iovisor/bcc"><code>iovisor/bcc</code></a>, we can trace the deepest invocation that happens in the <code>sys_socket</code> call stack and from there understand each step.</p>
+<pre><code>|  socket()
+|--------------- (kernel boundary)
+|  sys_socket    
+|       (socket, type, protocol)
+|  sock_create   
+|       (family, type, protocol, res)
+|  __sock_create 
+|       (net, family, type, protocol, res, kern)
+|  sock_alloc    
+|       ()
+˘
+</code></pre><p>Starting from <a href="https://elixir.bootlin.com/linux/v4.15/source/net/socket.c#L1317"><code>sys_socket</code></a> itself, this syscall wrapper is the first thing to be touched at kernelspace, being responsible for performing various checks and preparing some flags to pass down to subsequent invocations.</p>
+<p>Once preliminary validations have been performed, it allocates in its stack a pointer to a <code>struct socket</code>, the struct that will end up holding the non-protocol specific information about the socket:</p>
+<div><pre><code data-lang="c"><span>/**
+</span><span> * Defined `socket` as a syscall with the
+</span><span> * following arguments:
+</span><span> * - int family;        - the communication domain
+</span><span> * - int type; and      - the communication semantics
+</span><span> * - int protocol.      - a specific protocol within a
+</span><span> *                        certain domain and semantics.
+</span><span> *                       
+</span><span> */</span>
+<span>SYSCALL_DEFINE3</span><span>(</span><span>socket</span><span>,</span> 
+        <span>int</span><span>,</span> <span>family</span><span>,</span> 
+        <span>int</span><span>,</span> <span>type</span><span>,</span> 
+        <span>int</span><span>,</span> <span>protocol</span><span>)</span>
+<span>{</span>
+        <span>// A pointer that is meant to be pointed to
+</span><span></span>        <span>// a `struct sock` that contains the whole
+</span><span></span>        <span>// socket definition after it gets properly
+</span><span></span>        <span>// allocated by the socket family.
+</span><span></span>	<span>struct</span> <span>socket</span> <span>*</span><span>sock</span><span>;</span>
+	<span>int</span> <span>retval</span><span>,</span> <span>flags</span><span>;</span>
+
+
+	<span>// ... Checks some stuff and prepare some flags ...
+</span><span></span>        <span>// Create the underlying socket structures.
+</span><span></span>	<span>retval</span> <span>=</span> <span>sock_create</span><span>(</span><span>family</span><span>,</span> <span>type</span><span>,</span> <span>protocol</span><span>,</span> <span>&amp;</span><span>sock</span><span>);</span>
+	<span>if</span> <span>(</span><span>retval</span> <span>&lt;</span> <span>0</span><span>)</span>
+		<span>return</span> <span>retval</span><span>;</span>
+
+
+        <span>// Allocate the file descriptor for the process so
+</span><span></span>        <span>// that it can consume the underlying socket from
+</span><span></span>        <span>// userspace.
+</span><span></span>	<span>return</span> <span>sock_map_fd</span><span>(</span><span>sock</span><span>,</span> <span>flags</span> <span>&amp;</span> <span>(</span><span>O_CLOEXEC</span> <span>|</span> <span>O_NONBLOCK</span><span>));</span>
+<span>}</span>
+
+
+<span>/**
+</span><span> * High level wrapper of the socket structures.
+</span><span> */</span>
+<span>struct</span> <span>socket</span> <span>{</span>
+	<span>socket_state</span>            <span>state</span><span>;</span>
+	<span>short</span>                   <span>type</span><span>;</span>
+	<span>unsigned</span> <span>long</span>           <span>flags</span><span>;</span>
+	<span>struct</span> <span>sock</span><span>*</span>            <span>sk</span><span>;</span>
+	<span>const</span> <span>struct</span> <span>proto_ops</span><span>*</span> <span>ops</span><span>;</span>
+	<span>struct</span> <span>file</span><span>*</span>            <span>file</span><span>;</span>
+        <span>// ...
+</span><span></span><span>};</span>
+</code></pre></div><p>Given that at the moment that we create the socket we can choose between different types and protocol families (like, UDP, UNIX, and TCP), the <code>struct socket</code> contains an interface (<code>struct proto_ops*</code>) that defines the basic constructs that sockets implement (regardless of their families/type), which gets initiated on the next method called: <code>sock_create</code>.</p>
+<div><pre><code data-lang="c"><span>/**
+</span><span> * Initializes `struct socket`, allocating the
+</span><span> * necessary memory for it, as well as filling
+</span><span> * the necessary information associated with
+</span><span> * the socket.
+</span><span> * 
+</span><span> * It:
+</span><span> * - Performs some argument checking;
+</span><span> * - Runs a security check hook for `socket_create`
+</span><span> * - Initializes the actual allocation of the `struct socket`
+</span><span> *   (letting the `family` do it according to its own rules)
+</span><span> */</span>
+<span>int</span> <span>__sock_create</span><span>(</span><span>struct</span> <span>net</span> <span>*</span><span>net</span><span>,</span> 
+        <span>int</span> <span>family</span><span>,</span> <span>int</span> <span>type</span><span>,</span> <span>int</span> <span>protocol</span><span>,</span> 
+        <span>struct</span> <span>socket</span> <span>**</span><span>res</span><span>,</span> <span>int</span> <span>kern</span><span>)</span>
+<span>{</span>
+	<span>int</span> <span>err</span><span>;</span>
+	<span>struct</span> <span>socket</span> <span>*</span><span>sock</span><span>;</span>
+	<span>const</span> <span>struct</span> <span>net_proto_family</span> <span>*</span><span>pf</span><span>;</span>
+
+        <span>// Checks if the protocol range.
+</span><span></span>	<span>if</span> <span>(</span><span>family</span> <span>&lt;</span> <span>0</span> <span>||</span> <span>family</span> <span>&gt;=</span> <span>NPROTO</span><span>)</span>
+		<span>return</span> <span>-</span><span>EAFNOSUPPORT</span><span>;</span>
+	<span>if</span> <span>(</span><span>type</span> <span>&lt;</span> <span>0</span> <span>||</span> <span>type</span> <span>&gt;=</span> <span>SOCK_MAX</span><span>)</span>
+		<span>return</span> <span>-</span><span>EINVAL</span><span>;</span>
+
+
+	<span>// Triggers custom security hooks for socket_create.
+</span><span></span>	<span>err</span> <span>=</span> <span>security_socket_create</span><span>(</span><span>family</span><span>,</span> <span>type</span><span>,</span> <span>protocol</span><span>,</span> <span>kern</span><span>);</span>
+	<span>if</span> <span>(</span><span>err</span><span>)</span>
+		<span>return</span> <span>err</span><span>;</span>
+
+
+	 <span>// Allocates a `struct socket` object and ties it to
+</span><span></span>         <span>// a file under the `sockfs` filesystem.
+</span><span></span>        <span>sock</span> <span>=</span> <span>sock_alloc</span><span>();</span>
+	<span>if</span> <span>(</span><span>!</span><span>sock</span><span>)</span> <span>{</span>
+		<span>net_warn_ratelimited</span><span>(</span><span>&#34;socket: no more sockets</span><span>\n</span><span>&#34;</span><span>);</span>
+		<span>return</span> <span>-</span><span>ENFILE</span><span>;</span>	<span>/* Not exactly a match, but its the
+</span><span>				   closest posix thing */</span>
+	<span>}</span>
+
+	<span>sock</span><span>-&gt;</span><span>type</span> <span>=</span> <span>type</span><span>;</span>
+
+        <span>// Tries to retrieve the protocol family methods
+</span><span></span>        <span>// for performing the family-specific socket creation.
+</span><span></span>        <span>pf</span> <span>=</span> <span>rcu_dereference</span><span>(</span><span>net_families</span><span>[</span><span>family</span><span>]);</span>
+	<span>err</span> <span>=</span> <span>-</span><span>EAFNOSUPPORT</span><span>;</span>
+	<span>if</span> <span>(</span><span>!</span><span>pf</span><span>)</span>
+		<span>goto</span> <span>out_release</span><span>;</span>
+
+
+        <span>// Executes the protocol family specific 
+</span><span></span>        <span>// socket creation method.
+</span><span></span>        <span>//
+</span><span></span>        <span>// For instance, if our family is AF_INET (ipv4)
+</span><span></span>        <span>// and we&#39;re creating a TCP socket (SOCK_STREAM),
+</span><span></span>        <span>// a specific method for handling such type of socket
+</span><span></span>        <span>// is called.
+</span><span></span>        <span>//
+</span><span></span>        <span>// If we were specifying a local socket (UNIX),
+</span><span></span>        <span>// then another method would be called (given that
+</span><span></span>        <span>// such method would implement the `proto_ops` interface
+</span><span></span>        <span>// and have been loaded).
+</span><span></span>	<span>err</span> <span>=</span> <span>pf</span><span>-&gt;</span><span>create</span><span>(</span><span>net</span><span>,</span> <span>sock</span><span>,</span> <span>protocol</span><span>,</span> <span>kern</span><span>);</span>
+	<span>if</span> <span>(</span><span>err</span> <span>&lt;</span> <span>0</span><span>)</span>
+		<span>goto</span> <span>out_module_put</span><span>;</span>
+        <span>// ...
+</span><span></span><span>}</span>
+</code></pre></div><p>Continuing with our deep dive, we can now look closely at how the actual <code>struct socket</code> gets allocated by <code>sock_alloc()</code>.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/net-internal-socket.svg" alt="Illustration of how the Linux kernel creates sockets "/>
+
+    
+</figure>
+
+<p>What that method does is allocate two things: a new <code>inode</code>, and a <code>socket</code> object.</p>
+<p>These two are bound together via the <code>sockfs</code> filesystem, which is then responsible for not only keeping track of socket information in the system, but also providing the translation layer between regular filesystem calls (like <code>write(2)</code>) and the network stack (regardless of the underlying communication domain).</p>
+<p>By tracing <code>sock_alloc_inode</code>, the method responsible for allocating the inode in <code>sockfs</code>, we’re able to see how that gets set up:</p>
+<div><pre><code data-lang="cc"><span>trace</span> <span>-</span><span>K</span> <span>sock_alloc_inode</span>
+<span>22384</span>   <span>22384</span>   <span>socket</span><span>-</span><span>create</span><span>.</span><span>out</span>      <span>sock_alloc_inode</span>
+        <span>sock_alloc_inode</span><span>+</span><span>0x1</span> <span>[</span><span>kernel</span><span>]</span>
+        <span>new_inode_pseudo</span><span>+</span><span>0x11</span> <span>[</span><span>kernel</span><span>]</span>
+        <span>sock_alloc</span><span>+</span><span>0x1c</span> <span>[</span><span>kernel</span><span>]</span>
+        <span>__sock_create</span><span>+</span><span>0x80</span> <span>[</span><span>kernel</span><span>]</span>
+        <span>sys_socket</span><span>+</span><span>0x55</span> <span>[</span><span>kernel</span><span>]</span>
+        <span>do_syscall_64</span><span>+</span><span>0x73</span> <span>[</span><span>kernel</span><span>]</span>
+        <span>entry_SYSCALL_64_after_hwframe</span><span>+</span><span>0x3d</span> <span>[</span><span>kernel</span><span>]</span>
+
+
+<span>/**
+</span><span> *	sock_alloc	-	allocate a socket
+</span><span> *
+</span><span> *	Allocate a new inode and socket object. The two are bound together
+</span><span> *	and initialized. The socket is then returned. If we are out of inodes
+</span><span> *	NULL is returned.
+</span><span> */</span>
+<span>struct</span> <span>socket</span> <span>*</span><span>sock_alloc</span><span>(</span><span>void</span><span>)</span>
+<span>{</span>
+	<span>struct</span> <span>inode</span> <span>*</span><span>inode</span><span>;</span>
+	<span>struct</span> <span>socket</span> <span>*</span><span>sock</span><span>;</span>
+
+        <span>// Given that the filesystem is in-memory,
+</span><span></span>        <span>// perform the allocation using the kernel
+</span><span></span>        <span>// memory.
+</span><span></span>	<span>inode</span> <span>=</span> <span>new_inode_pseudo</span><span>(</span><span>sock_mnt</span><span>-&gt;</span><span>mnt_sb</span><span>);</span>
+	<span>if</span> <span>(</span><span>!</span><span>inode</span><span>)</span>
+		<span>return</span> <span>NULL</span><span>;</span>
+
+
+        <span>// Retrieves the `socket` struct from
+</span><span></span>        <span>// the `inode` that lives in `sockfs`
+</span><span></span>	<span>sock</span> <span>=</span> <span>SOCKET_I</span><span>(</span><span>inode</span><span>);</span>
+
+
+        <span>// Sets some filesystem aspects so that
+</span><span></span>	<span>inode</span><span>-&gt;</span><span>i_ino</span> <span>=</span> <span>get_next_ino</span><span>();</span>
+	<span>inode</span><span>-&gt;</span><span>i_mode</span> <span>=</span> <span>S_IFSOCK</span> <span>|</span> <span>S_IRWXUGO</span><span>;</span>
+	<span>inode</span><span>-&gt;</span><span>i_uid</span> <span>=</span> <span>current_fsuid</span><span>();</span>
+	<span>inode</span><span>-&gt;</span><span>i_gid</span> <span>=</span> <span>current_fsgid</span><span>();</span>
+	<span>inode</span><span>-&gt;</span><span>i_op</span> <span>=</span> <span>&amp;</span><span>sockfs_inode_ops</span><span>;</span>
+
+
+        <span>// Update the per-cpu counter (which can then be
+</span><span></span>        <span>// used by `sockstat` to and other systems
+</span><span></span>        <span>// to quickly know the socket count).
+</span><span></span>	<span>this_cpu_add</span><span>(</span><span>sockets_in_use</span><span>,</span> <span>1</span><span>);</span>
+	<span>return</span> <span>sock</span><span>;</span>
+<span>}</span>
+
+
+<span>static</span> <span>struct</span> <span>inode</span> <span>*</span><span>sock_alloc_inode</span><span>(</span>
+        <span>struct</span> <span>super_block</span> <span>*</span><span>sb</span><span>)</span>
+<span>{</span>
+	<span>struct</span> <span>socket_alloc</span> <span>*</span><span>ei</span><span>;</span>
+	<span>struct</span> <span>socket_wq</span> <span>*</span><span>wq</span><span>;</span>
+
+        <span>// Create an entry in the kernel cache 
+</span><span></span>        <span>// taking the necessary memory for it.
+</span><span></span>	<span>ei</span> <span>=</span> <span>kmem_cache_alloc</span><span>(</span><span>sock_inode_cachep</span><span>,</span> <span>GFP_KERNEL</span><span>);</span>
+	<span>if</span> <span>(</span><span>!</span><span>ei</span><span>)</span>
+		<span>return</span> <span>NULL</span><span>;</span>
+
+	<span>wq</span> <span>=</span> <span>kmalloc</span><span>(</span><span>sizeof</span><span>(</span><span>*</span><span>wq</span><span>),</span> <span>GFP_KERNEL</span><span>);</span>
+	<span>if</span> <span>(</span><span>!</span><span>wq</span><span>)</span> <span>{</span>
+		<span>kmem_cache_free</span><span>(</span><span>sock_inode_cachep</span><span>,</span> <span>ei</span><span>);</span>
+		<span>return</span> <span>NULL</span><span>;</span>
+	<span>}</span>
+
+        
+        <span>// Performs the most basic initialization
+</span><span></span>        <span>// possible
+</span><span></span>	<span>ei</span><span>-&gt;</span><span>socket</span><span>.</span><span>state</span> <span>=</span> <span>SS_UNCONNECTED</span><span>;</span>
+	<span>ei</span><span>-&gt;</span><span>socket</span><span>.</span><span>flags</span> <span>=</span> <span>0</span><span>;</span>
+	<span>ei</span><span>-&gt;</span><span>socket</span><span>.</span><span>ops</span> <span>=</span> <span>NULL</span><span>;</span>
+	<span>ei</span><span>-&gt;</span><span>socket</span><span>.</span><span>sk</span> <span>=</span> <span>NULL</span><span>;</span>
+	<span>ei</span><span>-&gt;</span><span>socket</span><span>.</span><span>file</span> <span>=</span> <span>NULL</span><span>;</span>
+
+        <span>// Returns the underlying vfs inode.
+</span><span></span>	<span>return</span> <span>&amp;</span><span>ei</span><span>-&gt;</span><span>vfs_inode</span><span>;</span>
+<span>}</span>
+</code></pre></div><h3 id="sockets-and-resource-limits">Sockets and resource limits</h3>
+<p>Given that a filesystem inode can be referred from the userspace from a file descriptor, after we have the underlying Kernel structs all set up, <code>sys_socket</code> is then responsible for generating a file descriptor for the user (going through the resource limits validations as presented in <a href="https://ops.tips/blog/proc-pid-limits-under-the-hood/">Process resource limits under the hood</a>.</p>
+<p>If you’ve wondered why it is the case that you might receive a “too many open files” error for <code>socket(2)</code>, that’s the reason - it goes through the same resource limits checks:</p>
+<div><pre><code data-lang="c"><span>static</span> <span>int</span>
+<span>sock_map_fd</span><span>(</span><span>struct</span> <span>socket</span><span>*</span> <span>sock</span><span>,</span> <span>int</span> <span>flags</span><span>)</span>
+<span>{</span>
+	<span>struct</span> <span>file</span><span>*</span> <span>newfile</span><span>;</span>
+
+        <span>// Do you recall this one? This is the method
+</span><span></span>        <span>// the kernel ends up performing a check against
+</span><span></span>        <span>// resource limits and making sure that we don&#39;t
+</span><span></span>        <span>// get past the limits!
+</span><span></span>	<span>int</span>          <span>fd</span> <span>=</span> <span>get_unused_fd_flags</span><span>(</span><span>flags</span><span>);</span>
+	<span>if</span> <span>(</span><span>unlikely</span><span>(</span><span>fd</span> <span>&lt;</span> <span>0</span><span>))</span> <span>{</span>
+		<span>sock_release</span><span>(</span><span>sock</span><span>);</span>
+		<span>return</span> <span>fd</span><span>;</span>
+	<span>}</span>
+
+	<span>newfile</span> <span>=</span> <span>sock_alloc_file</span><span>(</span><span>sock</span><span>,</span> <span>flags</span><span>,</span> <span>NULL</span><span>);</span>
+	<span>if</span> <span>(</span><span>likely</span><span>(</span><span>!</span><span>IS_ERR</span><span>(</span><span>newfile</span><span>)))</span> <span>{</span>
+		<span>fd_install</span><span>(</span><span>fd</span><span>,</span> <span>newfile</span><span>);</span>
+		<span>return</span> <span>fd</span><span>;</span>
+	<span>}</span>
+
+	<span>put_unused_fd</span><span>(</span><span>fd</span><span>);</span>
+	<span>return</span> <span>PTR_ERR</span><span>(</span><span>newfile</span><span>);</span>
+<span>}</span>
+</code></pre></div><h3 id="counting-the-number-of-sockets-in-the-system">Counting the number of sockets in the system</h3>
+<p>If you’ve paid attention to the <a href="https://elixir.bootlin.com/linux/v4.15/source/net/socket.c#L566"><code>sock_alloc</code></a> call, there was a part of it that took care of increasing the number of sockets that are “in-use”.</p>
+<div><pre><code data-lang="c"><span>struct</span> <span>socket</span> <span>*</span><span>sock_alloc</span><span>(</span><span>void</span><span>)</span>
+<span>{</span>
+	<span>struct</span> <span>inode</span> <span>*</span><span>inode</span><span>;</span>
+	<span>struct</span> <span>socket</span> <span>*</span><span>sock</span><span>;</span>
+
+        <span>// ....
+</span><span></span>
+        <span>// Update the per-cpu counter (which can then be
+</span><span></span>        <span>// used by `sockstat` to and other systems
+</span><span></span>        <span>// to quickly know the socket count).
+</span><span></span>	<span>this_cpu_add</span><span>(</span><span>sockets_in_use</span><span>,</span> <span>1</span><span>);</span>
+	<span>return</span> <span>sock</span><span>;</span>
+<span>}</span>
+</code></pre></div><p>Being <a href="https://elixir.bootlin.com/linux/v4.15/source/include/linux/percpu-defs.h#L511"><code>this_cpu_add</code></a> a macro, we can look at its definition and understand a bit more about it:</p>
+<div><pre><code data-lang="c"><span>/*
+</span><span> * this_cpu operations (C) 2008-2013 Christoph Lameter &lt;cl@linux.com&gt;
+</span><span> *
+</span><span> * Optimized manipulation for memory allocated through the per cpu
+</span><span> * allocator or for addresses of per cpu variables.
+</span><span> *
+</span><span> * These operation guarantee exclusivity of access for other operations
+</span><span> * on the *same* processor. The assumption is that per cpu data is only
+</span><span> * accessed by a single processor instance (the current one).
+</span><span> * 
+</span><span> * [...]
+</span><span> */</span>
+</code></pre></div><p>Now, given that we’re always adding to <code>sockets_in_use</code>, we can at least guess that if we go through the <a href="https://elixir.bootlin.com/linux/v4.15/source/net/ipv4/proc.c#L54">method that is registered for <code>/proc/net/sockstat</code></a> is going to use that value, which it really does (with also performing an addition over the values registered for each CPU):</p>
+<div><pre><code data-lang="c"><span>/*
+</span><span> *	Report socket allocation statistics [mea@utu.fi]
+</span><span> */</span>
+<span>static</span> <span>int</span> <span>sockstat_seq_show</span><span>(</span><span>struct</span> <span>seq_file</span> <span>*</span><span>seq</span><span>,</span> <span>void</span> <span>*</span><span>v</span><span>)</span>
+<span>{</span>
+	<span>struct</span> <span>net</span> <span>*</span><span>net</span> <span>=</span> <span>seq</span><span>-&gt;</span><span>private</span><span>;</span>
+	<span>unsigned</span> <span>int</span> <span>frag_mem</span><span>;</span>
+	<span>int</span> <span>orphans</span><span>,</span> <span>sockets</span><span>;</span>
+
+        <span>// Retrieve the counters related to TCP sockets.
+</span><span></span>	<span>orphans</span> <span>=</span> <span>percpu_counter_sum_positive</span><span>(</span><span>&amp;</span><span>tcp_orphan_count</span><span>);</span>
+	<span>sockets</span> <span>=</span> <span>proto_sockets_allocated_sum_positive</span><span>(</span><span>&amp;</span><span>tcp_prot</span><span>);</span>
+
+        <span>// Show the stats!
+</span><span></span>        <span>// As we saw in the beginning of the article,
+</span><span></span>        <span>// `alloc` show all of those that were allocated
+</span><span></span>        <span>// and might not be in an &#34;in-use&#34; state yet.
+</span><span></span>	<span>socket_seq_show</span><span>(</span><span>seq</span><span>);</span>
+	<span>seq_printf</span><span>(</span><span>seq</span><span>,</span> <span>&#34;TCP: inuse %d orphan %d tw %d alloc %d mem %ld</span><span>\n</span><span>&#34;</span><span>,</span>
+		   <span>sock_prot_inuse_get</span><span>(</span><span>net</span><span>,</span> <span>&amp;</span><span>tcp_prot</span><span>),</span> <span>orphans</span><span>,</span>
+		   <span>atomic_read</span><span>(</span><span>&amp;</span><span>net</span><span>-&gt;</span><span>ipv4</span><span>.</span><span>tcp_death_row</span><span>.</span><span>tw_count</span><span>),</span> <span>sockets</span><span>,</span>
+		   <span>proto_memory_allocated</span><span>(</span><span>&amp;</span><span>tcp_prot</span><span>));</span>
+	<span>// ...
+</span><span></span>	<span>seq_printf</span><span>(</span><span>seq</span><span>,</span>  <span>&#34;FRAG: inuse %u memory %u</span><span>\n</span><span>&#34;</span><span>,</span> <span>!!</span><span>frag_mem</span><span>,</span> <span>frag_mem</span><span>);</span>
+	<span>return</span> <span>0</span><span>;</span>
+<span>}</span>
+</code></pre></div><h3 id="what-about-namespaces">What about namespaces?</h3>
+<p>As you might’ve noticed, there’s no logic in the code related to namespaces when it comes to counting how many sockets where allocated.</p>
+<p>That’s something that at first really surprised me given that I thought the networking stack was something that was the most namespaced, but it turns out that there are still some points that are not.</p>
+
+
+
+<p>If you’d like to see that by yourself, make sure you follow the article <a href="https://ops.tips/blog/using-network-namespaces-and-bridge-to-isolate-servers/"><strong>Using network namespaces and a virtual switch to isolate servers</strong></a>.</p>
+<p>The gist of it is that you can create a bunch of sockets, see <code>sockstat</code>, then create a network namespace, get into it, and then see that although you can’t see the TCP sockets from the whole system over there (namespaces in action!), you can see the total number of allocated sockets in the system (not namespaced).</p>
+<div><pre><code data-lang="sh"><span># Create a bunch of sockets using our</span>
+<span># example in C</span>
+./sockets.out
+
+
+<span># Check that we have a bunch of sockets</span>
+cat /proc/net/sockstat
+sockets: used <span>296</span>
+TCP: inuse <span>5</span> orphan <span>0</span> tw <span>2</span> alloc <span>108</span> mem <span>3</span>
+UDP: inuse <span>1</span> mem <span>0</span>
+UDPLITE: inuse <span>0</span>
+RAW: inuse <span>0</span>
+FRAG: inuse <span>0</span> memory <span>0</span>
+
+
+<span># Create a network namespace</span>
+ip netns add namespace1
+
+
+<span># Get into it</span>
+ip netns <span>exec</span> namespace1 /bin/bash
+
+
+<span># Check how `/proc/net/sockstat` shows the same</span>
+<span># number of allocated sockets.</span>
+TCP: inuse <span>0</span> orphan <span>0</span> tw <span>0</span> alloc <span>108</span> mem <span>3</span>
+UDP: inuse <span>0</span> mem <span>0</span>
+UDPLITE: inuse <span>0</span>
+RAW: inuse <span>0</span>
+FRAG: inuse <span>0</span> memory <span>0</span>
+</code></pre></div><h3 id="closing-thoughts">Closing thoughts</h3>
+<p>It’s interesting to see how after exploring the inner workings of the Kernel by just being curious about <code>/proc</code> is leading to answers to why some specific behaviors that I’ve seen in daily operations work in such way.</p>
+<p>Given that this is just the first article that is about <code>/proc/net</code> and I’ve already learned a lot, I can’t wait to start digging deeper into the rest of it!</p>
+<p>If you’d like to follow along with me, make sure you subscribe to the mailing list.</p>
+<p>In case you have any questions or thoughts you’d like to share, please let me know!</p>
+<p>I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter, and I’d love to chat with you!</p>
+<p>Have a good one,
+Ciro</p>
+<h3 id="resources">Resources</h3>
+<ul>
+<li><a href="https://amzn.to/2DEiNOG">Computer Networking: A top-down approach</a>;</li>
+<li><a href="https://amzn.to/2QWyXp9">The Linux Programming Interface</a>;</li>
+<li><a href="https://amzn.to/2QD0kU4">Understanding the Linux Kernel, 3rd Ed</a>.</li>
+</ul>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

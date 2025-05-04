@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Using &#39;Go Generate&#39; To Deploy Multi-Process Apps | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/using-go-generate-to-deploy-multi-process-apps/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Using &#39;Go Generate&#39; To Deploy Multi-Process Apps</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>In microservice architectures, it’s fairly common to have a project that includes different worker types. A <a href="https://en.wikipedia.org/wiki/Makefile">Makefile</a> can be used to manage the creation of multiple programs, but the Go toolchain has a tool that can be used as well, <a href="https://blog.golang.org/generate">go generate</a>. Here are some examples of how it can be used:</p>
+<ul>
+<li><strong>API/Worker</strong> - We have an API that allows clients to start/stop long-running jobs, and a worker which accesses the same database to run the jobs.</li>
+<li><strong>NLP Classifier</strong> - We have different processes that share a majority of the same code, but have different quirks depending on if they are classifying sentiment, vulgarity, or subjectivity.</li>
+</ul>
+<p>In other words, we have one git repository, but from that code, we want to generate <code>n</code> number of executables.</p>
+<h2 id="repository-structure">
+  <span> Repository Structure</span> <a href="#repository-structure">🔗</a></h2>
+<p>Our normal single-process repositories have the following structure:</p>
+<ul>
+<li><code>main.go</code></li>
+<li><code>foo.go (other main package source files)</code></li>
+<li><code>bar.go</code></li>
+<li><code>internal (folder for packages intended just for this project)</code>
+<ul>
+<li><code>database (package for database access)</code>
+<ul>
+<li><code>database.go</code></li>
+</ul>
+</li>
+<li><code>rabbit (package for rabbitmq access)</code>
+<ul>
+<li><code>rabbit.go</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>As you can see, when there is only one program (one main.go) it’s really easy to build and deploy. We just run:</p>
+<pre tabindex="0"><code>go build
+</code></pre><p>from the root of the repository.</p>
+<h2 id="structure-with-multiple-programs">
+  <span> Structure With Multiple Programs</span> <a href="#structure-with-multiple-programs">🔗</a></h2>
+<p>Now let’s say we have a project that has an API that is responsible for managing some long-running jobs. For example, we can pretend it manages RSS scraping jobs. Here is how we would build out the repository:</p>
+<ul>
+<li><code>cmd</code>
+<ul>
+<li><code>api</code>
+<ul>
+<li><code>main.go</code></li>
+</ul>
+</li>
+<li><code>worker</code>
+<ul>
+<li><code>main.go</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>internal (folder for packages intended just for this project)</code>
+<ul>
+<li><code>database (package for database access)</code>
+<ul>
+<li><code>database.go</code></li>
+</ul>
+</li>
+<li><code>rss (package for rss scraping logic)</code>
+<ul>
+<li><code>rss.go</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>gen.go</code></li>
+</ul>
+<p>Here we have a <strong>cmd</strong> folder in the root, which then holds a directory for each executable. This allows us to still scope packages to the entire project, share a CI/CD pipeline, and keep code that is tightly coupled all in one place.</p>
+<h2 id="how-do-we-build-it">
+  <span> How Do We Build It?</span> <a href="#how-do-we-build-it">🔗</a></h2>
+<p>In the above project structure, you may have noticed the <code>gen.go</code> file. Here is what it looks like:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>//go:generate go build ./cmd/api
+</span></span></span><span><span><span>//go:generate go build ./cmd/worker
+</span></span></span></code></pre></div><p>Now we can run <strong>go generate</strong> from the root of our project and both executables will be built at the root.</p>
+<h2 id="can-we-do-more">
+  <span> Can We Do More?</span> <a href="#can-we-do-more">🔗</a></h2>
+<p>Have more steps in the build process? Go generate is quite flexible, lets’s build the production docker image as well (assuming we have a Dockerfile in the root of the project):</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>//go:generate go build ./cmd/api
+</span></span></span><span><span><span>//go:generate go build ./cmd/worker
+</span></span></span><span><span><span>//go:generate docker build .
+</span></span></span></code></pre></div><p>The <strong>generate</strong> function is a powerful tool and can do a lot more than just build a list of executables. Nevertheless, we’ve found this to be a convenient way to keep our projects “go native”.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

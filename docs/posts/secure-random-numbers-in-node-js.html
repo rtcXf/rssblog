@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Secure Random Numbers in Node.js | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/node-js-random-number/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Secure Random Numbers in Node.js</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p><strong>Quick answer: use <a href="https://nodejs.org/api/crypto.html#crypto_crypto_randombytes_size_callback">crypto.randomBytes()</a> for cryptographically secure randomness in Node.js.</strong></p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>{</span> <span>randomBytes</span> <span>}</span> <span>=</span> <span>await</span> <span>import</span><span>(</span><span>&#34;node:crypto&#34;</span><span>);</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>buf</span> <span>=</span> <span>randomBytes</span><span>(</span><span>256</span><span>);</span>
+</span></span><span><span><span>console</span><span>.</span><span>log</span><span>(</span><span>`</span><span>${</span><span>buf</span><span>.</span><span>length</span><span>}</span><span> bytes of random data: </span><span>${</span><span>buf</span><span>.</span><span>toString</span><span>(</span><span>&#34;hex&#34;</span><span>)</span><span>}</span><span>`</span><span>);</span>
+</span></span></code></pre></div><p><a href="https://nodejs.org/api/crypto.html#crypto_crypto_randombytes_size_callback">crypto.randomBytes()</a> is a <em>cryptographically secure</em> random number generator based on <a href="https://wiki.openssl.org/index.php/Random_Numbers#Initialization">openssl</a>. Depending on the operating system of the user, <code>randomBytes</code> will use <code>/dev/urandom</code> (Unix) or <code>CryptoGenRandom</code> (Windows).</p>
+<p>While still pseudo-random sources, the important thing is that they are <em>not guessable</em> by an attacker. In other words, after using <code>crypto.randomBytes()</code> to generate a secret key for <a href="https://blog.boot.dev/cryptography/aes-256-cipher/">AES-256 encryption</a>, no one will be able to guess the key.</p>
+<h2 id="randomness-is-a-hard-problem-in-nodejs">
+  <span> Randomness is a hard problem in Node.js</span> <a href="#randomness-is-a-hard-problem-in-nodejs">🔗</a></h2>
+<p>Randomness is a <a href="https://blog.boot.dev/cryptography/what-is-entropy-in-cryptography/#computers-are-deterministic">hard problem for computers</a>. Most functions that generate randomness in Node.js are <em>not</em> considered <a href="https://blog.boot.dev/cryptography/what-is-cryptography/">cryptographically</a> secure. As a result, it’s possible for attackers to take a good guess at which number will be generated. In the case of guessing a private key, insecure randomness can be actually be <em>catastrophic</em>.</p>
+<h2 id="how-to-generate-insecure-random-numbers">
+  <span> How to generate insecure random numbers</span> <a href="#how-to-generate-insecure-random-numbers">🔗</a></h2>
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random">Math.random()</a> a JavaScript built-in function that returns a pseudo-random number between <code>0</code> and <code>1</code>. At first this sounds fairly pointless, but by always generating a number between <code>0</code> and <code>1</code>, the user of the function can scale that random result up to whatever size they need.</p>
+<h3 id="insecure-example">
+  <span> Insecure example</span> <a href="#insecure-example">🔗</a></h3>
+<p>Generate an insecure random number between <code>0</code> and <code>10</code> in Node.js:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>betweenOneAndTen</span> <span>=</span> <span>Math</span><span>.</span><span>floor</span><span>(</span><span>Math</span><span>.</span><span>random</span><span>()</span> <span>*</span> <span>10</span><span>);</span>
+</span></span></code></pre></div><h3 id="insecure-example-2">
+  <span> Insecure example #2</span> <a href="#insecure-example-2">🔗</a></h3>
+<p>Generate an insecure random number between <code>10</code> and <code>100</code> in Node.js:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>const</span> <span>min</span> <span>=</span> <span>10</span><span>;</span>
+</span></span><span><span><span>const</span> <span>max</span> <span>=</span> <span>100</span><span>;</span>
+</span></span><span><span><span>const</span> <span>betweenOneAndTen</span> <span>=</span> <span>Math</span><span>.</span><span>floor</span><span>(</span><span>Math</span><span>.</span><span>random</span><span>()</span> <span>*</span> <span>(</span><span>max</span> <span>-</span> <span>min</span><span>))</span> <span>+</span> <span>min</span> <span>+</span> <span>1</span><span>;</span>
+</span></span></code></pre></div><h2 id="why-is-mathrandom-insecure">
+  <span> Why is Math.Random() insecure?</span> <a href="#why-is-mathrandom-insecure">🔗</a></h2>
+<p>Many non-secure sources of <a href="https://blog.boot.dev/cryptography/what-is-entropy-in-cryptography/">entropy</a>, like <code>Math.Random()</code>, do something similar to the following:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>getRandom</span><span>(</span><span>timestamp</span><span>,</span> <span>maxNumber</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>// Take the deterministic hash of the timestamp
+</span></span></span><span><span><span></span>  <span>const</span> <span>hashedTime</span> <span>=</span> <span>sha256</span><span>(</span><span>timestamp</span><span>);</span>
+</span></span><span><span>  <span>// Reduce the hash to within the range [0, maxNumber)
+</span></span></span><span><span><span></span>  <span>return</span> <span>hashedTime</span> <span>%</span> <span>maxNumber</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>This function (while ignoring some implementation details of modulus math by such a large number) will return random numbers that are based on a timestamp input, which is called the <em>seed</em>. If I pass in different timestamps, the corresponding outputs would <em>appear</em> random. This is an example of a weak <strong>pseudo-random</strong> number generator.</p>
+<p>A weak pseudo-random number generator works perfectly fine if you’re trying to:</p>
+<ul>
+<li>Create sample data for an application</li>
+<li>Write a video game engine</li>
+<li>etc …</li>
+</ul>
+<p>However, weak pseudo-randomness can be <em>catastrophically dangerous</em> if you’re trying to:</p>
+<ul>
+<li>Generate Bitcoin keys</li>
+<li>Generate passwords or salts</li>
+<li>etc …</li>
+</ul>
+<h2 id="should-i-always-use-cryptorandombytes">
+  <span> Should I always use crypto.randomBytes()?</span> <a href="#should-i-always-use-cryptorandombytes">🔗</a></h2>
+<p>No. There are dangers if you implement your random number generator on top of a low-level API like random bytes. Because it returns bytes and not numbers, it’s up to you to convert the bytes into numbers. If you make a mistake, it can result in a vulnerability in your system.</p>
+<p>In short, <strong>use crypto.randomBytes()</strong> whenever you need <em>raw bytes</em>. If you need a number within a range, for example, a random number between <code>0</code> and <code>9</code>, then use a non-biased function that uses <code>crypto.randomBytes()</code> as the <em>source</em> of entropy. For example: <a href="https://github.com/joepie91/node-random-number-csprng">node-random-number-csprng</a></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

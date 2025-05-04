@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Developing eBPF code with autocompletion support | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/developing-ebpf-with-autocompletion-support/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Developing eBPF code with autocompletion support</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>Some days ago I wrote about <a href="https://ops.tips/gists/navigating-the-linux-kernel-source-with-youcompleteme/">how you can configure YouCompleteMe to navigate the Linux source code</a>.</p>
+<p>One great benefit of going through such setup is that it showed me how I could use the very same concepts to develop <a href="https://www.iovisor.org/technology/ebpf">eBPF</a> code better by leveraging autocompletion and jumps to definitions and declarations.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/map-lookup-autocomplete.png" alt="Example of YouCompleteMe searching available structure fields "/>
+
+    
+</figure>
+
+<p>While it’s common for people to just embed their eBPF code directly into Python scripts, I find such approach very hard to debug (not being very accustomed to Kernel stuff).</p>
+<p>Given that not all eBPF code targets the same subsystems in the Kernel, some peculiarities arise when trying to provide proper autocompletion.</p>
+<p><em>ps.: I’m still learning these things!</em></p>
+<h3 id="autocompleting-ebpf-compiled-via-clang-without-bcc">Autocompleting eBPF compiled via Clang without BCC</h3>
+<p>If you’re performing the builds yourself (calling <code>clang</code> with the <code>bpf</code> backend specified via <code>-target bpf</code>), nothing more than a basic <code>.ycm_extra_conf.py</code> like showed in the <a href="https://ops.tips/gists/navigating-the-linux-kernel-source-with-youcompleteme/">article mentioned before</a> is needed.</p>
+<p>Usually, all you need is referencing <code>/usr/include</code> and you’re done.</p>
+<div><pre><code data-lang="python"><span>def</span> <span>FlagsForFile</span><span>(</span> <span>filename</span><span>,</span> <span>**</span><span>kwargs</span> <span>):</span>
+        <span>return</span> <span>{</span> <span>&#39;flags&#39;</span><span>:</span> <span>[</span>
+            <span>&#39;-I/usr/include&#39;</span><span>,</span>
+            <span>&#39;-I/usr/local/include&#39;</span><span>,</span>
+            <span>&#39;-std=gnu99&#39;</span><span>,</span> <span># this allows us to leverage `asm`</span>
+            <span>&#39;-xc&#39;</span>
+        <span>]}</span>
+</code></pre></div><p><em>ps.: if you need to reference internal kernel structures, make sure you include the proper paths from your local kernel source. For instance, if I have the kernel cloned at <code>/home/ubuntu/linux</code>, then I’d probably add something like <code>-I/home/ubuntu/linux/include</code> or whatever else you need from it.</em></p>
+<p>As a more specific example, in case you’re targetting ebpf programs for <code>tc</code>, it might be useful that you leverage the helpers from <code>iproute2</code>. It ships with a set of helpers that might be useful for you when using eBPF with <code>tc</code>, so it might be worth cloning <code>iproute2</code> and manually installing their bpf helpers file:</p>
+<div><pre><code data-lang="sh"><span># Clone the IPROUTE2 repository and get into the directory</span>
+git clone git://git.kernel.org/pub/scm/network/iproute2/iproute2.git 
+<span>cd</span> ./iproute2
+
+<span># Copy the `bpf_api.h` helpers file that lives under `./include`</span>
+<span># to your `/usr/include` directory.</span>
+<span>#</span>
+<span># ps.: this could be anywhere - including your current source tree.</span>
+install <span>\
+</span><span></span>        -m <span>0644</span> <span>\
+</span><span></span>        ./include/bpf_api.h <span>\
+</span><span></span>        /usr/include/iproute2
+</code></pre></div><p>Now, create a bpf hello world that gets loaded into the ingress path and you’ll see that the definitions properly show up:</p>
+<div><pre><code data-lang="c"><span>#include</span> <span>&lt;iproute2/bpf_api.h&gt;</span><span>
+</span><span>#include</span> <span>&lt;linux/bpf.h&gt;</span><span>
+</span><span></span>
+<span>__section</span><span>(</span><span>&#34;ingress&#34;</span><span>)</span> 
+<span>int</span> <span>cls_ingress</span><span>(</span><span>struct</span> <span>__sk_buff</span><span>*</span> <span>skb</span><span>)</span>
+<span>{</span>
+        <span>(</span><span>void</span><span>)</span><span>skb</span><span>;</span>
+	<span>printt</span><span>(</span><span>&#34;Hello World</span><span>\n</span><span>&#34;</span><span>);</span>
+
+	<span>return</span> <span>TC_ACT_UNSPEC</span><span>;</span>
+<span>}</span>
+</code></pre></div><p>With the autocompletion working, we can quickly visualize what are the fields that the <code>__sk_buff</code> structure gives us:</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/skb-autocomplete.png" alt="Example of YouCompleteMe searching available structure fields "/>
+
+    
+</figure>
+
+<p>More importantly, we can get our Vim cursor on top of it and jump to its declaration (<code>YcmCompleter GoToDeclaration</code>).</p>
+<p>Given that there are helpers defined in <code>iproute2/bpf_api.h</code>, and that we include it (and YouCompleteMe knows where to find this file given that we specified the include list at <code>.ycm_extr_conf.py</code>), we can do the same for the bpf helper functions (as shown in the image at the beginning of the article).</p>
+<h3 id="autocompleting-ebpf-compiled-using-bcc">Autocompleting eBPF compiled using BCC</h3>
+<p>If you’re using <a href="https://github.com/iovisor/bcc">bcc</a> to get your eBPF in, then the story changes a little bit - there’s a subset of code that gets injected behind the scenes (not very good for us, trying to provide the whole source code to the autocompletion engine).</p>
+<p>Such subset is what gives you some handy definitions like <a href="https://github.com/iovisor/bcc/blob/44c28bf979f068cd7ace66a28e97becf1862ef5d/src/cc/export/helpers.h#L129-L132"><code>BPF_HASH</code></a>.</p>
+<p>Not only BCC provides helpers, but it actually acts as part of the <a href="https://clang.llvm.org/">Clang</a> compilation process, transforming the eBPF source code that we provide.</p>
+<p>For instance, we can see how <code>bcc</code> adds some helpers:</p>
+<div><pre><code data-lang="cpp"><span>// Helpers are inlined in the following file (C). 
+</span><span>// Load the definitions and pass the partially compiled 
+</span><span>// module to the B frontend to continue with.
+</span><span></span><span>auto</span> <span>helpers_h</span> <span>=</span> <span>ExportedFiles</span><span>::</span><span>headers</span><span>()</span>
+        <span>.</span><span>find</span><span>(</span><span>&#34;/virtual/include/bcc/helpers.h&#34;</span><span>);</span>
+
+<span>if</span> <span>(</span><span>helpers_h</span> <span>==</span> <span>ExportedFiles</span><span>::</span><span>headers</span><span>().</span><span>end</span><span>())</span> <span>{</span>
+        <span>fprintf</span><span>(</span><span>stderr</span><span>,</span> <span>&#34;Internal error: missing bcc/helpers.h&#34;</span><span>);</span>
+        <span>return</span> <span>-</span><span>1</span><span>;</span>
+<span>}</span>
+
+<span>if</span> <span>(</span><span>int</span> <span>rc</span> <span>=</span> <span>load_includes</span><span>(</span><span>helpers_h</span><span>-&gt;</span><span>second</span><span>))</span>
+        <span>return</span> <span>rc</span><span>;</span>
+
+<span>BLoader</span> <span>b_loader</span><span>(</span><span>flags_</span><span>);</span>
+</code></pre></div><blockquote>
+<p>Source code from <a href="https://github.com/iovisor/bcc/blob/44c28bf979f068cd7ace66a28e97becf1862ef5d/src/cc/bpf_module.cc#L970-L980">bpf_module.cc#L970-l980</a></p>
+</blockquote>
+<p>I’m still not completely sure about how it interacts with the LLVM toolchain, but it seems like it’s something like this:</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/bcc-compile-path.svg" alt="Illustration of the BCC LLVM compilation path "/>
+
+    
+</figure>
+
+<p><em>ps.: There’s a great presentation by <a href="https://twitter.com/@alexei_ast">Alexei Starovoitov</a> illustrating  the process: <a href="https://blog.linuxplumbersconf.org/2015/ocw/system/presentations/3249/original/bpf_llvm_2015aug19.pdf">Slides - BPF in LLVM and kernel</a>.</em></p>
+<p>If we want to leverage those definitions (from the injected <code>helpers.h</code>) in our autocompletion though, we need to reference that file manually. The catch here is that if you look at it, there’s an extra line at both the beginning and end that would invalidate our use - it makes the whole code a comment.</p>
+<div><pre><code data-lang="c"><span>R</span><span>&#34;********(</span>
+<span>/*
+</span><span> * Copyright (c) 2015 PLUMgrid, Inc.
+</span><span> *
+</span><span> * Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
+</span><span> * you may not use this file except in compliance with the License.
+</span><span>
+</span><span> [...]
+</span><span>
+</span><span>        } while (0);
+</span><span>#endif
+</span><span>)********&#34;
+</span></code></pre></div><p>Naturally, that’s not acceptable for us as including it would fail.</p>
+<p>To remove the first and last line, we can then make use of <code>head</code> and <code>tail</code>:</p>
+<div><pre><code data-lang="sh"><span># Create the location at which we plan to store the `helpers.h`</span>
+<span># file.</span>
+mkdir -p /usr/local/include/bcc
+
+
+<span># Clone the bcc project</span>
+git clone https://github.com/iovisor/bcc
+
+
+<span># `tail -n +2` removes the first line by making</span>
+<span># it send to `stdout` only the last `n` lines starting</span>
+<span># at the second line.</span>
+<span>#</span>
+<span># `head -n -1` does the opposite: it the first `n-1`</span>
+<span># lines (that is, all of the lines except the last one)</span>
+<span># and sends them to stdout.</span>
+<span>#</span>
+<span># Given that we&#39;re doing those two operations in a pipeline</span>
+<span># manner, in the end, we have removed the first and the</span>
+<span># last lines.</span>
+<span>#</span>
+<span># Piping the result to `/usr/local/include/bcc/helpers.h` makes </span>
+<span># the modified content available at such location.</span>
+cat ./bcc/src/cc/export/helpers.h <span>|</span> <span>\
+</span><span></span>        tail -n +2  <span>|</span> <span>\
+</span><span></span>        head -n -1 <span>|</span> <span>\
+</span><span></span>        sudo tee -a &gt; /usr/local/include/bcc/helpers.h
+</code></pre></div><p>Now, let’s create an example to be used with <code>bcc</code> to see the autocompletion working.</p>
+<p>First, create a Python wrapper that is going to take our source and then make use of the BCC toolchain.</p>
+<p>The BCC toolchain uses its frontend to translate our code to a Clang-compatible code which gets turned into BPF bytecode via the LLVM BPF backend.</p>
+<div><pre><code data-lang="python"><span>from</span> <span>bcc</span> <span>import</span> <span>BPF</span>
+
+<span># BPF creates a new BPF module with the given</span>
+<span># source code that we can specify either via</span>
+<span># `src_file` or `text`.</span>
+<span>#</span>
+<span># `trace_print` reads the kernel debug trace pipe</span>
+<span># and then prints what&#39;s there to stdout.</span>
+<span>#</span>
+<span># This way, we&#39;re able to easily visualize our</span>
+<span># debug statements issued via `bpf_trace_printk`.</span>
+<span>BPF</span><span>(</span><span>src_file</span><span>=</span><span>&#39;./trace_vfs_open.c&#39;</span><span>)</span><span>.</span><span>trace_print</span><span>()</span>
+</code></pre></div><p>With the wrapper set, we can the code our <code>trace_vfs_open.c</code> file:</p>
+<div><pre><code data-lang="c"><span>/**
+</span><span> * If `BPF_HASH` is already defined, it means that we&#39;re
+</span><span> * in the BCC compilation path, so we don&#39;t need to import
+</span><span> * `bcc/helpers.h` as its been already added to this file
+</span><span> * already.
+</span><span> */</span>
+<span>#ifndef BPF_HASH
+</span><span>#include</span> <span>&lt;bcc/helpers.h&gt;</span><span>
+</span><span>#endif
+</span><span></span>
+<span>/**
+</span><span> * kprobe__vfs_open() - instrument the vfs_open call with a custom handler
+</span><span> * @ctx: registers and the bpf context (unused).
+</span><span> *
+</span><span> * Instruments the internall call `vfs_open` (`fs/open.c`) which is responsible
+</span><span> * for allocating a file structure, initializing it and then submitting a
+</span><span> * subsequent `open` call to the filesystem.
+</span><span> *
+</span><span> * By using the special prefix `kprobe__`, `bcc` will automatically
+</span><span> * attach the kprobe for us to the kernel method `sys_statfs`.
+</span><span> */</span>
+<span>int</span>
+<span>kprobe__vfs_open</span><span>(</span><span>void</span><span>*</span> <span>__attribute__</span><span>((</span><span>unused</span><span>))</span> <span>ctx</span><span>)</span>
+<span>{</span>
+	<span>/**
+</span><span>	 * `bpf_trace_printk` is a method that gets defined by the bcc
+</span><span>	 * toolchain - see [1].
+</span><span>	 *
+</span><span>	 * It defines a `printk`-like facility for debugging (that should
+</span><span>	 * really just be used for quick debugging).
+</span><span>	 *
+</span><span>	 * [1]:
+</span><span>	 * https://github.com/iovisor/bcc/blob/d17d5a8fd4f3b8a9638c8326a77b56ba56dc5eec/src/cc/frontends/clang/b_frontend_action.cc#L840-L852
+</span><span>	 */</span>
+	<span>bpf_trace_printk</span><span>(</span><span>&#34;vfs_open called</span><span>\n</span><span>&#34;</span><span>);</span>
+
+	<span>return</span> <span>0</span><span>;</span>
+<span>}</span>
+</code></pre></div><p>Although the example is pretty contrived, we can already see where the autocompletion support shines - we can discover which operations we can perform with the <code>ctx</code> argument:</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/ebpf-autocomplete-example.svg" alt="Animated example of EBPF autocomplete "/>
+
+    
+</figure>
+
+<p>If we switch this trace from <code>vps_open</code> to something more elaborate, like <code>tcp_v4_connect</code>, then we can see how such functionality shines. Consider the <a href="https://github.com/iovisor/bcc/blob/ee9f0e0a35ec389049c99c22a2238d122355737d/examples/tracing/tcpv4connect.py"><code>tcpv4connect.py</code></a> example from the BCC repository:</p>
+<div><pre><code data-lang="c"><span>int</span> <span>kprobe__tcp_v4_connect</span><span>(</span>
+        <span>struct</span> <span>pt_regs</span> <span>*</span><span>ctx</span><span>,</span> 
+        <span>struct</span> <span>sock</span> <span>*</span><span>sk</span><span>)</span>
+<span>{</span>
+	<span>u32</span> <span>pid</span> <span>=</span> <span>bpf_get_current_pid_tgid</span><span>();</span>
+	<span>// stash the sock ptr for lookup on return
+</span><span></span>	<span>currsock</span><span>.</span><span>update</span><span>(</span><span>&amp;</span><span>pid</span><span>,</span> <span>&amp;</span><span>sk</span><span>);</span>
+	<span>return</span> <span>0</span><span>;</span>
+<span>};</span>
+</code></pre></div><p>If we wanted to know more about <code>sock</code>, using the autocomplete feature we can quickly do it:</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/sk-autocomplete.png" alt="Screenshot of the terminal with VIM showing the autocomplete of a socket linux structure "/>
+
+    
+</figure>
+
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>Not being a Kernel developer myself, I found that by leveraging some additional tooling made me much more productive when learning about eBPF.</p>
+<p>It seems to me that if more people who are not very educated about Linux start getting into eBPF, then the more approachable this area tends to get.</p>
+<p>So, I hope that this helped you! Please let me know if you find something weird (or completely wrong). I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+<p><em>finis</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shell: how to add a prefix to the output of multiple commands | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/gists/shell-prefix-output-of-commands/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Shell: how to add a prefix to the output of multiple commands</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>This week I wanted to make the logs of a Docker build easier to read, and remembering how some tools prefix their outputs with a name, I thought that doing so would be a good way to go.</p>
+<p>In such scenario, I had the following structure:</p>
+<pre><code>.
+├── Dockerfile          # The Dockerfile that instruct the 
+│                       # image building process
+│
+└── scripts             # directory full of scripts to be run
+    ├── first.sh        # Ideally, each script would have its name
+    ├── second.sh       # used as the prefix in the logs when they
+    └── third.sh        # get executed.
+</code></pre><p>For this example, let’s assume that each of these scripts output a dummy text.</p>
+<div><pre><code data-lang="sh">cat ./scripts/<span>{</span>first,second,third<span>}</span>.sh
+<span>#!/bin/bash</span>
+<span>echo</span> <span>&#34;hello, first here&#34;</span>
+<span>#!/bin/bash</span>
+<span>echo</span> <span>&#34;hello, second here&#34;</span>
+<span>#!/bin/bash</span>
+<span>echo</span> <span>&#34;hello, third here&#34;</span>
+</code></pre></div><p>Knowing how to run these three scripts would give a hint to how to proceed.</p>
+<p>Here I had some options:</p>
+<ul>
+<li>use <code>find</code> and `xargs together;</li>
+<li>use <code>find</code> with its <code>-exec</code> argument;</li>
+<li>using a <code>for</code> together with variable expansion.</li>
+</ul>
+<p>Although all of them are capable of achieving the goal, I’d always first give a try to <code>find</code> piping to <code>xargs</code> - there are some caveats to running <code>for</code> loops over files that might break your script in ways you don’t expect (given that there’s a variable expansion going on, files named after command-line arguments could break your execution later).</p>
+<div><pre><code data-lang="sh"><span># Search for all the files under the `./scripts`</span>
+<span># directory that end with `.sh`.</span>
+<span>#</span>
+<span># Pipe the result of the search to `xargs`, which</span>
+<span># then executes the command supplied in the positional</span>
+<span># arguments replacing the replacement string supplied</span>
+<span># to `-I` (that is, when it finds `lol.sh`, it executes</span>
+<span># `bash lol.sh`.</span>
+find ./scripts -name <span>&#34;*.sh&#34;</span> <span>\
+</span><span></span>        <span>|</span> xargs -I <span>{}</span> bash <span>{}</span>
+hello, first here
+hello, third here
+hello, second here
+</code></pre></div><p>However, given that we’ll need to make use of piping to have our outputs prefixed, that’d mean making <code>xargs</code> call an extra shell for that.</p>
+<div><pre><code data-lang="sh"><span># If we want to pipe the result of `bash` to another</span>
+<span># command, then we need to use an extra shell to process</span>
+<span># the piping operator and set up the piping itself.</span>
+find ./scripts -name <span>&#34;*.sh&#34;</span> <span>\
+</span><span></span>        <span>|</span> xargs -I <span>{}</span> /bin/sh -c <span>&#39;bash {} | wc -c&#39;</span>
+      <span>18</span>
+      <span>18</span>
+      <span>19</span>
+</code></pre></div><p>So, in this case, using a <code>for</code> loop seems to be the way to go (knowing that none of our files there are going to break us):</p>
+<div><pre><code data-lang="sh"><span>for</span> script in *.sh<span>;</span> <span>do</span>
+        bash <span>$script</span> <span>|</span> wc -c
+<span>done</span>
+      <span>18</span>
+      <span>19</span>
+      <span>18</span>
+</code></pre></div><p>Now, to solve the problem we introduced before (prefixing the output of the executions), we can leverage the fact that we can take the output produced by those executions and then mutate them accordingly such that the final result has a prefix.</p>
+<p>Naturally, <code>sed</code> is a great candidate for mutating streams of strings.</p>
+<div><pre><code data-lang="sh"><span># Create a stream of multiline text</span>
+<span>printf</span> <span>&#39;haha\nhaha\nhaha\n&#39;</span>
+haha
+haha
+haha
+
+<span># Create a stream of multiline text and pipe</span>
+<span># it to `sed`.</span>
+<span>#</span>
+<span># Using the `s/regular expression/replacement/`</span>
+<span># we can provide a regular expression that matches</span>
+<span># the very initial part of the string and then </span>
+<span># replace that by a prefix.</span>
+<span>printf</span> <span>&#39;haha\nhaha\nhaha\n&#39;</span> <span>|</span> sed <span>&#39;s/^/prefix: /&#39;</span>
+prefix: haha
+prefix: haha
+prefix: haha
+</code></pre></div><p>Putting all together, we can make use of script name in the place of <code>prefix</code> in the <code>sed</code> rule and achieve our goal:</p>
+<div><pre><code data-lang="sh"><span># Iterate over all the script files under ./scripts.</span>
+<span># </span>
+<span># Given that the expansion will result in names that</span>
+<span># include the `./scripts` prefix and the `.sh` suffix,</span>
+<span># we can make use of bash&#39;s prefix and suffix replacement</span>
+<span># syntax to get rid of that and end up with the pure name.</span>
+<span>#</span>
+<span># Once clean names are got, then it&#39;s time to use in `sed`.</span>
+<span>for</span> script in ./scripts/*.sh<span>;</span> <span>do</span>
+  <span>name</span><span>=</span><span>${</span><span>script</span><span>#./scripts/</span><span>}</span>
+  <span>name</span><span>=</span><span>${</span><span>name</span><span>%.sh</span><span>}</span>
+
+  bash <span>$script</span> <span>|</span> sed <span>&#34;s/^/[</span><span>${</span><span>name</span><span>}</span><span>] /&#34;</span>
+<span>done</span>
+
+<span>[</span>first<span>]</span> hello, first here
+<span>[</span>second<span>]</span> hello, second here
+<span>[</span>third<span>]</span> hello, third here
+</code></pre></div><p>As an extra tip, if you happen to have your output being forwarded to a log collector and you see many lines (that should be separate) comming together, it might be the case that <code>sed</code> is performing some buffering. You can get rid of such behavior by executing <code>sed</code> with <code>stdbuf</code>.</p>
+<p>That’s it!</p>
+<p>Please let me know if you have any questions or if you spot anything wrong. I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+<p><em>finis</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Creating and Remembering a Strong Passphrase | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/security/creating-and-remembering-a-strong-passphrase/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Creating and Remembering a Strong Passphrase</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>We all have hundreds of online accounts. Ideally, as many of those accounts as possible have unique passwords. Unique passwords however present a difficult problem.</p>
+<p><strong>No one can remember hundreds of strong passwords.</strong></p>
+<p>To fix this problem, we created password managers. Now, all of our passwords are neatly stored in one place, encrypted by one master password or passphrase. The problem with this of course is the master password or passphrase needs to be very secure.</p>
+<p>Which should be used? A password or passphrase?</p>
+<h2 id="passphrases-are-better-than-passwords">
+  <span> Passphrases are Better Than Passwords</span> <a href="#passphrases-are-better-than-passwords">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/password_strength.png" alt="password comic"/></p>
+<p><a href="https://xkcd.com/936/">XKCD</a></p>
+<p>This XKCD comic does a good job of explaining the difference between passwords and passphrases. A password is easier for a computer to guess (less entropy), and also is much harder to remember! There is NO REASON we should be using passwords. If you are an application developer, especially an app developer writing you backend in Go, take a look at <a href="https://github.com/lane-c-wagner/go-password-validator">go-password-validator</a>. It will give users full control so they can create strong passphrases.</p>
+<h2 id="entropy">
+  <span> Entropy</span> <a href="#entropy">🔗</a></h2>
+<p>You may have noticed in the comic that the example password has 28 bits of entropy while the passphrase has 44. Entropy just means the number of possibilities that an attacker would need to guess to crack a password or passphrase.</p>
+<p>For example, imagine a password has 16 characters, and each character has 58 possibilities. This means that there are:</p>
+<p><code>58^16 = 16,400,152,899,115,243,850,138,976,256</code> possibilities.</p>
+<p>If we take the base 2 logarithm of the number of possibilities then we arrive at how many bits of entropy the recovery code contains.</p>
+<p><code>log2(58^16) = 93.73</code> bits of entropy.</p>
+<p>The chart below gives a rough idea of how long a given password or passphrase will take to crack based on how many bits of entropy it has and how many guesses per second the attacker can make (which depends on their hardware).</p>
+<p><img src="https://blog.boot.dev/img/800/rhdADIZYXJM2FxqNf6UOFqU5ar0VX3fayLFpKspN8uI.png" alt="password chart "/></p>
+<p><a href="https://www.reddit.com/r/dataisbeautiful/comments/322lbk/time_required_to_bruteforce_crack_a_password/">entropy chart</a></p>
+<h2 id="how-to-remember">
+  <span> How to Remember</span> <a href="#how-to-remember">🔗</a></h2>
+<p>Now that we’ve covered why and how a passphrase is safer than a password, let’s look at how to create a memorable passphrase. The key to a memorable passphrase is imagery. The idea is to take 4 or 5 random words and use those words to create an image in your head. The more ridiculous the image, the easier it will be to remember.</p>
+<p>The <em>correct horse battery staple</em> from the above XKCD is a good example, but I’ll give you another one. Let’s pretend you are trying to remember:</p>
+<p><em>banana army acid nose spray</em></p>
+<p>I would probably imagine an army of bananas doing acid while being sprayed out of a giant nose. If I repeat “banana army acid nose spray” out loud a couple times while imagining this ridiculous scene, then I can memorize it in just a couple seconds.</p>
+<p>Repeating it a couple times allows you to remember the exact order of the words, but picturing the image is what will cement ii in your mind for the long term.</p>
+<p>I hope this helps you create secure pass-phrases! As always, stay safe online! It’s a dangerous place.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

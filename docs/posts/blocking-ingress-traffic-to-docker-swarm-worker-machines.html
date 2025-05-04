@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blocking ingress traffic to Docker swarm worker machines | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/blocking-ingress-traffic-to-docker-swarm-worker-machines/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Blocking ingress traffic to Docker swarm worker machines</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>When Docker Swarm mode got announced, one of the big features included was the <a href="https://docs.docker.com/engine/swarm/ingress/">routing mesh</a>.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/ingress-routing-mesh.png" alt="Illustration of how the routing mesh works "/>
+
+    
+</figure>
+
+<blockquote>
+<p>Image from <a href="https://docs.docker.com/engine/swarm/ingress/#publish-a-port-for-a-service">docs.docker.com</a></p>
+</blockquote>
+<p>Although the feature indeed works as expected, there’s the possibility that you might not want to have all of your nodes accepting connections and performing the job of a load-balancer.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/ingress-routing-mesh-with-blocking.svg" alt="Illustration of what we want to achieve with the blocking "/>
+
+    
+</figure>
+
+<p>In this blog post, I go through what are the fundamental blocks that the routing mesh uses under the hood so we can block such kind of traffic on specific machines.</p>
+<h3 id="the-ingress-load-balancing-setup-lifecycle">The ingress load-balancing setup lifecycle</h3>
+<p>Given a cluster of machines, whenever a service publishes a port, any machine can be targetted at such port, and an internal load-balancer (<a href="http://www.linuxvirtualserver.org/software/ipvs.html">IPVS</a>) will send the traffic to a host containing an instance of such service.</p>
+<p>For instance, assume that we have the following service definition:</p>
+<div><pre><code data-lang="yaml"><span>version</span><span>:</span><span> </span><span>&#39;3.2&#39;</span><span>
+</span><span></span><span>services</span><span>:</span><span>
+</span><span>  </span><span>nginx</span><span>:</span><span>
+</span><span>    </span><span>image</span><span>:</span><span> </span><span>&#39;nginx:alpine&#39;</span><span>
+</span><span>    </span><span>ports</span><span>:</span><span>
+</span><span>      </span>- <span>&#39;8000:80&#39;</span><span>
+</span><span>    </span><span>deploy</span><span>:</span><span>
+</span><span>      </span><span>replicas</span><span>:</span><span> </span><span>1</span><span>
+</span></code></pre></div><p>And that we have three machines: <code>worker-1</code>, <code>worker-2</code> and <code>manager</code>.</p>
+<p>Once the service is pushed to a Docker Swarm manager, it gets the service instantiated in the form of tasks - only one in this case (<code>replicas == 1</code>)-, which turns into a container in a machine chosen by the manager.</p>
+<p>Having a port published (<code>target=80,published=8000</code>), Swarm proceeds with the configuration of the routing mesh, which happens at two moments:</p>
+<ol>
+<li>
+<p>at the time that the service gets created, all participating nodes in the cluster set up their IPVS configuration to have a virtual server listening on port <code>8000</code>.</p>
+</li>
+<li>
+<p>at the moment the task lands in a node and a container is created, then all machines update their IPVS configuration again, but now to include a real server that corresponds to the machine in which the container landed, forming the mesh.</p>
+</li>
+</ol>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/swarm-ingress-mesh.svg" alt="Illustration of the network routing "/>
+
+    
+</figure>
+
+<p>Each machine now has the published port (<code>8000</code>) set to listen for incoming connections so that you can target any of them and have the connection adequately established to a container.</p>
+<p>If it happens that the <code>nginx</code> container dies and the scheduler (Docker Swarm) creates a task for placing the container somewhere else, or it happens that we have a scale out situation (increasing the number of replicas to two, for instance), all machines become aware of that and update their IPVS configurations.</p>
+<p>If the service is removed (or a published port gets unpublished), then again, all participants get to know the change in the overall state and then reflect such changes in their local IPVS configuration.</p>
+<h3 id="under-the-hood---how-ingress-gets-traffic-directed-to-containers">Under the hood - how Ingress gets traffic directed to containers</h3>
+<p>If at this point you’ve tried to see how IPVS gets set up, you might’ve noticed that nothing shows up by running <code>ipvsadm --list</code>.</p>
+<p>That’s because such configuration is isolated in a namespace (<code>ingress_sbox</code>), and to have a full understanding of how the packet flow looks like, we need to take a look at the iptables rules set in the default namespace to make those packets get into the ingress namespace which is then responsible for doing the whole load-balancing.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/how-to-direct-to-sbox.svg" alt="Image showing the traffic flowing from the public interface to the ingress sandbox "/>
+
+    
+</figure>
+
+<p>To do so, let’s assume a more straightforward scenario:</p>
+<ul>
+<li>there are two machines (<code>machine1</code> and <code>machine2</code>), both members of the swarm cluster (it doesn’t matter which one is the manager);</li>
+<li>there’s a <code>nginx</code> service deployed (publishing port 8000 for the target port 80), having the one (and only one) replica landed in <code>machine1</code>; and</li>
+<li>we’re reaching the nginx service from <code>machine2</code>.</li>
+</ul>
+<p>When the packet gets received by the machine, its device issues an interrupt. A driver that has registered itself as a handler for that takes the packet data from the device (via direct memory access - DMA) and then fills the proper kernel representation of it in its driver (<code>skb</code>). After this, the packet starts flowing through a series of steps in the kernel before it’s sent to a local application or forwarded to a different interface.</p>
+<p>One of these steps is passing the packet through the kernel firewall, which can be configured from userspace using <code>iptables</code> (and many others), allowing you to set rules that can do all sorts of packet mangling, filtering, forwarding and more.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/packet-path.svg" alt="Illustration of the path that a packet takes within the host "/>
+
+    
+</figure>
+
+<p>These rules that we specify are placed in either preconfigured chains - hooks in the packet flow that are activated at certain points - or custom ones that we can reference from those that are preconfigured.</p>
+<p>These chains live under tables, which aggregate a set of chains by their purpose.</p>
+<p>For now, let’s focus on the <code>nat</code> table - the table where rules are set to implement network address translation. From the <code>man</code> page:</p>
+<pre><code>nat: This table is consulted when a packet 
+     that creates a new connection is encountered.
+
+It  consists  of  four  built-ins: 
+- PREROUTING (for altering packets as soon as they come in), 
+- INPUT (for altering packets destined  for  local  sockets),  
+- OUTPUT  (for altering  locally-generated  packets before routing), and
+- POSTROUTING (for altering packets as they are about to go out).  
+</code></pre><p>Being even more specific, let’s focus on the <code>PREROUTING</code> chain and those chains that are referenced there:</p>
+<p><em>tip: As a way of quickly grasping over all the additions to <code>iptables</code> that Docker made, I like to run <code>iptables-save</code> so we can see all that’s set across all tables.</em></p>
+<div><pre><code data-lang="sh"><span># List all the chains from the NAT table (by default,</span>
+<span># iptables lists the chains from the FILTER table).</span>
+iptables --list --table nat
+
+<span># As the packet has not been generated in our machine,</span>
+<span># packets get to this chain first before a routing </span>
+<span># decision is taken (i.e., before it&#39;s either set that</span>
+<span># the packet is indeed for this machine - INPUT - or that </span>
+<span># it&#39;s meant to be sent to another machine - FORWARD).</span>
+Chain PREROUTING <span>(</span>policy ACCEPT<span>)</span>
+target          prot opt <span>source</span>     destination         
+<span># Using the `addrtype` iptables extension, it looks at</span>
+<span># the packets and then performs matching based on its</span>
+<span># destination address type.</span>
+<span>#</span>
+<span># When this rule was set, it was configured to match the</span>
+<span># address type of the destination address to LOCAL - a</span>
+<span># local address.</span>
+<span>#</span>
+<span># ps.: LOCAL does not mean only 127.0.0.0/8 CIDR used for</span>
+<span># loopback addresses, but any address that represents the</span>
+<span># local machine (as per the routing table).</span>
+DOCKER-INGRESS  all  --  anywhere   anywhere       ADDRTYPE match dst-type LOCAL
+DOCKER          all  --  anywhere   anywhere       ADDRTYPE match dst-type LOCAL
+
+Chain DOCKER-INGRESS <span>(</span><span>2</span> references<span>)</span>
+target          prot opt <span>source</span>     destination   
+<span># Matches packets that make use of the TCP protocol and </span>
+<span># that are targetted towards port 8000, applying `DNAT`ing</span>
+<span># to them, effectively substituting the destination address</span>
+<span># to 172.18.0.2.</span>
+DNAT            tcp  --  anywhere   anywhere       tcp dpt:8000 to:172.18.0.2:8000
+RETURN          all  --  anywhere   anywhere  
+
+
+Chain DOCKER <span>(</span><span>2</span> references<span>)</span>
+target          prot opt <span>source</span>     destination   
+</code></pre></div><figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/redirect-to-sbox.svg" alt="Illustration of the process of redirecting a packet to the ingress sandbox "/>
+
+    
+</figure>
+
+<p>Now, taking a quick look at <code>ip addr</code> (lists all the devices in the current network namespace together with their addresses), we can notice that such ip (<code>172.18.0.2</code>) must belong to the device connected to the <code>docker_gwbridge</code> bridge:</p>
+<div><pre><code data-lang="sh"><span># Verify that the `docker_gwbridge` interface that belongs</span>
+<span># to the bridge device is indeed the gateway for the 172.18.0.1/16</span>
+<span># network.</span>
+ip addr show docker_gwbridge
+13: docker_gwbridge: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span>1500</span> qdisc noqueue state UP group default 
+    link/ether 02:42:af:92:92:f6 brd ff:ff:ff:ff:ff:ff
+    inet 172.18.0.1/16 brd 172.18.255.255 scope global docker_gwbridge
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:afff:fe92:92f6/64 scope link 
+       valid_lft forever preferred_lft forever
+
+<span># Check which interfaces have been connected to this bridge.</span>
+bridge link show docker_gwbridge
+25: veth79f1181 state UP @if24: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span>1500</span> master docker_gwbridge state forwarding priority <span>32</span> cost <span>2</span> 
+29: veth8aec496 state UP @if28: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span>1500</span> master docker_gwbridge state forwarding priority <span>32</span> cost <span>2</span> 
+
+<span># We can see that there are two veth pairs connected to it.</span>
+<span>#</span>
+<span># Naturally, being veth pairs, from this network namespace we can see</span>
+<span># one side of the pairs, while the other side have their interfaces in</span>
+<span># different network namespaces.</span>
+<span>#</span>
+<span># We can corroborate the hypothesis that there exists at least two different</span>
+<span># namespaces by checking that under the hood the `docker_gwbridge` docker network</span>
+<span># has two hidden containers:</span>
+docker network inspect <span>\
+</span><span></span>        --format <span>&#39;{{ json .Containers }}&#39;</span> <span>\
+</span><span></span>        docker_gwbridge <span>|</span> jq
+<span>{</span>
+  <span>&#34;ddf1af4f39efaeb556964351800f282aca75d509537d166ff78d5d12b8911cef&#34;</span>: <span>{</span>
+    <span>&#34;Name&#34;</span>: <span>&#34;gateway_ddf1af4f39ef&#34;</span>,
+    <span>&#34;EndpointID&#34;</span>: <span>&#34;5903ff858bc2d5...&#34;</span>,
+    <span>&#34;MacAddress&#34;</span>: <span>&#34;02:42:ac:12:00:03&#34;</span>,
+    <span>&#34;IPv4Address&#34;</span>: <span>&#34;172.18.0.3/16&#34;</span>,
+    <span>&#34;IPv6Address&#34;</span>: <span>&#34;&#34;</span>
+  <span>}</span>,
+  <span>&#34;ingress-sbox&#34;</span>: <span>{</span>
+    <span>&#34;Name&#34;</span>: <span>&#34;gateway_ingress-sbox&#34;</span>,
+    <span>&#34;EndpointID&#34;</span>: <span>&#34;650cc71d444f...&#34;</span>,
+    <span>&#34;MacAddress&#34;</span>: <span>&#34;02:42:ac:12:00:02&#34;</span>,
+    <span>&#34;IPv4Address&#34;</span>: <span>&#34;172.18.0.2/16&#34;</span>,     <span># &lt;&lt;&lt; the ip we saw!</span>
+    <span>&#34;IPv6Address&#34;</span>: <span>&#34;&#34;</span>
+  <span>}</span>
+<span>}</span>
+
+<span># Get inside this container and see what&#39;s going on there when</span>
+<span># it comes to IPVS.</span>
+nsenter <span>\
+</span><span></span>        --net<span>=</span>/var/run/docker/netns/ingress_sbox <span>\
+</span><span></span>        ipvsadm --list --numeric
+IP Virtual Server version 1.2.1 <span>(</span><span>size</span><span>=</span>4096<span>)</span>
+Prot LocalAddress:Port Scheduler Flags
+  -&gt; RemoteAddress:Port           Forward Weight ActiveConn InActConn
+FWM  <span>257</span> rr
+  -&gt; 10.255.0.6:0                 Masq    <span>1</span>      <span>0</span>          <span>0</span>       
+
+<span># Translating that output to pure English, it means:</span>
+<span># - for those connections marked with the firewall mark 257, load-balance</span>
+<span>#   them using NAT (masquerading) between the list of servers below (given</span>
+<span>#   that we have a single replica, there&#39;s only one address there).</span>
+<span>#</span>
+<span># To understand where that IP address comes from, get into the nginx</span>
+<span># container and check its interfaces:</span>
+ docker <span>exec</span> <span>$NGINX_CONTAINER_ID</span> ip addr show eth0
+26: eth0@if27: &lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt; mtu <span>1450</span> qdisc noqueue state UP 
+    link/ether 02:42:0a:ff:00:04 brd ff:ff:ff:ff:ff:ff
+    inet 10.255.0.4/16 brd 10.255.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+
+<span># Now if you&#39;re wondering where this network comes from, checkout </span>
+<span># `docker network ls` and inspect the `ingress` network:</span>
+docker network inspect ingress --format <span>&#39;{{ json .IPAM }}&#39;</span> <span>|</span> jq
+<span>{</span>
+  <span>&#34;Driver&#34;</span>: <span>&#34;default&#34;</span>,
+  <span>&#34;Options&#34;</span>: null,
+  <span>&#34;Config&#34;</span>: <span>[</span>
+    <span>{</span>
+      <span>&#34;Subnet&#34;</span>: <span>&#34;10.255.0.0/16&#34;</span>,
+      <span>&#34;Gateway&#34;</span>: <span>&#34;10.255.0.1&#34;</span>
+    <span>}</span>
+  <span>]</span>
+<span>}</span>
+</code></pre></div><p>The last thing that’s missing understanding from the ingress sandbox is: how does <code>fwmark</code> (firewall mark) that IPVS uses gets set? The answer is, one more time, <code>iptables</code>.</p>
+<p>However, the difference now is that this gets set in the <code>mangle</code> table:</p>
+<div><pre><code data-lang="sh"><span># Get inside the `ingress_sbox` namespace and then issue</span>
+<span># the iptables command to list the chains and rules that</span>
+<span># are set in the `mangle` table.</span>
+nsenter <span>\
+</span><span></span>        --net<span>=</span>/var/run/docker/netns/ingress_sbox <span>\
+</span><span></span>        iptables --list --table mangle
+Chain PREROUTING <span>(</span>policy ACCEPT<span>)</span>
+target     prot src  dst 
+<span># For every packet that is destined to port 8000 (the</span>
+<span># nginx&#39; published port), set the firewall mark to 0x101).</span>
+MARK       tcp  any  any  dpt:8000 MARK <span>set</span> 0x101
+
+Chain OUTPUT <span>(</span>policy ACCEPT<span>)</span>
+<span># For every packet that is destined to a virtual IP that swarm</span>
+<span># assigns to a specific service (10.255.0.3), also mark the packet</span>
+<span># with the corresponding virtual service mark.</span>
+<span>#</span>
+<span># Given that this destination (10.255.0.3) lives in the ingress</span>
+<span># network, this is only accessible from within a container.</span>
+target     prot opt <span>source</span>               destination         
+MARK       all  --  anywhere             10.255.0.3           MARK <span>set</span> 0x101
+
+<span># Given that in iptables that value is set in its hexadecimal</span>
+<span># form, we can look at what 0x101 means in the decimal form</span>
+<span># (shown in the `ipvsadm` listing).</span>
+<span>printf</span> <span>&#34;%d\n&#34;</span> 0x101
+<span>257</span>
+</code></pre></div><p>By looking at the man page of <code>iptables-extensions</code> we can see what that target does:</p>
+<blockquote>
+<p>“MARK - This  target  is used to set the Netfilter mark value associated with the packet.”</p>
+</blockquote>
+<blockquote>
+<p>From <a href="https://linux.die.net/man/8/iptables">https://linux.die.net/man/8/iptables</a></p>
+</blockquote>
+<p>And then, looking at <code>ipvsadm</code> man page we can also check how it can make use of such mark:</p>
+<blockquote>
+<p>“Using firewall-mark virtual services provides a convenient method of <strong>grouping together
+different IP addresses, ports, and protocols into a single virtual service</strong>. This is use‐
+ful  for  both  simplifying  configuration  if  a  large number of virtual services are
+required and grouping persistence across what would otherwise be multiple virtual  ser‐
+vices.”</p>
+</blockquote>
+<blockquote>
+<p>From <a href="https://linux.die.net/man/8/ipvsadm">https://linux.die.net/man/8/ipvsadm</a></p>
+</blockquote>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/sbox-internals.svg" alt="Illustration of the decisions that happen within the ingress sandbox "/>
+
+    
+</figure>
+
+<p>In summary, what goes on is:</p>
+<ol>
+<li>A packet is destined for our machine (<code>192.168.10.4</code>); then</li>
+<li>if it’s destination port matches a published port, we take the original destination address (our machine address) and replace it by a different address (<code>172.18.0.2</code>). As this is performed before a routing decision has been made, it has the effect of making the packet be routed to the <code>gateway_ingress-sbox</code> container that contains the IPVS load-balancer rules.</li>
+<li>once the packet lands in <code>ingress_sbox</code>, it passes through its own iptables rules. This time, it goes through the <code>mangle</code> table, which (in the case of being targetted at port 8000), has the effect of adding a marker to the packet (<code>fwmark</code>).</li>
+<li>landing in its destination (ipvs), the packet’s fwmark indicates the service that the packet needs to be load-balancer to. IPVS then picks one of the target real servers (using a given scheduling algorithm - roundrobin in this case) and then forwards it to the destination.</li>
+<li>As the destination servers are in the <code>ingress</code> networks, the overlay setup takes care of making the packets reach the destination address accordingly.</li>
+</ol>
+<h3 id="changing-iptables-to-block-ingress-traffic">Changing IPTables to block Ingress traffic</h3>
+<p>Having some idea of what goes on under the scenes, we can now jump into the process of putting barriers in the middle of these steps such that traffic can’t go through.</p>
+<p>Looking at the last two images, we can imagine that we can either put a barrier between <code>eth0</code> and <code>ingress_sbox</code>, or we can but a barrier between <code>ingress_sbox</code> and <code>ipvs</code></p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/where-to-block-ingress.svg" alt="Image questioning where we should place the block "/>
+
+    
+</figure>
+
+<p>If we perform the first block (cut traffic between <code>eth0</code> and <code>ingress_sbox</code>), then we’re going to be blocking connections that are made from one machine to the physical interface of another, but we’d still allow traffic originating in the host itself.</p>
+<p>Taking the second approach looks like a more protective block.</p>
+<p>Let’s create some services and some networks and apply the block to see that in action.</p>
+<div><pre><code data-lang="sh"><span># Create a network named `mynet` that uses the</span>
+<span># overlay network driver.</span>
+docker network create <span>\
+</span><span></span>  --driver overlay <span>\
+</span><span></span>  mynet
+
+
+<span># Create two services in the same network:</span>
+<span>#</span>
+<span># 1. nginx1 that specifies a public port mapping</span>
+<span>#    8123 --&gt; 80</span>
+<span>#</span>
+<span># 2. nginx2 that specifies a public port mapping</span>
+<span>#    8124 --&gt; 80</span>
+docker service create <span>\
+</span><span></span>  --detach <span>\
+</span><span></span>  --no-resolve-image <span>\
+</span><span></span>  --network mynet <span>\
+</span><span></span>  --publish 8123:80 <span>\
+</span><span></span>  --name nginx1 <span>\
+</span><span></span>  nginx:alpine
+
+docker service create <span>\
+</span><span></span>  --detach <span>\
+</span><span></span>  --no-resolve-image <span>\
+</span><span></span>  --network mynet <span>\
+</span><span></span>  --publish 8124:80 <span>\
+</span><span></span>  --name nginx2 <span>\
+</span><span></span>  nginx:alpine
+
+
+<span># Create the `CURL_ARGS` variable that is going to</span>
+<span># hold the non-positional arguments that we&#39;ll be</span>
+<span># using throughout the example. </span>
+<span>#</span>
+<span># --connect-timeout: specifies the maximum amount of</span>
+<span>#                    time that `connect(2)` should</span>
+<span>#                    take. This is needed because we&#39;re</span>
+<span>#                    simply dropping packets.</span>
+<span>#</span>
+<span># --silent: removes the verbose curl information</span>
+<span>#</span>
+<span># --output: allows us to specify a file that should</span>
+<span>#           be used as the stdout for the body. </span>
+<span>#           Using /dev/null we simply discard it.</span>
+<span>#</span>
+<span># --write-out: allows us to specify a template of text</span>
+<span>#              containing information regarding the</span>
+<span>#              connection / request. By specifying</span>
+<span>#              %{http_code} we can display the HTTP status</span>
+<span>#              code of the request (000) on connection</span>
+<span>#              failures.</span>
+<span>CURL_ARGS</span><span>=</span><span>&#34;--connect-timeout 0.5 \
+</span><span>--silent \
+</span><span>--write-out &#39;%{http_code}&#39; \
+</span><span>--output /dev/null&#34;</span>
+
+<span># Verify that both of the services can be </span>
+<span># reached from machine1 by targetting its</span>
+<span># own loopback interface.</span>
+curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  localhost:8123
+<span>200</span>
+curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  localhost:8124
+<span>200</span>
+
+
+<span># Get into machine2 and verify</span>
+<span># that it can indeed connect to the</span>
+<span># services by targetting the machine&#39;s</span>
+<span># interface (eth0).</span>
+ssh ubuntu@machine2
+machine2 $ curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  machine1:8123
+<span>200</span>
+machine2 $ curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  machine2:8124
+<span>200</span>
+
+
+<span># Still in machine2, verify that the</span>
+<span># service is accessible in its own IPVS </span>
+<span># load-balancer by trying to reach the </span>
+<span># service making a request to its own loopback</span>
+<span># interface.</span>
+machine2 $ curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  localhost:8123
+<span>200</span>
+machine2 $ curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  localhost:8124
+<span>200</span>
+
+
+<span># Get back to machine1.</span>
+<span>exit</span>
+
+
+<span># Get into the `ingress_sbox` network namespace.</span>
+<span>#</span>
+<span># To do this we can either make use of `nsenter`</span>
+<span># like we did before or make use of `ip netns` which </span>
+<span># assumes that the network namespace files live under</span>
+<span># /var/run/netns.</span>
+<span>#</span>
+<span># As docker creates its network namespace files under</span>
+<span># /var/run/docker/netns, we can get over such default</span>
+<span># by creating a soft link.</span>
+ln -s /var/run/docker/netns /var/run/netns
+
+
+<span># Given that Docker doesn&#39;t make use of the `filter`</span>
+<span># table and doesn&#39;t change it at all during service</span>
+<span># changes, we can include specific rules in specific chains</span>
+<span># there to drop desired connections.</span>
+<span>#</span>
+<span># By including a rule in the INPUT table, we&#39;re able to</span>
+<span># filter packets that are destined to a local address that</span>
+<span># represents the current machine.</span>
+ip netns <span>exec</span> ingress_sbox <span>\
+</span><span></span>  iptables -A INPUT -p tcp -m tcp --dport <span>8123</span> -j DROP
+
+
+<span># Verify that the `nginx` (8123) can&#39;t be </span>
+<span># accessed by touching `machine1` ports</span>
+curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  localhost:8123
+<span>000</span>
+
+curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  machine1:8123
+<span>000</span>
+
+<span># Verify that when targetting machine2, the service is </span>
+<span># available:</span>
+curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  machine2:8123
+<span>200</span>
+
+<span># Get into machine2 and verify that it can&#39;t access</span>
+<span># the service by targetting machine1</span>
+ssh ubuntu@machine2
+machine2 $ curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  machine1:8123
+<span>000</span>
+
+<span># But that it can access it via itself</span>
+machine2 $ curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  localhost:8123
+<span>200</span>
+
+
+<span># Go back to machine1 (manager) and create a new </span>
+<span># service and verify that docker didn&#39;t mess with </span>
+<span># the `ingress_sbox` rules:</span>
+docker service create <span>\
+</span><span></span>  --detach <span>\
+</span><span></span>  --no-resolve-image <span>\
+</span><span></span>  --network mynet <span>\
+</span><span></span>  --publish 8125:80 <span>\
+</span><span></span>  --name nginx3 <span>\
+</span><span></span>  nginx:alpine
+
+
+<span># Verify that it still fails (which is what we expect)</span>
+curl <span>$CURL_ARGS</span> <span>\
+</span><span></span>  localhost:8123
+<span>000</span>
+</code></pre></div><h3 id="closing-thoughts">Closing thoughts</h3>
+<p>It was very interesting to go through all of this as a way of learning how to set up a simple block for a given set of ports that wouldn’t mess with the default ingress load-balancing and other Docker-specific chains.</p>
+<p>Please let me know if I got something wrong - I’m new to networking and going through this definitely helped me improve and I’d appreciate a lot to be corrected if I presented a misleading or completely wrong information here.</p>
+<p>You can reach me at <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter!</p>
+<p>Have a good one!</p>
+<p><em>finis</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quantum Programming 101: Superdense Coding Tutorial | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/misc/quantum-programming-101-superdense-coding-tutorial/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Quantum Programming 101: Superdense Coding Tutorial</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><p>Superdense coding is a quantum communications protocol that allows a user to send 2 classical bits by sending only 1 qubit.</p><p>First a bell pair consisting of 2 qubits is prepared. Where q0 is the senders qubit and q1 is the receivers qubit. To do this q0 is put in to a superposition of states using a hadamard gate.</p><p>Then a CNOT operation is performed with q0 being the control and q1 being the target.</p><p>Next the sender has to encode the information they want to send on to q0 by applying certain operations to it.</p><p>Next q0 is sent and the receiver has to decode the qubit. This is done by applying a CNOT where the received q0 is the control and q1 is the target. Then a hadamard gate is applied to q0.</p><div><pre tabindex="0"><code data-lang="py"><span><span><span>print</span><span>(</span><span>&#39;</span><span>\n</span><span> Superdense Coding&#39;</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>&#39;--------------------------</span><span>\n</span><span>&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>from</span> <span>qiskit</span> <span>import</span> <span>QuantumRegister</span><span>,</span> <span>ClassicalRegister</span><span>,</span> <span>QuantumCircuit</span><span>,</span> <span>execute</span><span>,</span><span>IBMQ</span>
+</span></span><span><span>
+</span></span><span><span><span>IBMQ</span><span>.</span><span>enable_account</span><span>(</span><span>&#39;INSERT TOKEN HERE&#39;</span><span>)</span>
+</span></span><span><span><span>provider</span> <span>=</span> <span>IBMQ</span><span>.</span><span>get_provider</span><span>(</span><span>hub</span><span>=</span><span>&#39;ibm-q&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>q</span> <span>=</span> <span>QuantumRegister</span><span>(</span><span>2</span><span>,</span><span>&#39;q&#39;</span><span>)</span>
+</span></span><span><span><span>c</span> <span>=</span> <span>ClassicalRegister</span><span>(</span><span>2</span><span>,</span><span>&#39;c&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>backend</span> <span>=</span> <span>provider</span><span>.</span><span>get_backend</span><span>(</span><span>&#39;ibmq_qasm_simulator&#39;</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>&#39;Provider: &#39;</span><span>,</span><span>backend</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>#################### 00 ###########################</span>
+</span></span><span><span><span>circuit</span> <span>=</span> <span>QuantumCircuit</span><span>(</span><span>q</span><span>,</span><span>c</span><span>)</span> 
+</span></span><span><span>
+</span></span><span><span><span>circuit</span><span>.</span><span>h</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span> <span># Hadamard gate applied to q0</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>cx</span><span>(</span><span>q</span><span>[</span><span>0</span><span>],</span><span>q</span><span>[</span><span>1</span><span>])</span> <span># CNOT gate applied</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>cx</span><span>(</span><span>q</span><span>[</span><span>0</span><span>],</span><span>q</span><span>[</span><span>1</span><span>])</span> 
+</span></span><span><span><span>circuit</span><span>.</span><span>h</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span>  
+</span></span><span><span>
+</span></span><span><span><span>circuit</span><span>.</span><span>measure</span><span>(</span><span>q</span><span>,</span><span>c</span><span>)</span> <span># Qubits measured    </span>
+</span></span><span><span>
+</span></span><span><span><span>job</span> <span>=</span> <span>execute</span><span>(</span><span>circuit</span><span>,</span> <span>backend</span><span>,</span> <span>shots</span><span>=</span><span>10</span><span>)</span>
+</span></span><span><span>                               
+</span></span><span><span><span>print</span><span>(</span><span>&#39;Executing Job...</span><span>\n</span><span>&#39;</span><span>)</span>                  
+</span></span><span><span><span>result</span> <span>=</span> <span>job</span><span>.</span><span>result</span><span>()</span>
+</span></span><span><span><span>counts</span> <span>=</span> <span>result</span><span>.</span><span>get_counts</span><span>(</span><span>circuit</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>print</span><span>(</span><span>&#39;RESULT: &#39;</span><span>,</span><span>counts</span><span>,</span><span>&#39;</span><span>\n</span><span>&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>#################### 01 ###########################</span>
+</span></span><span><span><span>circuit</span> <span>=</span> <span>QuantumCircuit</span><span>(</span><span>q</span><span>,</span><span>c</span><span>)</span> 
+</span></span><span><span>
+</span></span><span><span><span>circuit</span><span>.</span><span>h</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>cx</span><span>(</span><span>q</span><span>[</span><span>0</span><span>],</span><span>q</span><span>[</span><span>1</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>x</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span> <span># X-gate applied</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>cx</span><span>(</span><span>q</span><span>[</span><span>0</span><span>],</span><span>q</span><span>[</span><span>1</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>h</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span>
+</span></span><span><span>
+</span></span><span><span><span>circuit</span><span>.</span><span>measure</span><span>(</span><span>q</span><span>,</span><span>c</span><span>)</span>
+</span></span><span><span>       
+</span></span><span><span><span>job</span> <span>=</span> <span>execute</span><span>(</span><span>circuit</span><span>,</span> <span>backend</span><span>,</span> <span>shots</span><span>=</span><span>10</span><span>)</span>
+</span></span><span><span>                               
+</span></span><span><span><span>print</span><span>(</span><span>&#39;Executing Job...</span><span>\n</span><span>&#39;</span><span>)</span>                  
+</span></span><span><span><span>result</span> <span>=</span> <span>job</span><span>.</span><span>result</span><span>()</span>
+</span></span><span><span><span>counts</span> <span>=</span> <span>result</span><span>.</span><span>get_counts</span><span>(</span><span>circuit</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>print</span><span>(</span><span>&#39;RESULT: &#39;</span><span>,</span><span>counts</span><span>,</span><span>&#39;</span><span>\n</span><span>&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>#################### 10 ###########################</span>
+</span></span><span><span><span>circuit</span> <span>=</span> <span>QuantumCircuit</span><span>(</span><span>q</span><span>,</span><span>c</span><span>)</span> 
+</span></span><span><span>
+</span></span><span><span><span>circuit</span><span>.</span><span>h</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>cx</span><span>(</span><span>q</span><span>[</span><span>0</span><span>],</span><span>q</span><span>[</span><span>1</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>z</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span> <span># Z-gate applied to q0 </span>
+</span></span><span><span><span>circuit</span><span>.</span><span>cx</span><span>(</span><span>q</span><span>[</span><span>0</span><span>],</span><span>q</span><span>[</span><span>1</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>h</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span>
+</span></span><span><span>
+</span></span><span><span><span>circuit</span><span>.</span><span>measure</span><span>(</span><span>q</span><span>,</span><span>c</span><span>)</span>
+</span></span><span><span>      
+</span></span><span><span><span>job</span> <span>=</span> <span>execute</span><span>(</span><span>circuit</span><span>,</span> <span>backend</span><span>,</span> <span>shots</span><span>=</span><span>10</span><span>)</span>
+</span></span><span><span>                               
+</span></span><span><span><span>print</span><span>(</span><span>&#39;Executing Job...</span><span>\n</span><span>&#39;</span><span>)</span>                  
+</span></span><span><span><span>result</span> <span>=</span> <span>job</span><span>.</span><span>result</span><span>()</span>
+</span></span><span><span><span>counts</span> <span>=</span> <span>result</span><span>.</span><span>get_counts</span><span>(</span><span>circuit</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>print</span><span>(</span><span>&#39;RESULT: &#39;</span><span>,</span><span>counts</span><span>,</span><span>&#39;</span><span>\n</span><span>&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>#################### 11 ###########################</span>
+</span></span><span><span><span>circuit</span> <span>=</span> <span>QuantumCircuit</span><span>(</span><span>q</span><span>,</span><span>c</span><span>)</span> 
+</span></span><span><span>
+</span></span><span><span><span>circuit</span><span>.</span><span>h</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>cx</span><span>(</span><span>q</span><span>[</span><span>0</span><span>],</span><span>q</span><span>[</span><span>1</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>z</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span> <span># Z-gate applied </span>
+</span></span><span><span><span>circuit</span><span>.</span><span>x</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span> <span># X-gate applied </span>
+</span></span><span><span><span>circuit</span><span>.</span><span>cx</span><span>(</span><span>q</span><span>[</span><span>0</span><span>],</span><span>q</span><span>[</span><span>1</span><span>])</span>
+</span></span><span><span><span>circuit</span><span>.</span><span>h</span><span>(</span><span>q</span><span>[</span><span>0</span><span>])</span>
+</span></span><span><span>
+</span></span><span><span><span>circuit</span><span>.</span><span>measure</span><span>(</span><span>q</span><span>,</span><span>c</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>job</span> <span>=</span> <span>execute</span><span>(</span><span>circuit</span><span>,</span> <span>backend</span><span>,</span> <span>shots</span><span>=</span><span>10</span><span>)</span>
+</span></span><span><span>                               
+</span></span><span><span><span>print</span><span>(</span><span>&#39;Executing Job...</span><span>\n</span><span>&#39;</span><span>)</span>                  
+</span></span><span><span><span>result</span> <span>=</span> <span>job</span><span>.</span><span>result</span><span>()</span>
+</span></span><span><span><span>counts</span> <span>=</span> <span>result</span><span>.</span><span>get_counts</span><span>(</span><span>circuit</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>print</span><span>(</span><span>&#39;RESULT: &#39;</span><span>,</span><span>counts</span><span>,</span><span>&#39;</span><span>\n</span><span>&#39;</span><span>)</span>
+</span></span><span><span><span>print</span><span>(</span><span>&#39;Press any key to close&#39;</span><span>)</span>
+</span></span><span><span><span>input</span><span>()</span>
+</span></span></code></pre></div><p>After running the code you will see something like the following printed on the screen :</p><p>InteresteWant to learn about Quantum Programming? Head over to <a href="https://quantumcomputinguk.org/">Quantum Computing UK</a>.</p><div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

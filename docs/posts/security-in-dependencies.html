@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Security in Dependencies | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/security/security-in-dependencies/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Security in Dependencies</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Choosing the right dependencies is a difficult task. Assuming the developer of an application is the best programmer in the world, the “best” thing to do would be to write the entire codebase alone. This would eliminate the bugs, vulnerabilities, and malicious intrusions of inferior developers.</p>
+<p>The trouble is that we like to move quickly to be able to compete in the market and offer new features. We try to avoid re-inventing the wheel when the wheel in question is widely used, is peer-reviewed, and we consider it stable and trusted.</p>
+<p>Let’s explore the decision making behind which dependencies we should use, and which we should avoid.</p>
+<h2 id="can-we-write-it">
+  <span> Can We Write it?</span> <a href="#can-we-write-it">🔗</a></h2>
+<p>This should be the first question asked when a new dependency is being considered. If it fits within the scope of a project it is almost always safest to write and own the code ourselves. Pertinent questions include:</p>
+<ul>
+<li>How long will it take us to write it?</li>
+<li>Do we need the whole package? Can we re-write the section we need?</li>
+<li>Is this something we have domain expertise in?</li>
+<li>Will our implementation be better? (don’t write your own cryptography)</li>
+<li>Does the language’s standard library already have this functionality?</li>
+</ul>
+<h2 id="review">
+  <span> Review</span> <a href="#review">🔗</a></h2>
+<p>If we decide that we shouldn’t write the code ourselves, we find a valid candidate package. We take a look at the code and ensure:</p>
+<ul>
+<li>Does the code have tests? Are they relevant?</li>
+<li>Is the library architected well? Is the code of high quality?</li>
+<li>How many contributors are there?</li>
+<li>How many other projects are dependent on this package?</li>
+<li>Is the project actively maintained? When was the last release?</li>
+<li>Does this project have dependencies? If so, we need to review those as well (best to <strong>try to avoid child dependencies</strong> where possible).</li>
+</ul>
+<h2 id="locking-versions">
+  <span> Locking Versions</span> <a href="#locking-versions">🔗</a></h2>
+<p>For any dependencies that are more security-critical, it is important to lock versions, and ideally <a href="https://blog.boot.dev/golang/should-you-commit-the-vendor-folder-in-go/">vendor the original source code</a>. For example, we perhaps have done a solid review of package ‘<strong>abc</strong>’ and determined that <strong>v1.4.4</strong> is stable and secure. We want to ensure that we don’t carelessly update that package without reviewing the changes. A package manager like yarn keeps the digital fingerprints of each dependency so that once v1.4.4 code is brought in, it can’t be maliciously swapped out.</p>
+<p>Vulnerabilities in updates aren’t protected by this feature. For this reason, we try to use <strong>‘1.4.4’</strong> vs <strong>’~1.4.4’</strong> or <strong>’^1.4.4’</strong>. By not including the tilde or the caret, we tell yarn that we don’t want to automatically update this package.</p>
+<p>When locking versions in this way we need to be more diligent about regularly reviewing and manually applying updates because many times new updates fix old security holes.</p>
+<h2 id="communication">
+  <span> Communication</span> <a href="#communication">🔗</a></h2>
+<p>When we decide that we want to use a dependency, especially if we don’t know much about it, we should reach out to the developer to ask questions and ensure that it is well maintained.</p>
+<p>We hope this quick guide gives some insight into our process for dependency management and gives you some good tips for building your own projects. Stay safe and have fun building!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

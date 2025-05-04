@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A minimal TCP Client in C | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/gists/a-minimal-tcp-client-in-c/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>A minimal TCP Client in C</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>This week I needed to check whether in a given situation a given error would occur when connecting to a TCP server, so why not go back to the <code>man</code> pages and review the steps?</p>
+<p>Here’s what I come up with! I hope it’s going to be useful for you who’s reading.</p>
+<div><pre><code data-lang="c"><span>/**
+</span><span> * Start by specifying our dependencies.
+</span><span> *
+</span><span> * As we&#39;re using only standard dependencies you&#39;d find in a
+</span><span> * Linux machine, these can be found under `/usr/include`.
+</span><span> *
+</span><span> * - `stdio.h` gives us the standard io (input and output) methods
+</span><span> *   like `fprintf` that allows us to format a given string and
+</span><span> *   write it to a specific file descriptor (usually stderr or
+</span><span> *   stdout).
+</span><span> *
+</span><span> * - `unistd.h` defines constants, types and methods that provides
+</span><span> *   access to the POSIX API. Here we make use of the `close(2)`
+</span><span> *   syscall definition that can be found there.
+</span><span> *
+</span><span> * - `arpa/inet` provides definitions for internet operations, most
+</span><span> *   notably, it gives us ways of converting addresses from string
+</span><span> *   formats (presentation) to numeric ones (and vice-versa).
+</span><span> *
+</span><span> *   Given that `arpa/inet` includes `netinet/in.h`, it also provides
+</span><span> *   us with the definitions of `sockaddr_in`, the structure used
+</span><span> *   to define internet addresses.
+</span><span> *
+</span><span> * - `sys/socket.h` provides us the `socket(2)` syscall and its
+</span><span> *   necessary definitions.
+</span><span> */</span>
+<span>#include</span> <span>&lt;arpa/inet.h&gt;</span><span>
+</span><span>#include</span> <span>&lt;stdio.h&gt;</span><span>
+</span><span>#include</span> <span>&lt;sys/socket.h&gt;</span><span>
+</span><span>#include</span> <span>&lt;unistd.h&gt;</span><span>
+</span><span></span>
+<span>/**
+</span><span> * ADDRESS defines the IP of the server that we should
+</span><span> * connect to.
+</span><span> *
+</span><span> * In this exampe, it must be a standard IPV4 address with
+</span><span> * four octects representing the IP in a string format -
+</span><span> * no names are allowed given that we don&#39;t perform name
+</span><span> * resolution.
+</span><span> *
+</span><span> * Using GCC, this value can be specified by using the
+</span><span> * -D arguments with the address itself having escaped
+</span><span> *  quotes (for instance: -DADDRESS=\&#34;127.0.0.1\&#34;). Without
+</span><span> *  the escaping, `127.0.0.1` would be supplied instead of
+</span><span> *  `&#34;127.0.0.1&#34;`, causing errors.
+</span><span> */</span>
+<span>#ifndef ADDRESS
+</span><span>#define ADDRESS &#34;127.0.0.1&#34;
+</span><span>#endif
+</span><span></span>
+<span>/**
+</span><span> * PORT represents the server port we want to connect to.
+</span><span> *
+</span><span> * Naturally, it must live in the range of [1,65k).
+</span><span> */</span>
+<span>#ifndef PORT
+</span><span>#define PORT 8000
+</span><span>#endif
+</span><span></span>
+<span>int</span>
+<span>main</span><span>()</span>
+<span>{</span>
+	<span>int</span>                <span>ret</span> <span>=</span> <span>0</span><span>;</span>
+	<span>int</span>                <span>conn_fd</span><span>;</span>
+	<span>struct</span> <span>sockaddr_in</span> <span>server_addr</span> <span>=</span> <span>{</span> <span>0</span> <span>};</span>
+
+	<span>// Specifiy the communication domain in which the address lives:
+</span><span></span>	<span>// AF_INET      - IPV4;
+</span><span></span>	<span>// AF_INET6     - IPV6;
+</span><span></span>	<span>// AF_UNIX      - Local communication (used w/ unix sockets).
+</span><span></span>	<span>server_addr</span><span>.</span><span>sin_family</span> <span>=</span> <span>AF_INET</span><span>;</span>
+
+	<span>// Assign the port that we supplied in host byte order in the
+</span><span></span>	<span>// form of network byte order (`htons` performs the conversion).
+</span><span></span>	<span>//
+</span><span></span>	<span>// On amd64 (x86-64), the byte ordering of the host is little endian
+</span><span></span>	<span>// (o.e., the least significant byte comes first).
+</span><span></span>	<span>//
+</span><span></span>	<span>// However, when it comes to networking, the byte ordering is big
+</span><span></span>	<span>// endian - the most significant byte comes first.
+</span><span></span>	<span>//
+</span><span></span>	<span>// This means that a value (like 8000) defined in our machine needs
+</span><span></span>	<span>// to be properly translated to the network byte order before being
+</span><span></span>	<span>// sent.
+</span><span></span>	<span>server_addr</span><span>.</span><span>sin_port</span> <span>=</span> <span>htons</span><span>(</span><span>PORT</span><span>);</span>
+
+	<span>// Fill the destination address with a 4-byte (32bit) unsigned integer
+</span><span></span>	<span>// in network byte order after converting the address from the string
+</span><span></span>	<span>// representation (e.g., &#34;127.0.0.1&#34;).
+</span><span></span>	<span>//
+</span><span></span>	<span>// Given that we might see a failure in the conversion (e.g., if we
+</span><span></span>	<span>// supply an invalid server_addr pointer or an invalid string), check
+</span><span></span>	<span>// for these errors.
+</span><span></span>	<span>//
+</span><span></span>	<span>// Note that differently from the majority of syscalls and glibc
+</span><span></span>	<span>// methods, success is defined with `1`, and not `0`. The information of
+</span><span></span>	<span>// what represents success can often be found in man pages - e.g., `man
+</span><span></span>	<span>// inet_pton`.
+</span><span></span>	<span>ret</span> <span>=</span> <span>inet_pton</span><span>(</span><span>AF_INET</span><span>,</span> <span>ADDRESS</span><span>,</span> <span>&amp;</span><span>server_addr</span><span>.</span><span>sin_addr</span><span>);</span>
+	<span>if</span> <span>(</span><span>ret</span> <span>!=</span> <span>1</span><span>)</span> <span>{</span>
+		<span>if</span> <span>(</span><span>ret</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+			<span>perror</span><span>(</span><span>&#34;inet_pton&#34;</span><span>);</span>
+		<span>}</span>
+		<span>fprintf</span><span>(</span><span>stderr</span><span>,</span>
+		        <span>&#34;failed to convert address %s &#34;</span>
+		        <span>&#34;to binary net address</span><span>\n</span><span>&#34;</span><span>,</span>
+		        <span>ADDRESS</span><span>);</span>
+		<span>return</span> <span>-</span><span>1</span><span>;</span>
+	<span>}</span>
+
+	<span>fprintf</span><span>(</span><span>stdout</span><span>,</span> <span>&#34;CONNECTING: address=%s port=%d</span><span>\n</span><span>&#34;</span><span>,</span> <span>ADDRESS</span><span>,</span> <span>PORT</span><span>);</span>
+
+	<span>// Create an endpoint for communication in our machine (our side) that
+</span><span></span>	<span>// is meant to communicate over the AF_INET (IPv4) domain, using
+</span><span></span>	<span>// SOCK_STREAM semantics (sequenced, reliable, two-way, connection-base
+</span><span></span>	<span>// byte streams - TCP, for instance).
+</span><span></span>	<span>//
+</span><span></span>	<span>// Note that at this point, no communication has been made to an
+</span><span></span>	<span>// external server yet - this operation is entirely local.
+</span><span></span>	<span>conn_fd</span> <span>=</span> <span>socket</span><span>(</span><span>AF_INET</span><span>,</span> <span>SOCK_STREAM</span><span>,</span> <span>0</span><span>);</span>
+	<span>if</span> <span>(</span><span>conn_fd</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+		<span>perror</span><span>(</span><span>&#34;socket&#34;</span><span>);</span>
+		<span>return</span> <span>-</span><span>1</span><span>;</span>
+	<span>}</span>
+
+	<span>// Connect our local endpoint (represented by the socket file
+</span><span></span>	<span>// descriptor) to the address specified by `server_addr`.
+</span><span></span>	<span>//
+</span><span></span>	<span>// On a TCP connection, `connect` passes to the kernel the
+</span><span></span>	<span>// responsability of perming the TCP handshake, blocking the call while
+</span><span></span>	<span>// the kernel goes forward (when nonblocking flag - SOCK_NONBLOCK - is
+</span><span></span>	<span>// not set in the socket).
+</span><span></span>	<span>//
+</span><span></span>	<span>// Once the handshake has been succesful, on the server side the
+</span><span></span>	<span>// connection is then put into a queue so that the server can
+</span><span></span>	<span>// `accept(2)` on a passive socket to make use of such established
+</span><span></span>	<span>// connection.
+</span><span></span>	<span>ret</span> <span>=</span>
+	  <span>connect</span><span>(</span><span>conn_fd</span><span>,</span> <span>(</span><span>struct</span> <span>sockaddr</span><span>*</span><span>)</span><span>&amp;</span><span>server_addr</span><span>,</span> <span>sizeof</span><span>(</span><span>server_addr</span><span>));</span>
+	<span>if</span> <span>(</span><span>ret</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+		<span>perror</span><span>(</span><span>&#34;connect&#34;</span><span>);</span>
+		<span>return</span> <span>-</span><span>1</span><span>;</span>
+	<span>}</span>
+
+	<span>// After the connection has been properly established, we could go
+</span><span></span>	<span>// forward with `read(2)` and `write(2)` calls.
+</span><span></span>	<span>//
+</span><span></span>	<span>// As in this example we don&#39;t want to read or write from it, we can
+</span><span></span>	<span>// proceed with a `shutdown(2)`, which takes care of terminating our
+</span><span></span>	<span>// side of the channel.
+</span><span></span>	<span>//
+</span><span></span>	<span>// By specifying `SHUT_RDWR`, not only furtes receptions are
+</span><span></span>	<span>// dissallowed, but transmissions to.
+</span><span></span>	<span>ret</span> <span>=</span> <span>shutdown</span><span>(</span><span>conn_fd</span><span>,</span> <span>SHUT_RDWR</span><span>);</span>
+	<span>if</span> <span>(</span><span>ret</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+		<span>perror</span><span>(</span><span>&#34;shutdown&#34;</span><span>);</span>
+		<span>return</span> <span>-</span><span>1</span><span>;</span>
+	<span>}</span>
+
+	<span>// Once the connection got properly terminated, now we can proceed with
+</span><span></span>	<span>// actually closing the file descriptor
+</span><span></span>	<span>ret</span> <span>=</span> <span>close</span><span>(</span><span>conn_fd</span><span>);</span>
+	<span>if</span> <span>(</span><span>ret</span> <span>==</span> <span>-</span><span>1</span><span>)</span> <span>{</span>
+		<span>perror</span><span>(</span><span>&#34;close&#34;</span><span>);</span>
+		<span>return</span> <span>-</span><span>1</span><span>;</span>
+	<span>}</span>
+
+	<span>return</span> <span>0</span><span>;</span>
+<span>}</span>
+</code></pre></div><p>If you spot anything weird, just let me know! I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

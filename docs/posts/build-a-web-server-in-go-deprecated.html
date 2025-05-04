@@ -809,7 +809,7 @@
 <p>Once you have the token, respond to the request with a <code>200</code> code and this body shape:</p>
 <div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
 </span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>1</span><span>,</span>
-</span></span><span><span>  <span>&#34;email&#34;</span><span>:</span> <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="ea868b848faa8f928b879a868fc4898587">[email protected]</a>&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;email&#34;</span><span>:</span> <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="c1ada0afa481a4b9a0acb1ada4efa2aeac">[email protected]</a>&#34;</span><span>,</span>
 </span></span><span><span>  <span>&#34;token&#34;</span><span>:</span> <span>&#34;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c&#34;</span>
 </span></span><span><span><span>}</span>
 </span></span></code></pre></div><p><strong>PUT <code>/api/users</code></strong></p>
@@ -860,7 +860,7 @@
 <p>The login endpoint should now return this shape:</p>
 <div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
 </span></span><span><span>  <span>&#34;id&#34;</span><span>:</span> <span>1</span><span>,</span>
-</span></span><span><span>  <span>&#34;email&#34;</span><span>:</span> <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="305c515e55705548515d405c551e535f5d">[email protected]</a>&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;email&#34;</span><span>:</span> <span>&#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="ec808d8289ac89948d819c8089c28f8381">[email protected]</a>&#34;</span><span>,</span>
 </span></span><span><span>  <span>&#34;token&#34;</span><span>:</span> <span>&#34;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c&#34;</span><span>,</span>
 </span></span><span><span>  <span>&#34;refresh_token&#34;</span><span>:</span> <span>&#34;56aa826d22baab4b5ec2cea41a59ecbba03e542aedbb31d9b80326ac8ffcfa2a&#34;</span>
 </span></span><span><span><span>}</span>
@@ -905,7 +905,7 @@
 <p>For example, when using <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#restrict_access_to_cookies">httpOnly cookies</a>, you can ensure that 3rd party JavaScript that’s being executed on your website can’t access any cookies. That’s a lot better than storing JWTs in the browser’s local storage, where it’s easily accessible to any JavaScript running on the page.</p>
 
 <p>While authentication is about verifying <em>who</em> a user is, authorization is about verifying <em>what a user is allowed to do</em>.</p>
-<p>For example, a user might be authenticated as <code><a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="036f626d6643667b626e736f662d606c6e">[email protected]</a></code>, but that doesn’t mean that they should be allowed to delete chirps authored by <code><a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="dfbeb3b3beb19fbaa7beb2afb3baf1bcb0b2">[email protected]</a></code>. Only the user who created the chirp should be allowed to delete it.</p>
+<p>For example, a user might be authenticated as <code><a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="d9b5b8b7bc99bca1b8b4a9b5bcf7bab6b4">[email protected]</a></code>, but that doesn’t mean that they should be allowed to delete chirps authored by <code><a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="0b6a67676a654b6e736a667b676e25686466">[email protected]</a></code>. Only the user who created the chirp should be allowed to delete it.</p>
 <p>Authorization logic is just the code that enforces these kinds of rules.</p>
 <p><strong>Assignment</strong></p>
 <p>Update the <code>POST /api/chirps</code> endpoint to only allow users to create chirps if they are authenticated. When they do create a chirp, the chirp should be associated with the user who created it. Add a new <code>author_id</code> field to your chirps and use it to store the user’s ID.</p>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Systems and Processes that Aren&#39;t in Code are Terrifying | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/systems-and-processes-that-arent-in-code-are-terrifying/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Systems and Processes that Aren&#39;t in Code are Terrifying</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>My worst enemy is processes that a developer spun up years ago on a server everyone has forgotten about. I don’t know how to find these systems reliably, I don’t know where they came from, what depends on them, and if they are safe to delete. For example, the dreaded <code>15 6 2 1 * /home/lane/backup.sh</code>. You may recognize this as a Unix cronjob, a job that is scheduled to run on a server periodically.</p>
+<p>You may be thinking, “Why is that scary? We use cronjobs all the time!”</p>
+<p>If the code that manages the crontab exists in source control within the organization’s central repositories, then I have very little to complain about. My beef is when an engineer hops onto a server and starts up a cron job without that configuration existing in code.</p>
+<p>You may say,</p>
+<blockquote>
+<p>Well, the cron schedule may not exist in code, but the script/program it runs does!</p>
+</blockquote>
+<p><strong>I don’t care.</strong></p>
+<p><img src="https://blog.boot.dev/img/800/26ipc1.jpg" alt="gordon ramsay"/></p>
+<p>I want to be able to look at the code base and know if the program is long-running, should be run manually, or if it runs on a specific schedule. It is fine if it’s going to be run using crontab. We just make sure that the <a href="https://www.boot.dev/courses/learn-ci-cd-github-docker">CI/CD</a> config file (or something similar that is source controlled) specifies how that is triggered.</p>
+<p>Or even better, program in Go so that spinning up side processes within your app is simpler than using the crontab ;)</p>
+<h2 id="other-angst-y-things">
+  <span> Other Angst-y Things</span> <a href="#other-angst-y-things">🔗</a></h2>
+<p>Crontabs are just a common example of hard-to-discover processes. Others, for example, may include:</p>
+<ul>
+<li>Database processes that were added manually, instead of by the app that owns the DB</li>
+<li><code>.bash_profile</code> or <code>.bashrc</code> files that kick off server startup jobs</li>
+<li>Third-party apps on the server to take care of special tasks (I don’t know, defragging the disk maybe). Those processes should be documented in code, probably config files that your organization typically uses to start its apps.</li>
+</ul>
+<p>Internal documentation certainly sucks, so document your processes in code instead. A config file that specifies how a process is started is much better than a PDF, because the config file can’t become outdated (if it does, things break).</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

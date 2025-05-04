@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Singletons in ES6 - The Good, The Bad, The Ugly | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/singletons-in-es6-the-good-the-bad-the-ugly/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Singletons in ES6 - The Good, The Bad, The Ugly</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Singletons are fairly controversial as far as I can tell, especially in JavaScript programming. Let’s take a look at what they are, when to (maybe) use them, and when not to.</p>
+<h2 id="what-is-a-singleton">
+  <span> What is a Singleton?</span> <a href="#what-is-a-singleton">🔗</a></h2>
+<blockquote>
+<p>A singleton is a class that allows only a single instance of itself to be created and gives access to that created instance. It contains static variables that can accommodate unique and private instances of itself. We use it in scenarios when a user wants to restrict instantiation of a class to only one object. This is helpful usually when a single object is required to coordinate actions across a system.</p>
+<p><a href="https://www.techopedia.com/definition/15830/singleton">techopedia</a></p>
+</blockquote>
+<p>Usually, in object-oriented programming, the idea is to define classes and create multiple instances of that class, each with its own state. This keeps code <a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself">DRY</a> and easy to maintain.</p>
+<p>By contrast, it only instantiates a singleton once, and therefore any code that accesses the singleton will either:</p>
+<ul>
+<li>Create a new instance</li>
+<li>Read, update, or modify that instance</li>
+</ul>
+<p>Which means a singleton is <em>almost</em> a global instance of a class. Gross.</p>
+<h2 id="i-cant-believe-its-not-global">
+  <span> I Can’t Believe It’s Not Global!</span> <a href="#i-cant-believe-its-not-global">🔗</a></h2>
+<p>For the purpose of this article, we will assume we are using ES6 modules in our front-end React or Vue project. An example of a singleton we might want could be:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>// Define our state and initialize it
+</span></span></span><span><span><span></span><span>let</span> <span>darkMode</span> <span>=</span> <span>false</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span><span>// Define the functions that will expose that state
+</span></span></span><span><span><span></span><span>const</span> <span>Settings</span> <span>=</span> <span>{</span>
+</span></span><span><span>  <span>setDarkMode</span><span>:</span> <span>(</span><span>newVal</span><span>)</span> <span>=&gt;</span> <span>(</span><span>darkMode</span> <span>=</span> <span>newVal</span><span>),</span>
+</span></span><span><span>  <span>getDarkMode</span><span>:</span> <span>()</span> <span>=&gt;</span> <span>darkMode</span><span>,</span>
+</span></span><span><span><span>};</span>
+</span></span><span><span>
+</span></span><span><span><span>// Disallow new properties on our object
+</span></span></span><span><span><span></span><span>Object</span><span>.</span><span>freeze</span><span>(</span><span>Settings</span><span>);</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>default</span> <span>Settings</span><span>;</span>
+</span></span></code></pre></div><p>As stated earlier, a singleton is dangerously close to being a global variable, and we don’t like those. There is one important difference:</p>
+<p>The singleton instance <strong>isn’t truly scoped globally</strong>: to modify the state, the caller must import the class and use getters and setters. This makes access more explicit and controlled. Not only are the ways in which the state can be modified explicitly defined, but files that use the state must ‘import’ it.</p>
+<h2 id="but-muh-redux">
+  <span> But Muh Redux</span> <a href="#but-muh-redux">🔗</a></h2>
+<p>Here’s my over-simplified opinion in the form of a flowchart:</p>
+<p><img src="https://blog.boot.dev/img/800/Screen-Shot-2019-11-04-at-9.29.33-AM.png" alt="flowchart"/></p>
+<p>The idea is to use the simplest, most-controlled solution we reasonably can. In order of least evil –&gt; most evil:</p>
+<ul>
+<li>scoped constants</li>
+<li>scoped variables</li>
+<li>singletons</li>
+<li>redux/vuex</li>
+<li>global variables</li>
+</ul>
+<h2 id="singletons-suck">
+  <span> Singletons Suck</span> <a href="#singletons-suck">🔗</a></h2>
+<p>Redux, Vuex, singletons, and global variables all suck. Try not to use them. I’m just trying to point out that they all suck to varying degrees. Good luck.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

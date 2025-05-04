@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Article recommendation using Hugo | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/article-recommendation-using-hugo/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Article recommendation using Hugo</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>This month I’ve been interested in increasing the overall time that a user spends navigating here in the blog.</p>
+<p>Being article recommendation something that the blog was missing, I went for it.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/recommended-articles.svg" alt="Article recommendation in use "/>
+
+    
+</figure>
+
+<p>Check out how you can do it for your static site too!</p>
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ul>
+<li><a href="#the-idea">The idea</a></li>
+<li><a href="#implementing-a-recommended-articles-list-in-hugo">Implementing a Recommended Articles list in Hugo</a></li>
+<li><a href="#displaying-the-recommendation-list">Displaying the recommendation list</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h3 id="the-idea">The idea</h3>
+<p>Given that my content usually is tagged, I thought that one easy way of adding article recommendation would be to simply take the union between the articles tagged with the same tag as the current one and then randomly list them.</p>
+<p>For instance, consider the case of this article: <a href="https://ops.tips/blog/udp-client-and-server-in-go/">A UDP server and client in Go</a>.</p>
+<p>Being the article tagged as <a href="https://ops.tips/tags/linux">Linux</a>, <a href="https://ops.tips/tags/networking">Networking</a>, and <a href="https://ops.tips/tags/go">Go</a>, we can infer that there are three pools of content that might be similar to what’s been there in this article (having some overlap between them).</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/recommendation-overlap.svg" alt="Overlap between bag of articles by selecting articles with tags matching "/>
+
+    
+</figure>
+
+<p>Moving forward, we can think that once we addressed the possible articles to recommend, the next step is to give preference to some of them: rank higher those with more overlap in more categories.</p>
+<p>Let’s implement that then.</p>
+<h3 id="implementing-a-recommended-articles-list-in-hugo">Implementing a Recommended Articles list in Hugo</h3>
+<p>As a first step, we retrive all the pages that are not the currently page that we are seeing:</p>
+<div><pre><code data-lang="scala"><span>// Assign the current scope (the current page) to
+</span><span>// a variable named `$currentArticle` so that within
+</span><span>// other scopes we are able to still reference the 
+</span><span>// current page.
+</span><span></span><span>{{</span> <span>$currentArticle</span> <span>:</span><span>=</span> <span>.</span> <span>}}</span>
+
+<span>// From the list of all pages from the site, only keep
+</span><span>// those whose name is different from the name of the
+</span><span>// current article and whose kind is `page`.
+</span><span>//
+</span><span>// ps.: here we could check something else, like permalink
+</span><span>// or another unique identifier.
+</span><span>// 
+</span><span>// ps.: here you&#39;d probably pick a specific section. To do
+</span><span>// so, perform another `where`.
+</span><span></span><span>{{</span> <span>$articles</span> <span>:</span><span>=</span> <span>where</span> 
+        <span>(</span><span>where</span> <span>$</span><span>.</span><span>Site</span><span>.</span><span>Pages</span> <span>&#34;.Kind&#34;</span> <span>&#34;eq&#34;</span> <span>&#34;page&#34;</span><span>)</span> 
+        <span>&#34;.Title&#34;</span> <span>&#34;!=&#34;</span> <span>$currentArticle</span><span>.</span><span>Title</span> <span>}}</span>
+</code></pre></div><p>note.: the <code>where</code> above <strong>must</strong> be inlined. Here I broke it in multiple lines just for achieving better readability.</p>
+<p>Next, we now create two lists:</p>
+<ol>
+<li>one that references all articles with <strong>at least two</strong> tags that are in the set of tags in the current article; and</li>
+<li>a list that references all articles with <strong>a single</strong> tag in the set of tags of the current article.</li>
+</ol>
+<p>We can call these two <code>veryRelevantArticles</code> and <code>relevantArticles</code> (accordingly):</p>
+<div><pre><code data-lang="scala"><span>// Instantiate each of them with an empty slice.
+</span><span></span><span>{{</span> <span>$veryRelevantArticles</span> <span>:</span><span>=</span> <span>slice</span> <span>}}</span>
+<span>{{</span> <span>$relevantArticles</span> <span>:</span><span>=</span> <span>slice</span> <span>}}</span>
+</code></pre></div><p>With the variables set, we can now start iterating over our list of all article pages and checking how many intersections they have with the set of tags from our current page:</p>
+<div><pre><code data-lang="scala"><span>// Iterate over each of the articles from the list 
+</span><span>// of article pages
+</span><span></span><span>{{</span> <span>range</span> <span>$idx</span><span>,</span> <span>$article</span> <span>:</span><span>=</span> <span>$articles</span> <span>}}</span>
+        <span>// Compute the number of tag intersactions.
+</span><span></span>        <span>{{</span> <span>$numberOfIntersections</span> <span>:</span><span>=</span> <span>len</span> <span>(</span>
+                <span>intersect</span> <span>$article</span><span>.</span><span>Params</span><span>.</span><span>tags</span> <span>$currentArticle</span><span>.</span><span>Params</span><span>.</span><span>Tags</span>
+        <span>)</span> <span>}}</span>
+
+        <span>// For those pages with a big number of 
+</span><span></span>        <span>// intersections (&gt;= 2), put in the first
+</span><span></span>        <span>// slice.
+</span><span></span>        <span>{{</span> <span>if</span> <span>(</span><span>ge</span> <span>$numberOfIntersections</span> <span>2</span><span>)</span> <span>}}</span>
+                <span>{{</span> <span>$veryRelevantArticles</span> <span>=</span> 
+                        <span>$veryRelevantArticles</span> <span>|</span> <span>append</span> <span>$article</span> <span>}}</span>
+        <span>// For the rest (single intersaction), put in the 
+</span><span></span>        <span>// second slice.
+</span><span></span>        <span>{{</span> <span>else</span> <span>if</span> <span>(</span><span>eq</span> <span>$numberOfIntersections</span> <span>1</span><span>)</span> <span>}}</span>
+                <span>{{</span> <span>$relevantArticles</span> <span>=</span> 
+                        <span>$relevantArticles</span> <span>|</span> <span>append</span> <span>$article</span> <span>}}</span>
+        <span>{{</span> <span>end</span> <span>}}</span>
+
+        <span>// note.: I&#39;m ignoring those with 0 intersections.
+</span><span></span><span>{{</span> <span>end</span> <span>}}</span>
+</code></pre></div><p>Once we’ve gotten all interesting articles, now we can create an ordered list starting from those with the biggest number of recommendations to those with the lowest, i.e., we can create a list that corresponds to the concatenation of the two variables we created above:</p>
+<div><pre><code data-lang="scala"><span>// Create an empty slice to hold the final list
+</span><span></span><span>{{</span> <span>$recommendedArticles</span> <span>:</span><span>=</span> <span>slice</span> <span>}}</span>
+
+<span>// For each very recommended article, append to the
+</span><span>// list.
+</span><span></span><span>{{</span> <span>range</span> <span>$veryRelevantArticles</span> <span>}}</span> 
+        <span>{{</span> <span>$recommendedArticles</span> <span>=</span> <span>$recommendedArticles</span> <span>|</span> <span>append</span> <span>.</span> <span>}}</span> 
+<span>{{</span> <span>end</span> <span>}}</span>
+
+<span>// For each recommended article, append to the
+</span><span>// list.
+</span><span>// 
+</span><span>// This will lead to something like 
+</span><span>// [very, very, rec, rec, rec....]
+</span><span></span><span>{{</span> <span>range</span> <span>$relevantArticles</span> <span>}}</span> 
+        <span>{{</span> <span>$recommendedArticles</span> <span>=</span> <span>$recommendedArticles</span> <span>|</span> <span>append</span> <span>.</span> <span>}}</span> 
+<span>{{</span> <span>end</span> <span>}}</span>
+</code></pre></div><p>With the list created, now it’s time to show it.</p>
+<h3 id="displaying-the-recommendation-list">Displaying the recommendation list</h3>
+<p>With a list containing those with the biggest number of intersections first and then the ones that have the less number of intersections, we can move forward with displaying that.</p>
+<p>For this Blog, I took the approach of showing a shuffle of the very first five that are picked from such list.</p>
+<div><pre><code data-lang="scala"><span>&lt;</span><span>ul</span><span>&gt;</span>
+
+<span>// For every article in the set of the first 5
+</span><span>// recommended articles shuffled, show their
+</span><span>// anchor.
+</span><span></span><span>{{</span> <span>range</span> <span>(</span><span>shuffle</span> <span>(</span><span>first</span> <span>5</span> <span>$recommendedArticles</span><span>))</span> <span>}}</span>
+<span>&lt;</span><span>li</span><span>&gt;</span>
+  <span>&lt;</span><span>a</span> <span>href</span><span>=</span><span>&#34;{{ .Permalink }}&#34;</span><span>&gt;</span>
+    <span>{{</span> <span>.</span><span>Title</span> <span>}}</span>
+  <span>&lt;/</span><span>a</span><span>&gt;</span>
+<span>&lt;/</span><span>li</span><span>&gt;</span>
+<span>{{</span> <span>end</span> <span>}}</span>
+
+<span>&lt;/</span><span>ul</span><span>&gt;</span>
+</code></pre></div><p>This guarantees that if I have some articles with big intersections with the content of the current article, they get displayed (even though unordered).</p>
+<div>
+
+<p>If you have a lot of content, and a lot of tags, you might want to create more categories (not only <code>veryRelevant</code> and <code>relevant</code>.</p>
+<p>In such case, something more elaborate could be done.</p>
+
+</div>
+
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>It’s interesting to see how much we can accomplish without “an actual language”.</p>
+<p>Although Hugo gives us some simple primitives, we can build upon that and achieve some pretty satisfactory results.</p>
+<p>What about you? Have you ever achieved something similar doing something different? Please let me know!</p>
+<p>Also, if you have any questions, feel free to drop me a message at <a href="https://twitter.com/cirowrc">@cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

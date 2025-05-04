@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Create Constant Maps, Slices, &amp; Arrays in Golang | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/golang-constant-maps-slices/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Create Constant Maps, Slices, &amp; Arrays in Golang</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p><strong>The quick answer is that Go does not support constant arrays, maps or slices.</strong> However, there are some great workarounds.</p>
+<p>For the most part, I’ve found that <a href="https://www.boot.dev/courses/learn-golang">developers learning Go</a> for the first time are pretty good at using global <em>constants</em> for configuration values rather than global <em>variables</em>. However, a problem arises when we want a constant version of some of the more complex types. The Go compiler does not allow us to <a href="https://blog.boot.dev/golang/golang-make-maps-and-slices/">create array, map, or slice</a> constants. After realizing this, many developers decide to use a dangerous global variable.</p>
+<p>In this article, we will explore some alternative options that allow us to make a <em>form</em> of constant maps, slices, and arrays, albeit with some trade-offs. Please don’t use global variables if you can avoid them!</p>
+<h2 id="so-if-go-doesnt-support-these-types-of-constants-what-is-the-best-alternative">
+  <span> So if Go doesn’t support these types of constants, what is the best alternative?</span> <a href="#so-if-go-doesnt-support-these-types-of-constants-what-is-the-best-alternative">🔗</a></h2>
+<p>The solution is to use <em>initialization functions</em>. While slices, maps, and arrays once created are still able to be mutated, at least you can always get a new <em>copy</em> by re-calling the initialization copy. The new copy is guaranteed to contain the original values.</p>
+<h3 id="example-of-const-array-in-go">
+  <span> Example of const array in Go</span> <a href="#example-of-const-array-in-go">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// An initialization function that creates
+</span></span></span><span><span><span>// and returns a new copy of an array
+</span></span></span><span><span><span></span><span>func</span> <span>getArray</span><span>()</span> <span>[</span><span>5</span><span>]</span><span>int</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>[</span><span>5</span><span>]</span><span>int</span><span>{</span><span>10</span><span>,</span> <span>20</span><span>,</span> <span>30</span><span>,</span> <span>40</span><span>,</span> <span>50</span><span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>// A mutable array of size 3
+</span></span></span><span><span><span></span><span>var</span> <span>nums</span> <span>=</span> <span>[</span><span>3</span><span>]</span><span>int</span> <span>{</span><span>10</span><span>,</span> <span>20</span><span>,</span> <span>30</span><span>}</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="go"><span><span><span>// A mutable array of size 3,
+</span></span></span><span><span><span>// but with syntactic sugar that relies on
+</span></span></span><span><span><span>// the compiler to compute the length
+</span></span></span><span><span><span></span><span>var</span> <span>nums</span> <span>=</span> <span>[</span><span>...</span><span>]</span><span>int</span> <span>{</span><span>10</span><span>,</span> <span>20</span><span>,</span> <span>30</span><span>}</span>
+</span></span></code></pre></div><h3 id="example-of-const-slice-in-go">
+  <span> Example of const slice in Go</span> <a href="#example-of-const-slice-in-go">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// An initialization function
+</span></span></span><span><span><span>// that creates a new slice of strings
+</span></span></span><span><span><span></span><span>func</span> <span>getSlice</span><span>()</span> <span>[]</span><span>string</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>[]</span><span>string</span><span>{</span><span>&#34;hello&#34;</span><span>,</span> <span>&#34;world&#34;</span><span>}</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>// A mutable slice of strings
+</span></span></span><span><span><span></span><span>var</span> <span>msgs</span> <span>=</span> <span>[]</span><span>string</span><span>{</span><span>&#34;hello&#34;</span><span>,</span> <span>&#34;world&#34;</span><span>}</span>
+</span></span></code></pre></div><h3 id="example-of-const-map-in-go">
+  <span> Example of const map in Go</span> <a href="#example-of-const-map-in-go">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// An initialization function
+</span></span></span><span><span><span>// that creates a map
+</span></span></span><span><span><span></span><span>func</span> <span>getMap</span><span>()</span> <span>map</span><span>[</span><span>string</span><span>]</span><span>int</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>map</span><span>[</span><span>string</span><span>]</span><span>int</span><span>{</span>
+</span></span><span><span>        <span>&#34;truck&#34;</span><span>:</span> <span>5</span><span>,</span>
+</span></span><span><span>        <span>&#34;car&#34;</span><span>:</span> <span>7</span><span>,</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>With the quick answer out of the way, let’s explore why initialization functions are our best bet.</p>
+<h2 id="a-brief-refresher-on-globals-and-constants">
+  <span> A Brief Refresher on Globals and Constants</span> <a href="#a-brief-refresher-on-globals-and-constants">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>foo</span>
+</span></span><span><span>
+</span></span><span><span><span>// this is a global constant
+</span></span></span><span><span><span></span><span>const</span> <span>safeRateLimit</span> <span>=</span> <span>10</span>
+</span></span><span><span>
+</span></span><span><span><span>// this is a global variable
+</span></span></span><span><span><span></span><span>var</span> <span>dangerousRateLimit</span> <span>=</span> <span>10</span>
+</span></span></code></pre></div><p>When setting configuration globals, which should be read-only, there’s <strong>no good reason to use a global variable</strong>. By using a variable instead of a constant you:</p>
+<ul>
+<li>Open up the potential for bugs when you or someone else accidentally mutates the value</li>
+<li>Confuse future developers who assume the value is <em>supposed</em> to change</li>
+</ul>
+<p>Most people already know this about global variables thankfully, and switching global variables to global constants is a fairly straightforward task.</p>
+<h2 id="what-happens-if-i-try-to-use-a-constant-array-map-or-slice">
+  <span> What happens if I try to use a constant array, map, or slice?</span> <a href="#what-happens-if-i-try-to-use-a-constant-array-map-or-slice">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/Screen-Shot-2019-10-21-at-7.50.41-AM.png" alt="global slice"/></p>
+<p>Let’s assume the following situation:</p>
+<p>We have a program that needs two sets of configurations. The configurations are:</p>
+<ul>
+<li>A list of supported social media networks</li>
+<li>A rate limit for making API calls to the networks (we assume they all have the same rate limit)</li>
+</ul>
+<p>Now that we know a bit about the configurations we make the following decisions:</p>
+<ul>
+<li>Because these configurations will not change based on the environment the program is running in, we elect to set the values in code rather than using environment variables</li>
+<li>Since they are needed in many places in the app, we choose to scope them globally, instead of passing them into 20+ functions</li>
+<li>Because they should not change during the execution of the program, we decide to make them constant</li>
+</ul>
+<p>We then write the following code:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>rateLimit</span> <span>=</span> <span>10</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>supportedNetworks</span> <span>=</span> <span>[]</span><span>string</span><span>{</span><span>&#34;facebook&#34;</span><span>,</span> <span>&#34;twitter&#34;</span><span>,</span> <span>&#34;instagram&#34;</span><span>}</span>
+</span></span></code></pre></div><p>Much to our surprise, when we try to compile this code we get the following error:</p>
+<p>const initializer []string literal is not a constant</p>
+<p><a href="https://blog.boot.dev/clean-code/constants-in-go-vs-javascript-and-when-to-use-them/">Unlike constants in JavaScript</a>, Go doesn’t allow complex types like slices, maps, or arrays to be constant! Our first instinct may be to lazily switch it to a variable, and add a comment:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>rateLimit</span> <span>=</span> <span>10</span>
+</span></span><span><span>
+</span></span><span><span><span>// this is meant to be constant! Please don&#39;t mutate it!
+</span></span></span><span><span><span></span><span>var</span> <span>supportedNetworks</span> <span>=</span> <span>[]</span><span>string</span><span>{</span><span>&#34;facebook&#34;</span><span>,</span> <span>&#34;twitter&#34;</span><span>,</span> <span>&#34;instagram&#34;</span><span>}</span>
+</span></span></code></pre></div><p>Whenever we find ourselves leaving comments like this, we should be aware we are doing something <strong>wrong</strong>.</p>
+<h2 id="the-better-solution-for-constants-in-go">
+  <span> The Better Solution for Constants in Go</span> <a href="#the-better-solution-for-constants-in-go">🔗</a></h2>
+<p>It’s much better to use an initializer function as we talked about above (not to be confused with Go’s conventional <a href="https://golang.org/doc/effective_go#init">init()</a> function). An initializer function is a function that simply declares something and returns it. Like I explained above, a good solution to our problem would be as follows:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>rateLimit</span> <span>=</span> <span>10</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>getSupportedNetworks</span><span>()</span> <span>[]</span><span>string</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>[]</span><span>string</span><span>{</span><span>&#34;facebook&#34;</span><span>,</span> <span>&#34;twitter&#34;</span><span>,</span> <span>&#34;instagram&#34;</span><span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Now, anywhere in the program, we can use the result of <code>getSupportedNetworks()</code> and we know that there is no way we can get a mutated value.</p>
+<p>Obviously one of the biggest downsides to this approach is that to get a new copy of the configuration you’re literally creating a new copy and making a function call. In the vast majority of cases, this should be fine - if it’s truly just a configuration you probably won’t need to be accessing it too often. That said, if you’re rapidly making new copies constantly the extra memory overhead could become a performance issue.</p>
+<h2 id="good-practices">
+  <span> Good Practices</span> <a href="#good-practices">🔗</a></h2>
+<p>Being able to access to maps and slices that are <em>effectively</em> constant makes your code easier to read, and more importantly, less error-prone. One of the most sought-after traits of a <a href="https://blog.boot.dev/computer-science/comprehensive-guide-to-learn-computer-science-online/">computer scientist</a> for <a href="https://blog.boot.dev/computer-science/highest-paying-computer-science-jobs/">high-end coding jobs</a> is the ability to read, write, and refactor code so that it’s more maintainable and easier to understand.</p>
+<h2 id="are-you-_sure_-that-go-doesnt-support-constant-maps-slices-and-arrays">
+  <span> Are you <em>sure</em> that Go doesn’t support constant maps slices and arrays?</span> <a href="#are-you-_sure_-that-go-doesnt-support-constant-maps-slices-and-arrays">🔗</a></h2>
+<p>Yes. From the official <a href="https://golang.org/ref/spec#Constants">specification</a>:</p>
+<blockquote>
+<p>There are <em>boolean constants</em>, <em>rune constants</em>, <em>integer constants</em>, <em>floating-point constants</em>, <em>complex constants</em>, and <em>string constants</em>. Rune, integer, floating-point, and complex constants are collectively called <em>numeric constants</em>.</p>
+</blockquote>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

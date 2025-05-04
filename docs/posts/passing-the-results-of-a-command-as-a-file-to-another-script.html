@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Passing the results of a command as a file to another script | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/bash-process-substitution/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Passing the results of a command as a file to another script</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>Being accustomed to tying together multiple bash programs with the pipe operator, sometimes I’ve seen myself not being able to easily do so when a command expected the input to come from a file instead of <code>stdin</code>.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/pipe-to-dirname-fails.svg" alt="Illustration of a pipe to dirname failing "/>
+
+    <figcaption>
+        Given that `dirname` doesn&#39;t expect input from `stdin`, piping to it doesn&#39;t work as expected
+      </figcaption>
+    
+</figure>
+
+<p>Using process substitution we can make sure that pretty much every command can perform the equivalent of taking contents from standard input.</p>
+<p><em>tl;dr: <code>dirname &lt;(echo &#34;/var/lib/my/file.txt&#34;)</code></em></p>
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ul>
+<li><a href="#rationale">Rationale</a></li>
+<li><a href="#example-consuming-from-stdin-using-go">Example: consuming from <code>stdin</code> using Go</a></li>
+<li><a href="#example-consuming-from-a-file-using-go">Example: consuming from a file using Go</a></li>
+<li><a href="#example-consuming-from-both-a-file-and-stdin-using-go">Example: consuming from both a file and stdin using Go</a></li>
+<li><a href="#using-process-substitution-to-pass-a-temporary-file-consuming-the-output-of-a-command">Using process substitution to pass a temporary file consuming the output of a command</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h3 id="rationale">Rationale</h3>
+<p>Although it’s prevalent for some programs like <a href="https://stedolan.github.io/jq/"><code>jq</code></a> (the command-line JSON processor) to receive things from its standard input, process them, and then give the response back on the standard output, not every program is made like that.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/jq-common-stdin-stdout.svg" alt="Visualization of JQ taking a JSON input from the standard intput and producing a filter JSON as output "/>
+
+    <figcaption>
+        JQ receiving JSON from stdin and procuding a filtered output at stdout
+      </figcaption>
+    
+</figure>
+
+<p>Some programs, like <a href="https://linux.die.net/man/1/dirname"><code>dirname</code></a>, expect that the input comes as a form of positional argument (others usually expect a flag).</p>
+<p>While that might not look like a big deal, for some use cases where you want to streamline operations between multiple processes, it might feel like you can’t easily do that when a file is expected.</p>
+<p>The programmer that created the command line interface for the program needs to be aware that someone might want to use its software in such manner and then code it for that.</p>
+<h3 id="example-consuming-from-stdin-using-go">Example: consuming from <code>stdin</code> using Go</h3>
+<p>For instance, if we’re doing a byte counter in <a href="https://golang.org">Go</a>, that’s how we’d do it:</p>
+<div><pre><code data-lang="go"><span>package</span> <span>main</span>
+
+<span>import</span> <span>(</span>
+	<span>&#34;bufio&#34;</span>
+	<span>&#34;fmt&#34;</span>
+	<span>&#34;io&#34;</span>
+	<span>&#34;os&#34;</span>
+<span>)</span>
+
+<span>// maxBufferSize defines the maximum size of
+</span><span>// the buffer that we&#39;re creating for temporarily
+</span><span>// holding the contents of what&#39;s coming from
+</span><span>// stdin.
+</span><span></span><span>const</span> <span>maxBufferSize</span> <span>=</span> <span>4096</span>
+
+<span>func</span> <span>main</span><span>()</span> <span>{</span>
+	<span>var</span> <span>totalRead</span> <span>uint64</span>
+
+	<span>buffer</span> <span>:=</span> <span>make</span><span>([]</span><span>byte</span><span>,</span> <span>maxBufferSize</span><span>)</span>
+	<span>reader</span> <span>:=</span> <span>bufio</span><span>.</span><span>NewReader</span><span>(</span><span>os</span><span>.</span><span>Stdin</span><span>)</span>
+
+        <span>// Keep reading in a buffered fashion
+</span><span></span>        <span>// from `stdin` until an EOF is returned
+</span><span></span>        <span>// in the form of an error.
+</span><span></span>        <span>//
+</span><span></span>        <span>// When that happens, output to `stdout`
+</span><span></span>        <span>// the total count and exit.
+</span><span></span>	<span>for</span> <span>{</span>
+		<span>n</span><span>,</span> <span>err</span> <span>:=</span> <span>reader</span><span>.</span><span>Read</span><span>(</span><span>buffer</span><span>)</span>
+		<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+			<span>if</span> <span>err</span> <span>==</span> <span>io</span><span>.</span><span>EOF</span> <span>{</span>
+				<span>break</span>
+			<span>}</span>
+
+			<span>fmt</span><span>.</span><span>Fprintln</span><span>(</span><span>os</span><span>.</span><span>Stderr</span><span>,</span> <span>err</span><span>.</span><span>Error</span><span>())</span>
+			<span>os</span><span>.</span><span>Exit</span><span>(</span><span>1</span><span>)</span>
+		<span>}</span>
+
+		<span>totalRead</span> <span>+=</span> <span>uint64</span><span>(</span><span>n</span><span>)</span>
+	<span>}</span>
+
+        <span>// Write the `stdout` the total amount of
+</span><span></span>        <span>// bytes that were read.
+</span><span></span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>totalRead</span><span>)</span>
+<span>}</span>
+</code></pre></div><p>Compile the code with a standard <code>go build</code> and check that it indeed works as expected:</p>
+<div><pre><code data-lang="sh"><span># Create a 1MB file named `./1M`</span>
+dd <span>if</span><span>=</span>/dev/zero <span>of</span><span>=</span>./1M <span>bs</span><span>=</span><span>1024</span> <span>count</span><span>=</span><span>1024</span>
+
+
+<span># Confirm that we sent 1024*1024 bytes to the file</span>
+ls -lah <span>|</span> grep 1M
+-rw-r--r--  <span>1</span> cirocosta  wheel   1.0M  <span>4</span> Sep 21:13 1M
+
+
+<span># Check how many bytes are there in this file by</span>
+<span># running our go code by sending the whole contents</span>
+<span># of the file to the standard input of our command</span>
+cat ./1M <span>|</span> ./byte-counter
+<span>1048576</span>
+</code></pre></div><h3 id="example-consuming-from-a-file-using-go">Example: consuming from a file using Go</h3>
+<p>If we were about to change this code to not take from <code>stdin</code>, but instead, read from a file, the changes wouldn’t be significant: take the filename either from a flag or a positional argument and then read it.</p>
+<div><pre><code data-lang="diff"><span>diff --git a/tmp/before b/tmp/after
+</span><span>index fe7f39c..e4102af 100644
+</span><span></span><span>--- a/tmp/before
+</span><span></span><span>+++ b/tmp/after
+</span><span></span><span>@@ -16,8 +16,24 @@ const maxBufferSize = 4096
+</span><span></span> func main() {
+        var totalRead uint64
+
+<span>+       if len(os.Args) &lt; 2 {
+</span><span>+               fmt.Fprintln(os.Stderr, &#34;error: not enough arguments&#34;)
+</span><span>+               fmt.Fprintln(os.Stderr, &#34;Usage: byte-counter &lt;filename&gt;&#34;)
+</span><span>+               os.Exit(1)
+</span><span>+       }
+</span><span>+
+</span><span>+       fileName := os.Args[1]
+</span><span>+
+</span><span>+       // Open the file that the user provided us
+</span><span>+       // with a path. 
+</span><span>+       // Given that `os.Open` returns os.File which 
+</span><span>+       // implements the `io.Reader` interface, we don&#39;t 
+</span><span>+       // need to change the rest of the code.
+</span><span>+       reader, err := os.Open(fileName)
+</span><span>+       if err != nil {
+</span><span>+               fmt.Fprintln(os.Stderr, err)
+</span><span>+               os.Exit(1)
+</span><span>+       }
+</span><span>+
+</span><span>+       defer file.Close()
+</span><span>+
+</span><span></span>        buffer := make([]byte, maxBufferSize)
+<span>@@ -41,8 +57,5 @@ func main() {
+</span></code></pre></div><p>Even better, because it doesn’t matter to us what the reader is (the interface only cares about the methods that the implementor implements), we can modify the code very little.</p>
+<h3 id="example-consuming-from-both-a-file-and-stdin-using-go">Example: consuming from both a file and stdin using Go</h3>
+<p>We can go even deeper and simplify our reading logic and make it handle both cases - when it should read from a file and when it should read from the standard input:</p>
+<div><pre><code data-lang="go"><span>package</span> <span>main</span>
+
+<span>import</span> <span>(</span>
+	<span>&#34;fmt&#34;</span>
+	<span>&#34;io&#34;</span>
+	<span>&#34;io/ioutil&#34;</span>
+	<span>&#34;os&#34;</span>
+<span>)</span>
+
+<span>// maxBufferSize defines the maximum size of
+</span><span>// the buffer that we&#39;re creating for temporarily
+</span><span>// holding the contents of what&#39;s coming from
+</span><span>// stdin.
+</span><span></span><span>const</span> <span>maxBufferSize</span> <span>=</span> <span>4096</span>
+
+<span>func</span> <span>main</span><span>()</span> <span>{</span>
+	<span>var</span> <span>(</span>
+		<span>err</span>    <span>error</span>
+		<span>reader</span> <span>io</span><span>.</span><span>Reader</span>
+		<span>writer</span> <span>=</span> <span>ioutil</span><span>.</span><span>Discard</span>
+	<span>)</span>
+
+	<span>// Make sure that the user always supplies
+</span><span></span>	<span>// a positional argument to be explcit that
+</span><span></span>	<span>// it either wants to consume the input of
+</span><span></span>	<span>// stdin or a file.
+</span><span></span>	<span>if</span> <span>len</span><span>(</span><span>os</span><span>.</span><span>Args</span><span>)</span> <span>&lt;</span> <span>2</span> <span>{</span>
+		<span>fmt</span><span>.</span><span>Fprintln</span><span>(</span><span>os</span><span>.</span><span>Stderr</span><span>,</span> <span>&#34;error: not enough arguments&#34;</span><span>)</span>
+		<span>fmt</span><span>.</span><span>Fprintln</span><span>(</span><span>os</span><span>.</span><span>Stderr</span><span>,</span> <span>&#34;Usage: byte-counter (filename|-)&#34;</span><span>)</span>
+		<span>os</span><span>.</span><span>Exit</span><span>(</span><span>1</span><span>)</span>
+	<span>}</span>
+
+	<span>if</span> <span>os</span><span>.</span><span>Args</span><span>[</span><span>1</span><span>]</span> <span>==</span> <span>&#34;-&#34;</span> <span>{</span>
+		<span>reader</span> <span>=</span> <span>os</span><span>.</span><span>Stdin</span>
+	<span>}</span> <span>else</span> <span>{</span>
+		<span>reader</span><span>,</span> <span>err</span> <span>=</span> <span>os</span><span>.</span><span>Open</span><span>(</span><span>os</span><span>.</span><span>Args</span><span>[</span><span>1</span><span>])</span>
+		<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+			<span>fmt</span><span>.</span><span>Fprintln</span><span>(</span><span>os</span><span>.</span><span>Stderr</span><span>,</span> <span>err</span><span>)</span>
+			<span>os</span><span>.</span><span>Exit</span><span>(</span><span>1</span><span>)</span>
+		<span>}</span>
+
+		<span>defer</span> <span>reader</span><span>.(</span><span>*</span><span>os</span><span>.</span><span>File</span><span>).</span><span>Close</span><span>()</span>
+	<span>}</span>
+
+	<span>// Use the `io.Copy` method to read the contents
+</span><span></span>	<span>// of the file into a temporary buffer and then
+</span><span></span>	<span>// write those to the discard facility (/dev/null).
+</span><span></span>	<span>//
+</span><span></span>	<span>// Naturally, there&#39;s no need for the `write` part,
+</span><span></span>	<span>// but this simplifies our code.
+</span><span></span>	<span>n</span><span>,</span> <span>err</span> <span>:=</span> <span>io</span><span>.</span><span>Copy</span><span>(</span><span>writer</span><span>,</span> <span>reader</span><span>)</span>
+	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+		<span>fmt</span><span>.</span><span>Fprintln</span><span>(</span><span>os</span><span>.</span><span>Stderr</span><span>,</span> <span>err</span><span>)</span>
+		<span>os</span><span>.</span><span>Exit</span><span>(</span><span>1</span><span>)</span>
+	<span>}</span>
+
+	<span>// Write the `stdout` the total amount of
+</span><span></span>	<span>// bytes that were read.
+</span><span></span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>n</span><span>)</span>
+<span>}</span>
+</code></pre></div><p>Given that for <a href="https://golang.org/pkg/io/#Copy"><code>io.Copy</code></a> all that matters is something that implements the <code>io.Reader</code> interface (and well, both <code>stdin</code> and a file can be referred by a file descriptor in Linux anyway - pretty close semantics), we can use both <code>os.Stdin</code> and the <code>os.File</code> interchangeably with <code>io.Copy</code>. Neat!</p>
+<h3 id="using-process-substitution-to-pass-a-temporary-file-consuming-the-output-of-a-command">Using process substitution to pass a temporary file consuming the output of a command</h3>
+<p>While it’s pretty well known that bash can interpolate the results of the execution of a given command (like, <code>echo $(date)</code> becomes <code>echo Sun 9 Sep 2018 20:53:41 EDT</code>), it is also capable of interpolating the execution of a command with a named pipe (see the article <a href="https://www.linuxjournal.com/article/2156">Introduction to Named Pipes</a> for some great info about what pipes are).</p>
+<p>Here is where <a href="https://www.gnu.org/software/bash/manual/html_node/Process-Substitution.html">process substitution</a> comes in place.</p>
+<p>Whenever bash spots the <code>&lt;(cmd)</code> operator, it runs the given <code>cmd</code> and then makes its standard output be connected to a temporary named pipe that it creates.</p>
+<pre><code>dirname &lt;(echo &#34;/var/lib/my/file.txt&#34;)
+                |
+                *-----&gt; 1. creates a named pipe under /dev/fd/&lt;number&gt;
+                *-----&gt; 2. substitutes the execution by the file path
+
+                        dirname /dev/fd/&lt;number&gt;
+
+                        *---&gt; executes the `dirname` command
+</code></pre><p>The interpolation then substitutes such syntax by the path to this temporary file and now whatever program you’re running is capable of reading from this temporary file!</p>
+<div>
+
+<p><em>ps</em>: the resulting temporary file is <strong>not</strong> a regular file.</p>
+<p>If the command you’re supplying this named pipe to checks if the file is a regular file, the entire operation might fail (as the file types are different).</p>
+
+</div>
+
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>Having a little bit of extra knowledge about some capabilities of bash is definitely handy.</p>
+<p>I really hope I enjoyed this quick bash tip tied with a bit of Go as well.</p>
+<p>Please let me know if you have any questions or additions! I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter and would love your feedback!</p>
+<p>Cheers,</p>
+<p>Ciro</p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

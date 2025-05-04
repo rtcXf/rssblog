@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A bpftrace Ansible role | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/gists/a-bpftrace-ansible-role/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>A bpftrace Ansible role</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+
+  <header>
+    
+    <h2 itemprop="description">Check out how to fetch and install bpftrace using Ansible</h2>
+
+    
+  </header>
+
+  <article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>Today I spotted something <strong>very</strong> interesting in my Twitter (I’m <a href="https://twitter.com/cirowrc">@cirowrc</a> there, by the way):</p>
+<blockquote data-twitter-extracted-i1746337640022948336="true"><p lang="en" dir="ltr">To learn bpftrace, there is a reference guide and one-liners tutorial: <a href="https://t.co/EztuxTK9iJ">https://t.co/EztuxTK9iJ</a> <a href="https://t.co/foCH2TUCpv">https://t.co/foCH2TUCpv</a></p>— Brendan Gregg (@brendangregg) <a href="https://twitter.com/brendangregg/status/1049319776743387136?ref_src=twsrc%5Etfw">October 8, 2018</a></blockquote>
+
+
+<p>That’s right, <a href="http://dtrace.org/guide/preface.html">dtrace</a> functionality for Linux via eBPF “superpowers”.</p>
+<p>To be very honest, I know almost nothing about <code>dtrace</code> itself, but I’ve heard about it many times - it brings to the operator a framework that allows he/she to observe what’s going on throughout the stack: be it in the user space, or the kernel space.</p>
+<p>I’ll be taking a deeper look at it soon, but meanwhile, <a href="https://github.com/iovisor/bpftrace"><code>bpftrace</code></a> is out there, and you can check it out right now!</p>
+<p>In this quick post, you can check a sample <a href="https://docs.ansible.com/ansible/latest/index.html">Ansible</a> that’s able to install the dependencies of <code>bpftrace</code> as well as build and install it.</p>
+<h3 id="the-bpftrace-ansible-role">The bpftrace ansible role</h3>
+<p>The role is pretty much a follow up of the <a href="https://github.com/iovisor/bpftrace/blob/master/INSTALL.md">INSTALL guide</a> from <code>bpftrace</code>, targetting at an Ubuntu Bionic (18.04) installation.</p>
+<div><pre><code data-lang="yml"><span>---</span><span>
+</span><span></span>- <span>name</span><span>:</span><span> </span><span>&#39;add llvm apt key&#39;</span><span>
+</span><span>  </span><span>apt_key</span><span>:</span><span>
+</span><span>    </span><span>url</span><span>:</span><span> </span><span>&#39;https://apt.llvm.org/llvm-snapshot.gpg.key&#39;</span><span>
+</span><span>    </span><span>state</span><span>:</span><span> </span><span>&#39;present&#39;</span><span>
+</span><span>
+</span><span></span>- <span>name</span><span>:</span><span> </span><span>&#39;add llvm apt repo&#39;</span><span>
+</span><span>  </span><span>apt_repository</span><span>:</span><span>
+</span><span>    </span><span>repo</span><span>:</span><span> </span><span>&#39;deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-6.0 main&#39;</span><span>
+</span><span>    </span><span>state</span><span>:</span><span> </span><span>&#39;present&#39;</span><span>
+</span><span>    </span><span>update_cache</span><span>:</span><span> </span><span>&#39;yes&#39;</span><span>
+</span><span>
+</span><span></span>- <span>name</span><span>:</span><span> </span><span>&#39;install bpftrace dependencies&#39;</span><span>
+</span><span>  </span><span>apt</span><span>:</span><span>
+</span><span>    </span><span>update_cache</span><span>:</span><span> </span><span>&#39;yes&#39;</span><span>
+</span><span>    </span><span>cache_valid_time</span><span>:</span><span> </span><span>3600</span><span>
+</span><span>    </span><span>name</span><span>:</span><span> </span><span>&#39;{{ item }}&#39;</span><span>
+</span><span>    </span><span>state</span><span>:</span><span> </span><span>&#39;present&#39;</span><span>
+</span><span>  </span><span>with_items</span><span>:</span><span>
+</span><span>    </span>- <span>&#39;bison&#39;</span><span>
+</span><span>    </span>- <span>&#39;clang-6.0&#39;</span><span>
+</span><span>    </span>- <span>&#39;clang-6.0-doc&#39;</span><span>
+</span><span>    </span>- <span>&#39;clang-tools-6.0&#39;</span><span>
+</span><span>    </span>- <span>&#39;cmake&#39;</span><span>
+</span><span>    </span>- <span>&#39;flex&#39;</span><span>
+</span><span>    </span>- <span>&#39;g++&#39;</span><span>
+</span><span>    </span>- <span>&#39;git&#39;</span><span>
+</span><span>    </span>- <span>&#39;libclang-6.0-dev&#39;</span><span>
+</span><span>    </span>- <span>&#39;libclang-common-6.0-dev&#39;</span><span>
+</span><span>    </span>- <span>&#39;libclang1-6.0&#39;</span><span>
+</span><span>    </span>- <span>&#39;libelf-dev&#39;</span><span>
+</span><span>    </span>- <span>&#39;libfl-dev&#39;</span><span>
+</span><span>    </span>- <span>&#39;libllvm6.0&#39;</span><span>
+</span><span>    </span>- <span>&#39;llvm-6.0&#39;</span><span>
+</span><span>    </span>- <span>&#39;llvm-6.0-dev&#39;</span><span>
+</span><span>    </span>- <span>&#39;llvm-6.0-runtime&#39;</span><span>
+</span><span>    </span>- <span>&#39;zlib1g-dev&#39;</span><span>
+</span><span>
+</span><span>
+</span><span></span>- <span>name</span><span>:</span><span> </span><span>&#39;clone bpftrace repository&#39;</span><span>
+</span><span>  </span><span>git</span><span>:</span><span>
+</span><span>    </span><span>repo</span><span>:</span><span> </span><span>&#39;https://github.com/iovisor/bpftrace&#39;</span><span>
+</span><span>    </span><span>dest</span><span>:</span><span> </span><span>&#39;/usr/share/bpftrace&#39;</span><span>
+</span><span>    </span><span>force</span><span>:</span><span> </span><span>&#39;yes&#39;</span><span>
+</span><span>
+</span><span></span>- <span>name</span><span>:</span><span> </span><span>&#39;create build directory&#39;</span><span>
+</span><span>  </span><span>file</span><span>:</span><span>
+</span><span>    </span><span>path</span><span>:</span><span> </span><span>&#39;/usr/share/bpftrace/build&#39;</span><span>
+</span><span>    </span><span>state</span><span>:</span><span> </span><span>&#39;directory&#39;</span><span>
+</span><span>    </span><span>mode</span><span>:</span><span> </span><span>0755</span><span>
+</span><span>
+</span><span></span>- <span>name</span><span>:</span><span> </span><span>&#39;prepare makefile&#39;</span><span>
+</span><span>  </span><span>command</span><span>:</span><span> </span><span>&#39;cmake -DCMAKE_BUILD_TYPE=DEBUG ..&#39;</span><span>
+</span><span>  </span><span>args</span><span>:</span><span>
+</span><span>    </span><span>chdir</span><span>:</span><span> </span><span>&#39;/usr/share/bpftrace/build&#39;</span><span>
+</span><span>
+</span><span></span>- <span>name</span><span>:</span><span> </span><span>&#39;build&#39;</span><span>
+</span><span>  </span><span>command</span><span>:</span><span> </span><span>&#39;make -j3&#39;</span><span>
+</span><span>  </span><span>args</span><span>:</span><span>
+</span><span>    </span><span>chdir</span><span>:</span><span> </span><span>&#39;/usr/share/bpftrace/build&#39;</span><span>
+</span><span>
+</span><span></span>- <span>name</span><span>:</span><span> </span><span>&#39;install&#39;</span><span>
+</span><span>  </span><span>command</span><span>:</span><span> </span><span>&#39;make -j3&#39;</span><span>
+</span><span>  </span><span>args</span><span>:</span><span>
+</span><span>    </span><span>chdir</span><span>:</span><span> </span><span>&#39;/usr/share/bpftrace/build&#39;</span><span>
+</span></code></pre></div><p>Run it against your machine (with privileges) and you should be good to go!</p>
+<p>You can find related roles (like one for installing <a href="https://github.com/iovisor/bcc"><code>bcc</code></a>) here: <a href="https://github.com/cirocosta/mylinux">github.com/cirocosta/mylinux</a>.</p>
+<p>Please let me know if you need any help! I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+
+    </section>
+  </article>
+
+</div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

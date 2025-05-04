@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Adding privileged containers to Docker Swarm mode | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/adding-privileged-to-docker-swarm-mode/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Adding privileged containers to Docker Swarm mode</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>There’s been some time since an issue has been open under SwarmKit to address the lack of support to having privileged containers (see <a href="https://github.com/docker/swarmkit/issues/1030)">https://github.com/docker/swarmkit/issues/1030)</a>.</p>
+<p>Although pull requests have been made (see <a href="https://github.com/docker/swarmkit/pull/1129,">https://github.com/docker/swarmkit/pull/1129,</a> for instance), it seems like there’s no intention by the Docker team to have the feature added before entitlements get into moby (see <a href="https://github.com/moby/moby/issues/32801)">https://github.com/moby/moby/issues/32801)</a>.</p>
+<p>Knowing those facts, and given that I’ve forked docker before (I blogged before on <a href="https://ops.tips/blog/compiling-your-own-forked-docker-release/">how to compile and run your own docker fork</a>), why not give a try forking it and add support to privileged containers?</p>
+<p>Here’s how the journey looked like.</p>
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ol>
+<li><a href="#1-the-idea">The idea</a></li>
+<li><a href="#2-modifying-the-cli">Modifying the CLI</a></li>
+<li><a href="#3-modifying-swarmkit">Modifying SwarmKit</a></li>
+<li><a href="#4-modifying-the-docker-daemon">Modifying the Docker Daemon</a></li>
+</ol>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<p>Let’s get started then!</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/fork-docker-privileged-journey.svg" alt="Illustration of the journey to get the fork working "/>
+
+    
+</figure>
+
+<h3 id="1-the-idea">1. The idea</h3>
+<p>The whole point of the modifications is as outlined in the swarmkit pull request:</p>
+<blockquote>
+<p>“When create some container, we need <code>privileged=True</code>. But swarmkit does not support this.”</p>
+</blockquote>
+<blockquote>
+<p><a href="https://github.com/docker/swarmkit/issues/1030#issue-161106957">https://github.com/docker/swarmkit/issues/1030#issue-161106957</a></p>
+</blockquote>
+<p>That is, the <code>--privileged</code> flag that exists in a regular <code>docker run</code> does not exist in <code>docker service create</code> (and the subsequent API calls used by the CLI).</p>
+<p>Having that enables us to have any interesting functionality that requires more privileges than the default ones chosen by the Docker contributors. For instance, with <code>--privileged</code> you can:</p>
+<ul>
+<li>run docker in docker (<code>dind</code>);</li>
+<li>run an NFS server;</li>
+<li>create special devices; and</li>
+<li>more.</li>
+</ul>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/docker-privileged-instantiation.svg" alt="Representation of the process of instantiating a privileged service "/>
+
+    
+</figure>
+
+<p>As shown in the picture above, there are many places where our <code>privileged</code> annotation has to go on.</p>
+<p>Let’s put them in place.</p>
+<h3 id="2-modifying-the-cli">2. Modifying the CLI</h3>
+<p>Not wanting to interact with the new feature using the remote api directly (using <code>curl</code>, for instance), I decided to start messing with the <a href="https://github.com/docker/cli">docker/cli</a> repository.</p>
+<p>Here is where we’re able to expose the <code>--privileged</code> flag to users of the <code>docker</code> client. For this part, check out the <code>privileged</code> branch from my fork: <a href="https://github.com/cirocosta/docker-cli/tree/privileged">https://github.com/cirocosta/docker-cli/tree/privileged</a></p>
+<p>For any Go developer who has already developed an application with flag parsing and all that stuff, the first thing to search for is the place where the definition of the flags to be parsed live.</p>
+<p>Given that the <code>docker</code> client has multiple subcommands, the organization in the repository follows the same pattern:</p>
+<div><pre><code data-lang="sh">tree ./cli/command -L <span>1</span>
+./cli/command
+<span>|</span>-- bundlefile
+<span>|</span>-- checkpoint
+<span>|</span>-- image
+<span>|</span>-- inspect
+...
+<span>|</span>-- network
+<span>|</span>-- node
+...
+<span>|</span>-- service     <span># &lt;&lt;&lt;&lt;</span>
+<span>|</span>-- stack
+...
+<span>`</span>-- volume
+</code></pre></div><p>Getting there under <code>service</code>, there’s an <code>opts.go</code> file with all the options that the subcommands of <code>service</code> needs. There you go:</p>
+<div><pre><code data-lang="diff"><span>diff --git a/cli/command/service/opts.go b/cli/command/service/opts.go
+</span><span>index 6d427451..b61b6c0f 100644
+</span><span></span><span>--- a/cli/command/service/opts.go
+</span><span></span><span>+++ b/cli/command/service/opts.go
+</span><span></span><span>@@ -483,6 +483,7 @@ type serviceOptions struct {
+</span><span></span>        stopSignal      string
+<span>+       privileged      bool
+</span><span></span>        mounts          opts.MountOpt
+        dns             opts.ListOpts
+        dnsSearch       opts.ListOpts
+<span>@@ -622,6 +623,7 @@ func (options *serviceOptions) ToService(ctx context.Context, apiClient client.N
+</span><span></span>                                Groups:     options.groups.GetAll(),
+                                StopSignal: options.stopSignal,
+                                TTY:        options.tty,
+<span>+                               Privileged: options.privileged,
+</span><span></span>                                ReadOnly:   options.readOnly,
+                                Mounts:     options.mounts.Value(),
+                                DNSConfig: &amp;swarm.DNSConfig{
+<span>@@ -795,6 +797,8 @@ func addServiceFlags(flags *pflag.FlagSet, opts *serviceOptions, defaultFlagValu
+</span><span></span><span>+       flags.BoolVar(&amp;opts.privileged, flagPrivileged, false, &#34;Give extended privileges to the service&#34;)
+</span><span>+       flags.SetAnnotation(flagPrivileged, &#34;version&#34;, []string{&#34;1.35&#34;})
+</span><span></span>        flags.BoolVarP(&amp;opts.tty, flagTTY, &#34;t&#34;, false, &#34;Allocate a pseudo-TTY&#34;)
+
+<span>@@ -878,6 +882,7 @@ const (
+</span><span></span><span>+       flagPrivileged              = &#34;privileged&#34;
+</span><span></span>        flagUpdateDelay             = &#34;update-delay&#34;
+</code></pre></div><p>If we were able to compile <code>cli</code>, then <em>voilà</em>, we’d have <code>--privileged</code> setting a <code>Privileged</code> boolean to <code>true</code> in the service spec.</p>
+<p>Why wouldn’t it compile yet? Because the service spec doesn’t have such field! Time to modify SwarmKit.</p>
+<h3 id="3-modifying-swarmkit">3. Modifying SwarmKit</h3>
+<p>Looking at <code>api/specs.proto</code>, we can see the definition of the messages that go through the SwarmKit API.</p>
+<p>There we can find one type of message that carries the type of information that fits our purpose: <code>ContainerSpec</code>.</p>
+<blockquote>
+<p>“Container specifies runtime parameters for a container.”</p>
+</blockquote>
+<blockquote>
+<p>see <a href="https://github.com/cirocosta/swarmkit/blob/5598a39a89bd7482864c6279ae5544d9e8aa5299/api/specs.proto#L164">swarmkit#api/specs.proto line 164</a></p>
+</blockquote>
+<p>That could only mean one thing - we had to proceed to add a “privileged” to this <code>struct</code>.</p>
+<p>Being a property of a <code>protobuf</code> message, that also meant that I’d need to regenerate the Golang definitions that are made up from the <code>protobuf</code> specification.  That is, before proceeding, I’d need to grab the <code>protobuf</code> compiler tooling ready.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/swarmkit-flow.svg" alt="Representation of the modification of the swarmkit api protobuf message "/>
+
+    
+</figure>
+
+<p>The installation goes like this:</p>
+<ol>
+<li>grab a <code>protoc</code> (<code>protobuf</code> compiler) release; and</li>
+<li>install the binary and the includes.</li>
+</ol>
+<p>So, go to the <a href="https://github.com/google/protobuf/releases">protobuf releases page</a> and grab the <code>x86-64</code> (<code>amd64</code>) version.</p>
+<p>That’s a zip that comes with the following:</p>
+<pre><code>Archive:  ./protoc-3.5.1-linux-x86_64.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+        0  2017-12-22 19:21   include/
+        0  2017-12-22 19:21   include/google/
+        0  2017-12-22 19:21   include/google/protobuf/
+     3781  2017-12-22 19:21   include/google/protobuf/struct.proto
+     6283  2017-12-22 19:21   include/google/protobuf/type.proto
+    36277  2017-12-22 19:21   include/google/protobuf/descriptor.proto
+     7734  2017-12-22 19:21   include/google/protobuf/api.proto
+     2422  2017-12-22 19:21   include/google/protobuf/empty.proto
+        0  2017-12-22 19:21   include/google/protobuf/compiler/
+     8200  2017-12-22 19:21   include/google/protobuf/compiler/plugin.proto
+     5483  2017-12-22 19:21   include/google/protobuf/any.proto
+     8196  2017-12-22 19:21   include/google/protobuf/field_mask.proto
+     3745  2017-12-22 19:21   include/google/protobuf/wrappers.proto
+     5975  2017-12-22 19:21   include/google/protobuf/timestamp.proto
+     4890  2017-12-22 19:21   include/google/protobuf/duration.proto
+     2352  2017-12-22 19:21   include/google/protobuf/source_context.proto
+        0  2017-12-22 19:21   bin/
+  4433736  2017-12-21 19:11   bin/protoc
+      715  2017-12-22 19:21   readme.txt
+---------                     -------
+  4529789                     19 files
+</code></pre><p>The <code>/bin/protoc</code> is the binary that we need to have in our <code>$PATH</code>, while those <code>protobuf</code> definitions under <code>include</code> must be placed in our default include path (<code>/usr/local/include</code>).</p>
+<p>In summary, here’s what you can do:</p>
+<div><pre><code data-lang="sh"><span># Grab the release zip</span>
+curl <span>\
+</span><span></span>        -SL <span>\
+</span><span></span>        -o protoc.zip <span>\
+</span><span></span>        https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip
+
+<span># Unzip it</span>
+unzip ./protoc.zip
+
+<span># Move the correpsonding files</span>
+sudo mv ./bin/protoc /usr/local/bin
+sudo mv ./include/google /usr/local/include/google
+</code></pre></div><p>With that, we have protobuf set for generating <code>swarmkit</code> protobuf files.</p>
+<p>note.: we don’t need to install <code>github.com/golang/protobuf/protoc-gen-go</code> given that <code>swarmkit</code> uses <code>protoc-gen-gogoswarm</code>.</p>
+<p>With that done, we’re not able to apply the changes to our local clone of <code>swarmkit</code>:</p>
+<div><pre><code data-lang="diff"><span>--- a/agent/exec/dockerapi/container.go
+</span><span></span><span>+++ b/agent/exec/dockerapi/container.go
+</span><span></span><span>@@ -209,6 +209,7 @@ func (c *containerConfig) hostConfig() *enginecontainer.HostConfig {
+</span><span></span>                PortBindings: c.portBindings(),
+                Init:         c.init(),
+                Isolation:    c.isolation(),
+<span>+               Privileged:   c.spec().Privileged,
+</span><span></span>        }
+ 
+        // The format of extra hosts on swarmkit is specified in:
+
+
+<span>diff --git a/cmd/swarmctl/service/flagparser/container.go b/cmd/swarmctl/service/flagparser/container.go
+</span><span>index 1507a168..37f11dd1 100644
+</span><span></span><span>--- a/cmd/swarmctl/service/flagparser/container.go
+</span><span></span><span>+++ b/cmd/swarmctl/service/flagparser/container.go
+</span><span></span><span>@@ -15,6 +15,15 @@ func parseContainer(flags *pflag.FlagSet, spec *api.ServiceSpec) error {
+</span><span></span>                spec.Task.GetContainer().Image = image
+        }
+ 
+<span>+       if flags.Changed(&#34;privileged&#34;) {
+</span><span>+               privileged, err := flags.GetBool(&#34;privileged&#34;)
+</span><span>+               if err != nil {
+</span><span>+                       return err
+</span><span>+               }
+</span><span>+
+</span><span>+               spec.Task.GetContainer().Privileged = privileged
+</span><span>+       }
+</span><span>+
+</span><span></span>        if flags.Changed(&#34;hostname&#34;) {
+                hostname, err := flags.GetString(&#34;hostname&#34;)
+                if err != nil {
+
+<span>diff --git a/api/specs.proto b/api/specs.proto
+</span><span>index 14448d04..a5945ec3 100644
+</span><span></span><span>--- a/api/specs.proto
+</span><span></span><span>+++ b/api/specs.proto
+</span><span></span><span>@@ -318,6 +318,9 @@ message ContainerSpec {
+</span><span></span>        // PidsLimit prevents from OS resource damage by applications inside the container 
+        // using fork bomb attack.
+        int64 pidsLimit = 25;
+<span>+
+</span><span>+       // Privileged gives extended privileges to the container
+</span><span>+       bool privileged = 26;
+</span><span></span> }
+</code></pre></div><p><code>protobuf</code> definition updated, now generate the golang <code>protobuf</code> files using <code>swarmkit</code>’s makefile target:</p>
+<div><pre><code data-lang="sh"><span># Install extra dependencies that might be needed.</span>
+make setup
+
+<span># Generate the protobuf golang files.</span>
+make generate
+
+<span># Build the swarkit binaries</span>
+make binaries
+</code></pre></div><p>With everything getting properly compiled, that means that we should now proceed to the next step - incorporating the setting of <code>privileged</code> flag to the <code>ContainerSpec</code> message whenever <code>dockerd</code> receives a <code>Privileged</code> flag in its service spec.</p>
+<h3 id="4-modifying-the-docker-daemon">4. Modifying the Docker Daemon</h3>
+<p>Having a local fork, incorporating the modified <code>swarmkit</code> into the fork doesn’t take much more than setting up the vendoring tool and changing a file here and there.</p>
+<p>As <code>docker</code> makes use of <a href="https://github.com/LK4D4/vndr">vndr</a> to vendor its dependencies, we can modify the <code>vndr</code> configuration pointing <code>swarmkit</code> at our forked repository instead of the regular <code>docker/swarmkit</code> one and have it update the <code>vendor</code> directory with it:</p>
+<div><pre><code data-lang="sh"><span># Get the current commit </span>
+swarmkit $ <span>FORKED_SWARMKIT_COMMIT</span><span>=</span><span>$(</span>git rev-parse HEAD<span>)</span>
+5598a39a89bd7482864c6279ae5544d9e8aa5299
+
+<span># Go to our forked moby/moby repository</span>
+swarmkit $ <span>cd</span> ../docker
+
+<span># Set a variable that defines the repository for `vndr`</span>
+<span># to use to gather our forked source code.</span>
+<span>FORKED_SWARMKIT_REPO</span><span>=</span>https://github.com/cirocosta/swarmkit
+
+<span># Prepare the variables to be used in the SED replacement</span>
+<span>SED_FROM</span><span>=</span><span>&#34;\(github.com/docker/swarmkit\) \([a-zA-Z0-9]*\)&#34;</span>
+<span>SED_TO</span><span>=</span><span>&#34;\1 </span><span>$FORKED_SWARMKIT_COMMIT</span><span> </span><span>$FORKED_SWARMKIT_REPO</span><span>&#34;</span>
+
+<span># Perform the replacement in `vendor.conf`.</span>
+<span># ps.: you could just grab an editor of your choice</span>
+<span># (like vim) and do the changes there.</span>
+<span>#</span>
+<span># Here I&#39;m using `sed` just to make the changes</span>
+<span># reproducible by copying and pasting.</span>
+docker $ sed <span>\
+</span><span></span>  --in-place <span>\
+</span><span></span>  <span>&#34;s#</span><span>$SED_FROM</span><span>#</span><span>$SED_TO</span><span>#g&#34;</span> <span>\
+</span><span></span>  ./vendor.conf
+
+<span># Update the dependencies</span>
+vndr
+</code></pre></div><p>With the dependencies updated (i.e., with our <code>swarmkit</code> code in!), build the binaries (they will now include our swarmkit code):</p>
+<div><pre><code data-lang="sh"><span># Run the `binary` target specified in ./Makefile</span>
+make binary
+</code></pre></div><p>This will make use of a local instance of Docker that you must have running and then generate the daemon binaries at <code>./bundle</code>:</p>
+<pre><code>./bundles/
+├── binary-daemon
+│   ├── docker-containerd
+│   ├── docker-containerd-ctr
+│   ├── docker-containerd-ctr.md5
+│   ├── docker-containerd-ctr.sha256
+│   ├── docker-containerd.md5
+│   ├── docker-containerd.sha256
+│   ├── docker-containerd-shim
+│   ├── docker-containerd-shim.md5
+│   ├── docker-containerd-shim.sha256
+│   ├── dockerd -&gt; dockerd-dev
+│   ├── dockerd-dev
+│   ├── dockerd-dev.md5
+│   ├── dockerd-dev.sha256
+│   ├── docker-init
+│   ├── docker-init.md5
+│   ├── docker-init.sha256
+│   ├── docker-proxy
+│   ├── docker-proxy.md5
+│   ├── docker-proxy.sha256
+│   ├── docker-runc
+│   ├── docker-runc.md5
+│   └── docker-runc.sha256
+└── latest -&gt; .
+</code></pre><p>Naturally, without any changes to <code>docker/docker</code> itself, no flags would be passed to the recently modified SwarmKit <code>ContainerSpec</code> struct.</p>
+<div><pre><code data-lang="diff"><span>diff --git a/api/types/swarm/container.go b/api/types/swarm/container.go
+</span><span>index 0041653c9..c16c55fd8 100644
+</span><span></span><span>--- a/api/types/swarm/container.go
+</span><span></span><span>+++ b/api/types/swarm/container.go
+</span><span></span><span>@@ -57,6 +57,7 @@ type ContainerSpec struct {
+</span><span></span>        Privileges      *Privileges             `json:&#34;,omitempty&#34;`
+        StopSignal      string                  `json:&#34;,omitempty&#34;`
+        TTY             bool                    `json:&#34;,omitempty&#34;`
+<span>+       Privileged      bool                    `json:&#34;,omitempty&#34;`
+</span><span></span>        OpenStdin       bool                    `json:&#34;,omitempty&#34;`
+        ReadOnly        bool                    `json:&#34;,omitempty&#34;`
+        Mounts          []mount.Mount           `json:&#34;,omitempty&#34;`
+<span>diff --git a/daemon/cluster/convert/container.go b/daemon/cluster/convert/container.go
+</span><span>index 0a34fc73e..9eb1feb4e 100644
+</span><span></span><span>--- a/daemon/cluster/convert/container.go
+</span><span></span><span>+++ b/daemon/cluster/convert/container.go
+</span><span></span><span>@@ -17,6 +17,7 @@ func containerSpecFromGRPC(c *swarmapi.ContainerSpec) *types.ContainerSpec {
+</span><span></span>        if c == nil {
+                return nil
+        }
+<span>+
+</span><span></span>        containerSpec := &amp;types.ContainerSpec{
+                Image:      c.Image,
+                Labels:     c.Labels,
+<span>@@ -32,6 +33,7 @@ func containerSpecFromGRPC(c *swarmapi.ContainerSpec) *types.ContainerSpec {
+</span><span></span>                OpenStdin:  c.OpenStdin,
+                ReadOnly:   c.ReadOnly,
+                Hosts:      c.Hosts,
+<span>+    Privileged: c.Privileged,
+</span><span></span>                Secrets:    secretReferencesFromGRPC(c.Secrets),
+                Configs:    configReferencesFromGRPC(c.Configs),
+                Isolation:  IsolationFromGRPC(c.Isolation),
+<span>@@ -228,6 +230,7 @@ func containerToGRPC(c *types.ContainerSpec) (*swarmapi.ContainerSpec, error) {
+</span><span></span>                Groups:     c.Groups,
+                StopSignal: c.StopSignal,
+                TTY:        c.TTY,
+<span>+    Privileged: c.Privileged,
+</span><span></span>                OpenStdin:  c.OpenStdin,
+                ReadOnly:   c.ReadOnly,
+                Hosts:      c.Hosts,
+<span>diff --git a/daemon/cluster/executor/container/container.go b/daemon/cluster/executor/container/container.go
+</span><span>index 69d673bd3..829c5dcc3 100644
+</span><span></span><span>--- a/daemon/cluster/executor/container/container.go
+</span><span></span><span>+++ b/daemon/cluster/executor/container/container.go
+</span><span></span><span>@@ -351,6 +351,7 @@ func (c *containerConfig) hostConfig() *enginecontainer.HostConfig {
+</span><span></span>        hc := &amp;enginecontainer.HostConfig{
+                Resources:      c.resources(),
+                GroupAdd:       c.spec().Groups,
+<span>+               Privileged:     c.spec().Privileged,
+</span><span></span>                PortBindings:   c.portBindings(),
+                Mounts:         c.mounts(),
+                ReadonlyRootfs: c.spec().ReadOnly,
+</code></pre></div><p>Compile it again, and now everything should be fine!</p>
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>To finish the whole thing, update the vendoring of the <code>docker/cli</code> fork to incorporate those changes (yes, <code>docker/cli</code> depends on <code>docker/docker</code>, which depends on <code>docker/swarmkit</code>) and now everything should compile.</p>
+<p>Modify your <code>docker.service</code> to use the built binaries, call <code>docker service create</code> using the recently built <code>docker</code> binary and you’re good to go!</p>
+<p>If you found any mistakes or felt a little lost, please let me know! I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+<p><em>finis</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

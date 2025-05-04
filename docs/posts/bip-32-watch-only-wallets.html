@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BIP 32 Watch-Only Wallets | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/bitcoin/bip-32-watch-only-wallets/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>BIP 32 Watch-Only Wallets</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p><a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">Bitcoin improvement proposal 32</a> is, in my opinion, one of the most important BIPs we have. (Thanks <a href="https://twitter.com/pwuille">Peter Wuille</a>!) BIP 32 gave us Hierarchical Deterministic Wallets, which grant the ability to create a tree of keys from a single seed.</p>
+<p>In the early days of Bitcoin, each time a user wanted to receive new coins, their wallet would randomly generate a new Bitcoin private key, along with the associated public key and address. For example (and don’t try to use these):</p>
+<p>Private key: <strong>L57hXXKTCRgJRytYMVbhaxnsKpWZdzPzReKUghiYY6D6aQqQrM39</strong></p>
+<p>Address (public key hash): <strong>1P3AzkwVv1jDJAhEBQby6873xwJvymzDRn</strong></p>
+<p>Each user’s wallet software contained lists of public and private key pairs. If the user’s computer breaks or became stolen, you will lose all the private keys. The user had to be fairly tech-savvy to know how to export and encrypt their keys for safekeeping. Even so, each time they received coins to a new address, they needed to re-back up the new private key.</p>
+<h2 id="hd-wallets-to-the-rescue">
+  <span> HD wallets to the rescue</span> <a href="#hd-wallets-to-the-rescue">🔗</a></h2>
+<p>Following BIP 32, new wallets called HD wallets (Hierarchical Deterministic, not High Definition) made the backup process a lot easier and safer.</p>
+<p>Instead of generating random private keys for each transaction, HD wallets generate one <a href="https://bitcoin.org/en/glossary/hd-wallet-seed">seed</a> which is used to create a master private key. This master private key can be used to generate more “child” private keys for each transaction. Because the child keys are determined using the same pattern each time, the user doesn’t need to back up all of their private keys, only the one seed:</p>
+<p><strong>000102030405060708090a0b0c0d0e0f</strong></p>
+<p>However, since most wallets have also adopted <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">BIP 39</a> you may be more familiar with a 12 or twenty-four-word encoding of your seed (again don’t use this example):</p>
+<p><strong>bubble cat run happy tree bird snow flake person orange yellow mother</strong></p>
+<p>Now, on a piece of paper or in a password manager like <a href="https://blog.boot.dev">Boot.dev</a>, users can back up their seed phrase. Then they know that all the Bitcoins that will ever be stored in their wallet are recoverable.</p>
+<h2 id="watch-only-hd-wallet">
+  <span> Watch only HD wallet</span> <a href="#watch-only-hd-wallet">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/icon95-20-512.png" alt="eye picture"/></p>
+<p>A watch-only HD wallet is the same as a normal HD wallet except that it can’t spend coins, only store them. Watch-only wallets are perfect for users who want a wallet to receive new coins easily but don’t want to spend regularly from that wallet, similar to a savings account.</p>
+<p>The seed (and associated private keys) are stored offline or under heavy encryption, while the <a href="https://www.google.com/search?q=bitcoin+xpub&amp;oq=bitcoin+xpub&amp;aqs=chrome.0.0j69i60j0l4.2127j0j7&amp;sourceid=chrome&amp;ie=UTF-8">extended public key</a> is used in the online watch-only wallet.</p>
+<p>A full watch-only wallet is much better and safer than using the same address again and again. This is because <a href="https://en.bitcoin.it/wiki/Address_reuse">using new addresses enhances privacy</a>.</p>
+<p>Thanks for reading, good luck, and stay safe being your own bank!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

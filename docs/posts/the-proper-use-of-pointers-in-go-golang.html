@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Proper Use of Pointers in Go (Golang) | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/the-proper-use-of-pointers-in-go-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>The Proper Use of Pointers in Go (Golang)</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Go has become increasingly popular in recent years, especially in my local area. It has been consistently displacing other backend languages like Ruby, Python, C# and Java. Go is wanted for its simplicity, explicitness, speed, and low memory consumption.</p>
+<p>Many developers that are new to the language, or new to a language that can handle memory directly using pointers end up misusing those pointers.</p>
+<h2 id="what-is-a-pointer">
+  <span> What Is a Pointer?</span> <a href="#what-is-a-pointer">🔗</a></h2>
+<p>A pointer is a variable that stores the address of a value, rather than the value itself. If you think of a computer’s memory (RAM) as a JSON object, a pointer would be like the key, and a normal variable would be the value.</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;pointer&#34;</span><span>:</span> <span>&#34;variableValue&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Lets see one in action:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>&#34;fmt&#34;</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>// create a normal string variable
+</span></span></span><span><span><span></span>	<span>name</span> <span>:=</span> <span>&#34;original&#34;</span>
+</span></span><span><span>	<span>// pass in a pointer to the string variable using &#39;&amp;&#39;
+</span></span></span><span><span><span></span>	<span>setName</span><span>(</span><span>&amp;</span><span>name</span><span>,</span> <span>&#34;boot.dev&#34;</span><span>)</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>name</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>setName</span><span>(</span><span>ptr</span> <span>*</span><span>string</span><span>,</span> <span>newName</span> <span>string</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>// dereference the pointer so we can modify the value
+</span></span></span><span><span><span></span>	<span>// and set the value to &#34;boot.dev&#34;
+</span></span></span><span><span><span></span>	<span>*</span><span>ptr</span> <span>=</span> <span>newName</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>This prints:</p>
+<pre tabindex="0"><code>boot.dev
+</code></pre><p>As you can see, because we have a pointer to the address of the variable, we can modify its value, even within the scope of another function. If the value were not a pointer, this would not work:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>&#34;fmt&#34;</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>name</span> <span>:=</span> <span>&#34;original&#34;</span>
+</span></span><span><span>	<span>setNameBroken</span><span>(</span><span>name</span><span>,</span> <span>&#34;boot.dev&#34;</span><span>)</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>name</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>setNameBroken</span><span>(</span><span>ptr</span> <span>string</span><span>,</span> <span>newName</span> <span>string</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>ptr</span> <span>=</span> <span>newName</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>prints:</p>
+<pre tabindex="0"><code>original
+</code></pre><p>Pointers can be useful, but in the same way that they are useful, they can be dangerous. For example, if we dereference a pointer that has no value, the program will panic. For this reason, we always check if an error value is <code>nil</code> before trying to print it.</p>
+<h2 id="syntax">
+  <span> Syntax</span> <a href="#syntax">🔗</a></h2>
+<p><strong>1. Creating a pointer: &amp;</strong></p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>newString</span> <span>:=</span> <span>&#34;&#34;</span>
+</span></span><span><span><span>newStringPointer</span> <span>:=</span> <span>&amp;</span><span>newString</span>
+</span></span></code></pre></div><p>If you print that pointer you will see a memory address.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>&#34;fmt&#34;</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>newString</span> <span>:=</span> <span>&#34;&#34;</span>
+</span></span><span><span>	<span>newStringPointer</span> <span>:=</span> <span>&amp;</span><span>newString</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>newStringPointer</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>prints: 0xc00000e1e0</p>
+<p>Which is the memory address of that variable in your machine.</p>
+<p><strong>2. Describing a pointer: *</strong></p>
+<p>In a function signature or type definition, the <code>*</code> is used to designate that a value is a pointer.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>passPointer</span><span>(</span><span>pointer</span> <span>*</span><span>string</span><span>)</span> <span>{</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p><strong>3. Dereferencing a pointer: *</strong></p>
+<p>It can be slightly confusing, but the <code>*</code> is used to describe a pointer and it is also used as an operator to dereference a pointer.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>derefPointer</span><span>(</span><span>pointer</span> <span>*</span><span>string</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>newStringVariable</span> <span>:=</span> <span>*</span><span>pointer</span>
+</span></span><span><span>        <span>// newStringVariable is just a normal string
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="when-should-i-use-a-pointer">
+  <span> When Should I Use a Pointer?</span> <a href="#when-should-i-use-a-pointer">🔗</a></h2>
+<p>There are probably many nuanced cases for when a pointer is a good idea, but 90% of the time when you use a pointer it should be for one the following reasons:</p>
+<p><strong>1. A function that mutates one of its parameters</strong></p>
+<p>When I call a function that takes a pointer as an argument, I expect that my variable will be mutated. If you aren’t mutating the variable in your function, then you probably shouldn’t be using a pointer.</p>
+<p><strong>2. Better Performance</strong></p>
+<p>If you have a string that contains an entire novel in memory it gets really expensive to copy that variable each time it is passed to a new function. It may be worthwhile to pass a pointer instead, which will save CPU and memory. This comes at the cost of readability however so only make this optimization if you must.</p>
+<p><strong>3. Need a Nil Value Option</strong></p>
+<p>Sometimes a function needs to know what something’s value is, as well as if it exists or not. I usually use this when <a href="https://blog.boot.dev/golang/json-golang/">decoding JSON</a> to know if a field exists or not. For example:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Person</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>Name</span> <span>*</span><span>string</span> <span>`json:&#34;name&#34;`</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>(){</span>
+</span></span><span><span>	<span>p</span> <span>:=</span> <span>Person</span><span>{}</span>
+</span></span><span><span>	<span>json</span><span>.</span><span>Unmarshal</span><span>([]</span><span>byte</span><span>(</span><span>`{&#34;name&#34;: &#34;boot.dev&#34;}`</span><span>),</span> <span>&amp;</span><span>p</span><span>)</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>*</span><span>p</span><span>.</span><span>Name</span><span>)</span> <span>// prints &#34;boot.dev&#34;
+</span></span></span><span><span><span></span>
+</span></span><span><span>	<span>json</span><span>.</span><span>Unmarshal</span><span>([]</span><span>byte</span><span>(</span><span>`{&#34;name&#34;: &#34;&#34;}`</span><span>),</span> <span>&amp;</span><span>p</span><span>)</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>*</span><span>p</span><span>.</span><span>Name</span><span>)</span> <span>// prints &#34;&#34;
+</span></span></span><span><span><span></span>
+</span></span><span><span>	<span>json</span><span>.</span><span>Unmarshal</span><span>([]</span><span>byte</span><span>(</span><span>`{}`</span><span>),</span> <span>&amp;</span><span>p</span><span>)</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>p</span><span>.</span><span>Name</span><span>)</span> <span>// prints &#34;&lt;nil&gt;&#34;
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><p>These are some rules of thumb for when to use pointers in your code. If you are unsure, and a normal value will work just fine, I would advise avoiding the pointer. Pointers are useful tools but can lead to nasty bugs or unreadable code quite easily.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

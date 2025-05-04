@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Encoding vs Encryption - They Aren&#39;t the Same | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/encoding-vs-encryption/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Encoding vs Encryption - They Aren&#39;t the Same</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>While encryption does <em>involve</em> various methods of encoding data, the two are absolutely not interchangeable. In fact, if you get them mixed up it can result in serious data breaches and security vulnerabilities.</p>
+<p><a href="https://en.wikipedia.org/wiki/Encryption">Encryption</a> is a specific subset of encoding where the encoded messages can only be accessed by authorized parties (the ones holding the decryption keys).</p>
+<p><a href="https://blog.boot.dev/bitcoin/base64-vs-base58-encoding/">Encoding</a> is simply a way of representing data in a specific format. For example, raw binary data can be encoded and decoded using the ASCII format as shown in the table below.</p>
+<p><img src="https://blog.boot.dev/img/800/asciifull.gif" alt="encoding chart "/></p>
+<p>In the context of programming and cybersecurity, encoding offers <strong>absolutely no security</strong>. Sometimes formats like JWTs or Base64 outputs can confuse entry-level programmers because they appear encrypted when in reality <strong>they aren’t!</strong> An attacker can easily figure out the protocol used to encode the data and reverse it. For example, in the case of ASCII encoding it’s as simple as looking up each bytecode in the table above.</p>
+<p>Encoding formats are only useful because they give computers and humans protocols to view and process raw binary data in a meaningful way.</p>
+<p>To illustrate this point, try the following tools to see how easy it is to decode messages that are just encoded (not encrypted):</p>
+<ul>
+<li><a href="https://jwt.io/">JWT.io</a></li>
+<li><a href="https://www.base64encode.org/">https://www.base64encode.org</a></li>
+</ul>
+<p><img src="https://blog.boot.dev/img/800/code_talkers.png" alt="navajo code comic"/></p>
+<p><a href="https://xkcd.com/257/">https://xkcd.com/2</a><a href="https://xkcd.com/257/">57/</a></p>
+<h2 id="why-you-should-ensure-your-encoded-data-is-encrypted">
+  <span> Why you should ensure your encoded data is encrypted</span> <a href="#why-you-should-ensure-your-encoded-data-is-encrypted">🔗</a></h2>
+<p>At a job where I worked in the past, a developer before me built his own encoding scheme. It would take the raw binary data contained in a message and map specific bytes sequences to certain characters. It was totally made up, and the comment he left on the code was:</p>
+<pre tabindex="0"><code>// Obfuscation technique. Base53 encoding for security
+</code></pre><p>While it may confuse an attacker for a couple of minutes, this obfuscation offers more potential bugs in terms of needless complexity than it does security benefits. With free and easy to use encryption libraries available in all major programming languages, there is no excuse to try to bake your own these days.</p>
+<p><a href="https://blog.boot.dev/cryptography/elliptic-curve-cryptography/">Elliptic curve cryptography</a>, RSA, <a href="https://blog.boot.dev/cryptography/aes-256-cipher/">AES-256</a>, or another secure algorithm should have been used in the situation above. Ironically, it also probably would have taken less time to implement.</p>
+<p>Security can be hard. However, take the time to use best-practices. It will save you so much time and headaches in the long run. Good luck, and stay safe out there!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

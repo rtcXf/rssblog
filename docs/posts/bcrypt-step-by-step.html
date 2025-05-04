@@ -46,14 +46,14 @@ Alg   Cost                  Salt                                            Hash
 <p>In web development, it is insecure to store user’s passwords in plain text. If an attacker were to gain access to the server’s database they could find raw email/password combinations and use them to attack the same users on other sites.</p>
 <p>At the <em>very least</em> we must hash user’s passwords, but hash functions like <a href="https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/">SHA-2</a> and MD5 are too fast to be secure. Using a KDF like Bcrypt provides security benefits over fast hashes because it is computationally expensive and slow. If an attacker gains access to a database of password hashes made with fast algorithms it is easy for them to “reverse” the hashes by guessing different inputs and seeing if the outputs match.</p>
 <p>For example, let’s say the attacker finds the following entry in a database:</p>
-<p><a href="https://blog.boot.dev/cdn-cgi/l/email-protection#4b3e382e390b2c262a222765282426"><span data-cfemail="522721372012353f333b3e7c313d3f">[email protected]</span></a> 5906ac361a137e2d286465cd6588ebb5ac3f5ae955001100bc41577c3d751764</p>
+<p><a href="https://blog.boot.dev/cdn-cgi/l/email-protection#027771677042656f636b6e2c616d6f"><span data-cfemail="b1c4c2d4c3f1d6dcd0d8dd9fd2dedc">[email protected]</span></a> 5906ac361a137e2d286465cd6588ebb5ac3f5ae955001100bc41577c3d751764</p>
 <p>They can try hashing common passwords like:</p>
 <p>password1 -&gt;
 0b14d501a594442a01c6859541bcb3e8164d183d32937b851835442f69d5c94e
 password2 -&gt;
 6cf615d5bcaac778352a8f1f3360d23f02f34ec182e259897fd6ce485d7870d4
 password3 -&gt; 5906ac361a137e2d286465cd6588ebb5ac3f5ae955001100bc41577c3d751764</p>
-<p><code>password3</code> produced a matching hash! Now the attacker knows that <code><a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="a8dddbcddae8cfc5c9c1c486cbc7c5">[email protected]</a></code> is likely to use the password <code>password3</code> on other sites and can go hack other accounts. This is only possible because the attacker is able to quickly compute many hashes per second and guess millions of potential passwords.</p>
+<p><code>password3</code> produced a matching hash! Now the attacker knows that <code><a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="661315031426010b070f0a4805090b">[email protected]</a></code> is likely to use the password <code>password3</code> on other sites and can go hack other accounts. This is only possible because the attacker is able to quickly compute many hashes per second and guess millions of potential passwords.</p>
 <p>A slow KDF like Bcrypt solves this problem.</p>
 <h2 id="bcrypt-explained-step-by-step">
   <span> Bcrypt Explained Step by Step</span> <a href="#bcrypt-explained-step-by-step">🔗</a></h2>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Secure Your Bitcoin | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/bitcoin/how-to-secure-bitcoin/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Secure Your Bitcoin</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>If you’re new to Bitcoin and cryptocurrency, you may have heard the common phrase <a href="https://www.youtube.com/watch?v=dnC5mFaIW3Q">not your keys not your coins</a>. While self-custody isn’t for everyone, it’s the only way to truly have exclusive control over your funds. If that’s what you’re into, read on.</p>
+<h2 id="dangers-of-storing-your-own-bitcoin">
+  <span> Dangers of storing your own Bitcoin</span> <a href="#dangers-of-storing-your-own-bitcoin">🔗</a></h2>
+<p>To spend your Bitcoin, you need to have access to your <a href="https://bitcoin.org/en/choose-your-wallet">wallet</a> or to the <a href="https://en.bitcoin.it/wiki/Seed_phrase">seed phrase</a> that was created alongside the wallet. Likewise, an attacker only needs access to one of those two things to steal all your coins.</p>
+<p>A seed phrase is essentially the <em>master key</em> to a crypto wallet and usually comes in the form of 12 or 24 words. If you lose your wallet, for example maybe the phone your wallet was on becomes lost, then you can use the seed to regenerate every private key in the wallet and regain access to your Bitcoin.</p>
+<p>Example of a BIP-39 seed phrase:</p>
+<pre tabindex="0"><code>witch collapse practice feed shame open despair creek road again ice least
+</code></pre><h2 id="methods-for-securing-your-bitcoin-seed-phrase">
+  <span> Methods for securing your Bitcoin seed phrase</span> <a href="#methods-for-securing-your-bitcoin-seed-phrase">🔗</a></h2>
+<p>Like choosing a wallet, choosing a method to store your seed phrase depends slightly on your technical abilities and personal needs. Let’s go over some options and weigh the pros and cons.</p>
+<h3 id="storing-the-seed-phrase-on-paper">
+  <span> Storing the seed phrase on paper</span> <a href="#storing-the-seed-phrase-on-paper">🔗</a></h3>
+<p>This is the simplest method, and for many people, it’s a good start.</p>
+<ul>
+<li>Can’t be hacked digitally</li>
+<li>Can be physically stolen</li>
+<li>Free</li>
+<li>Easily destroyed (eaten by a dog, burned, soaked, etc)</li>
+<li>Easily lost, but can be mitigated by using <a href="https://blog.boot.dev/cryptography/shamirs-secret-sharing/">Shamir’s Secret Sharing</a>, which requires more technical knowledge</li>
+</ul>
+<h3 id="storing-the-seed-phrase-on-metal">
+  <span> Storing the seed phrase on metal</span> <a href="#storing-the-seed-phrase-on-metal">🔗</a></h3>
+<p>Here you would etch the words into steel or store them using a product like <a href="https://cryptosteel.com/?gclid=EAIaIQobChMIhfOt-MSr5AIVEKrsCh3ubwXpEAAYAiAAEgLqy_D_BwE">CryptoSteel</a>. This is a great option if you have a significant sum of money that you want to have custody over.</p>
+<ul>
+<li>More expensive than paper</li>
+<li>More difficult to get created</li>
+<li>Can be physically stolen</li>
+<li>Protects against destruction</li>
+<li>Easily lost, but can be mitigated by using <a href="https://blog.boot.dev/cryptography/shamirs-secret-sharing/">Shamir’s Secret Sharing</a>, which requires more technical knowledge</li>
+<li>Can’t be hacked</li>
+<li>Easily lost, but can be mitigated by using <a href="https://blog.boot.dev/cryptography/shamirs-secret-sharing/">Shamir’s Secret Sharing</a>, which requires more technical knowledge</li>
+</ul>
+<h3 id="storing-the-seed-phrase-in-your-brain">
+  <span> Storing the seed phrase in your brain</span> <a href="#storing-the-seed-phrase-in-your-brain">🔗</a></h3>
+<p>Simply remembering the phrase is referred to as a “<a href="https://en.bitcoin.it/wiki/Brainwallet">brainwallet</a>”. If the seed is not recorded anywhere, the Bitcoins practically exist only in your mind. The idea is to use memory techniques to allow the words to be memorized and recalled easily.</p>
+<ul>
+<li>Can be lost by forgetfulness or even amnesia or concussions</li>
+<li>Can only be overtly destroyed via injury or death</li>
+<li>There is no way for loved ones to recover the coins if you die</li>
+<li>Impossible to be hacked digitally or stolen physically</li>
+<li>Like all other methods, still susceptible to the $5 wrench attack if the attacker knows you own the coins</li>
+</ul>
+<p><img src="https://blog.boot.dev/img/800/security.png" alt=""/></p>
+<p><a href="https://xkcd.com/538/">xkcd</a></p>
+<h3 id="storing-the-seed-phrase-digitally-online">
+  <span> Storing the seed phrase digitally online</span> <a href="#storing-the-seed-phrase-digitally-online">🔗</a></h3>
+<p>This is almost certainly a bad idea. Only do this if you really know what you’re doing, or if you have so little money stored that you aren’t worried about losing it all.</p>
+<ul>
+<li>Can easily be hacked - If the machine has access to the internet there are myriad ways that a hacker could steal your coins.</li>
+<li>Hard to lose - You can easily backup multiple copies of the phrase</li>
+<li>Difficult to destroy - You can back the files up using the cloud</li>
+<li>Unlikely a physical break-in to your home will result in a loss</li>
+</ul>
+<h3 id="storing-the-seed-phrase-digitally-offline">
+  <span> Storing the seed phrase digitally offline</span> <a href="#storing-the-seed-phrase-digitally-offline">🔗</a></h3>
+<p>Storing the phrase digitally is usually a bad idea, but if you’re going to do it then at least doing it on a machine that doesn’t have internet access is preferable.</p>
+<ul>
+<li>Can’t easily be hacked unless someone gains access to the device</li>
+<li>Easily lost - Since the seed probably isn’t on multiple offline devices if you lose the one it’s on you’re out of luck.</li>
+<li>Easily destroyed in a house fire or even simple hardware malfunction</li>
+<li>Unlikely a physical break-in to your home will result in a loss</li>
+</ul>
+<p>Every person and organization will have different preferences for how to store seed phrases. Factors that should influence this decision include the amount of crypto being stored, the technical abilities of the owners, and also tolerance for inconvenience.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

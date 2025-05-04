@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Recursively Traverse JSON Objects | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/how-to-recursively-traverse-objects/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Recursively Traverse JSON Objects</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I’ve found that it’s pretty rare that I need recursion in application code, but every once in a while I need to write a function that operates on a tree of unknown depth, such as a JSON object, and that’s often best solved recursively. Even though recursion is rare, it is important to recognize when a problem is best solved recursively so that we can implement a good solution when the time comes.</p>
+<h2 id="what-is-recursion">
+  <span> What is Recursion?</span> <a href="#what-is-recursion">🔗</a></h2>
+<p>Function recursion is a process in computer science that occurs when a function calls itself.</p>
+<p><img src="https://blog.boot.dev/img/800/cut.jpg" alt="man answering two phones"/></p>
+<p>For example:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>printArrayRecursive</span><span>(</span><span>arr</span><span>,</span> <span>i</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>// base case, stop recurring
+</span></span></span><span><span><span></span>  <span>if</span> <span>(</span><span>i</span> <span>===</span> <span>arr</span><span>.</span><span>length</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>return</span><span>;</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span>  <span>console</span><span>.</span><span>log</span><span>(</span><span>arr</span><span>[</span><span>i</span><span>]);</span>
+</span></span><span><span>  <span>// call ourself with the next index
+</span></span></span><span><span><span></span>  <span>recursive</span><span>(</span><span>arr</span><span>,</span> <span>i</span> <span>+</span> <span>1</span><span>);</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>In the code above, <code>printArrayRecursive</code> prints one element from the list, then calls itself again with the next index. Each successive call to itself prints the next element, and so on. The recursion continues until the <strong>base case</strong> is reached. In our example, the base case is when the index is equal to the array’s length.</p>
+<p>The same function looks quite a bit different in the <strong>iterative</strong> world, which you are probably more familiar with:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>printArrayIterative</span><span>(</span><span>arr</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>for</span> <span>(</span><span>let</span> <span>i</span> <span>=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>arr</span><span>.</span><span>length</span><span>;</span> <span>i</span><span>++</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>console</span><span>.</span><span>log</span><span>(</span><span>arr</span><span>[</span><span>i</span><span>]);</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>In the case of simply printing the items of a list, the iterative approach is better for a number of reasons:</p>
+<ul>
+<li>Easier to read and understand</li>
+<li>Less memory utilization - <em>Recursive functions keep all calls on the stack until the base case is reached</em></li>
+<li>Faster compute time - <em>Recursive functions come with the overhead of an entire function call for each step</em></li>
+<li>If there is a bug in the recursion, the program is likely to enter an infinite loop</li>
+</ul>
+<h2 id="why-use-recursion">
+  <span> Why Use Recursion?</span> <a href="#why-use-recursion">🔗</a></h2>
+<p>Iterative programs can be written using recursion, and all recursive programs can be written using iteration. Both systems are, unless limited by the implementation, <a href="https://en.wikipedia.org/wiki/Turing_completeness">Turing c</a><a href="https://en.wikipedia.org/wiki/Turing_completeness">omplete</a>.</p>
+<p><img src="https://blog.boot.dev/img/800/mechanical-turing-machine-in-wood-vo8izckhif0mp4-shot0001_featured.png" alt="mechanical turing machine "/></p>
+<p><a href="https://hackaday.com/2018/03/08/mechanical-wooden-turing-machine/">mechanical turing machine</a></p>
+<p>The primary reason to choose recursion over iteration is <strong>simplicity</strong>.</p>
+<p>Many years ago the majority of compilers and interpreters didn’t support the syntax for iteration. <strong>For-loops simply didn’t exist</strong>. This is primarily because it’s much simpler to write an interpreter that can handle recursion than it is to write one that supports loops.</p>
+<p>Even if a compiler supports loops, some problems are easier to solve with a recursive function. A good example is tree traversal. I often write recursive functions to find every property of any JSON object, or to search every file in a folder that may have an infinite number of nested subfolders.</p>
+<h2 id="examples">
+  <span> Examples</span> <a href="#examples">🔗</a></h2>
+<p>Recursively print all properties of a JSON object:</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>printAllVals</span><span>(</span><span>obj</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>for</span> <span>(</span><span>let</span> <span>k</span> <span>in</span> <span>obj</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>if</span> <span>(</span><span>typeof</span> <span>obj</span><span>[</span><span>k</span><span>]</span> <span>===</span> <span>&#34;object&#34;</span><span>)</span> <span>{</span>
+</span></span><span><span>      <span>printAllVals</span><span>(</span><span>obj</span><span>[</span><span>k</span><span>]);</span>
+</span></span><span><span>    <span>}</span> <span>else</span> <span>{</span>
+</span></span><span><span>      <span>// base case, stop recurring
+</span></span></span><span><span><span></span>      <span>console</span><span>.</span><span>log</span><span>(</span><span>obj</span><span>[</span><span>k</span><span>]);</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Recursively print all the filenames of a folder, and its subfolders, and their subfolders, ad infinitum.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>printSubFiles</span><span>(</span><span>dir</span><span>)</span> <span>{</span>
+</span></span><span><span>  <span>files</span> <span>=</span> <span>fs</span><span>.</span><span>readdirSync</span><span>(</span><span>dir</span><span>);</span>
+</span></span><span><span>  <span>files</span><span>.</span><span>forEach</span><span>(</span><span>function</span> <span>(</span><span>file</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>absName</span> <span>=</span> <span>`</span><span>${</span><span>dir</span><span>}</span><span>/</span><span>${</span><span>file</span><span>}</span><span>`</span><span>;</span>
+</span></span><span><span>    <span>if</span> <span>(</span><span>fs</span><span>.</span><span>statSync</span><span>(</span><span>absName</span><span>).</span><span>isDirectory</span><span>())</span> <span>{</span>
+</span></span><span><span>      <span>printSubFiles</span><span>(</span><span>absName</span><span>);</span>
+</span></span><span><span>    <span>}</span> <span>else</span> <span>{</span>
+</span></span><span><span>      <span>// base case, stop recurring
+</span></span></span><span><span><span></span>      <span>console</span><span>.</span><span>log</span><span>(</span><span>file</span><span>);</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>});</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>When trying to figure out how to write a function recursively, think:</p>
+<blockquote>
+<p>What is my base case? What should stop the recursion from continuing?</p>
+</blockquote>
+<p>Once that’s hammered out, the rest of the function just needs to answer the questions,</p>
+<blockquote>
+<p>What do I want to do with my current value?</p>
+</blockquote>
+<p>and</p>
+<blockquote>
+<p>How do I call myself to get to the next value?</p>
+</blockquote>
+<p>Recursion is an important principle to understand for any programmer, and I hope this helps you be just a little better! If you’re interested in learning more about recursion and functional programming principles, take a look at our <a href="https://www.boot.dev/courses/learn-functional-programming-python">functional programming course.</a></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

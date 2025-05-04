@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compiling and running your own forked Docker release | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/compiling-your-own-forked-docker-release/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Compiling and running your own forked Docker release</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>Some days ago I needed to tweak Docker a little bit to check if changing some parameters of SwarmKit would make it work more reliably.</p>
+<p>Given that the value I needed changing was hardcoded, no <code>/etc/docker/daemon.json</code> configuration would do the job. That meant that a fork would be needed.</p>
+<p>It turns out that building and running a forked version of Docker is not complicated once you get to know what are the pieces involved.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/docker-ce-overview.svg" alt="A sample illustration of the packages involved in a docker release "/>
+
+    
+</figure>
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ul>
+<li><a href="#what-does-the-docker-ce-package-installs-on-my-system">What does the docker-ce package installs on my system?</a></li>
+<li><a href="#running-the-docker-daemon-behind-the-scenes">Running the docker daemon behind the scenes</a></li>
+<li><a href="#building-right-from-the-docker-ce-repository">Building right from the docker-ce repository</a></li>
+<li><a href="#modifying-docker-the-daemon-from-the-main-repository">Modifying docker (the daemon) from the main repository</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h3 id="what-does-the-docker-ce-package-installs-on-my-system">What does the docker-ce package installs on my system?</h3>
+<p>As I’ve always been installing docker using <code>apt</code>, the first step was to get it running right from the binaries.</p>
+<p>Not knowing what to expect from the building process, I started looking at what are the binaries that the <code>docker-ce</code> package installs on the system.</p>
+<p>You can check which binaries are these by looking at <code>dpkg --listfiles &lt;pkg_name&gt;</code> (it lists the files installed to your system from <code>pkg_name</code>):</p>
+<div><pre><code data-lang="sh"><span># List the files that the docker-ce package brought</span>
+<span># us and then filter out those that are not in</span>
+<span># the `/usr/bin` directory.</span>
+sudo dpkg --listfiles docker-ce <span>|</span> <span>\
+</span><span></span>  grep /usr/bin
+
+/usr/bin
+/usr/bin/docker
+/usr/bin/docker-containerd
+/usr/bin/docker-containerd-ctr
+/usr/bin/docker-containerd-shim
+/usr/bin/docker-init
+/usr/bin/docker-proxy
+/usr/bin/docker-runc
+/usr/bin/dockerd
+</code></pre></div><p>Aside from <code>/usr/bin/docker</code>, which is the Docker CLI, the others are components that are run behind the scenes by the Docker daemon (<code>dockerd</code>).</p>
+<p><code>dockerd</code> is the daemon that keeps running as a server, taking commands from your <code>docker</code> client (usually from a unix socket) and then acting upon them, creating containers leveraging the other <code>docker-*</code> binaries.</p>
+<h3 id="running-the-docker-daemon-behind-the-scenes">Running the docker daemon behind the scenes</h3>
+<p>To have <code>dockerd</code> running at all times, <code>docker-ce</code> (the package) sets two <a href="https://www.freedesktop.org/wiki/Software/systemd/"><code>systemd</code></a> configuration files:</p>
+<div><pre><code data-lang="sh"><span># List the files installed by `docker-ce` and the</span>
+<span># filter out those without a systemd in the path.</span>
+sudo dpkg --listfiles docker-ce <span>|</span> <span>\
+</span><span></span>  grep systemd
+
+/lib/systemd
+/lib/systemd/system
+/lib/systemd/system/docker.service      <span># &lt;&lt;&lt;&lt; </span>
+/lib/systemd/system/docker.socket       <span># &lt;&lt;&lt;&lt;</span>
+</code></pre></div><p>These are <code>systemd</code> units, files that describe resources that should be taken care by <code>systemd</code> - the default <a href="https://en.wikipedia.org/wiki/Init">init process</a> used by most distributions (e.g., Ubuntu and Debian).</p>
+<p>The later (<code>docker.socket</code>) controls the socket that <code>dockerd</code> uses to listen for requests made by a client.</p>
+<p>Given that generally every <code>.socket</code> file must have a corresponding <code>.service</code> unit, the <code>docker.socket</code> is tied to the <code>docker.service</code> unit.</p>
+<div><pre><code data-lang="cfg"><span>[Unit]</span>
+<span># By telling the unit that it&#39;s part of `docker.service`</span>
+<span># we&#39;re tying a relationship between them, making a restart</span>
+<span># on `docker.service` propagate to this unit (the same for</span>
+<span># a stop but not for a start).</span>
+<span>PartOf</span><span>=</span><span>docker.service</span>
+
+
+<span># Information about the socket that systemd should supervise.</span>
+<span>[Socket]</span>
+<span># The address to listen on for a stream (`SOCK_STREAM`).</span>
+<span># Given that it starts with a `slash`, a filesystem socket (`AF_UNIX`) </span>
+<span># is created.</span>
+<span>ListenStream</span><span>=</span><span>/var/run/docker.sock</span>
+
+<span># File permissions that should be used in the socket file.</span>
+<span>SocketMode</span><span>=</span><span>0660</span>
+<span>SocketUser</span><span>=</span><span>root</span>
+<span>SocketGroup</span><span>=</span><span>docker</span>
+
+
+<span># This section carries information regarding installation of the unit.</span>
+<span># Its sole purpose is to provide `systemd` information regarding `enable`</span>
+<span># and `disable` commands issued by `systemctl` during installation or</span>
+<span># uninstallation of units.</span>
+<span>#</span>
+<span># ps.: without this section, `systemctl enable` doesn&#39;t work.</span>
+<span>[Install]</span>
+<span># Creates a symbolic link in the `.wants` directory of the `sockets` target,</span>
+<span># having the effect of making it a dependency of another unit.</span>
+<span>#</span>
+<span># This is telling systemd to pull in the unit when starting sockets.target.</span>
+<span>WantedBy</span><span>=</span><span>sockets.target</span>
+</code></pre></div><p>ps.: a cool effect of having the <code>.socket</code> unit is that you can keep the socket unit active (thus, having <code>/var/run/docker.sock</code> created) and the docker unit inactive (dockerd not running) at machine startup time such that only when a connection is made to the socket, docker starts.</p>
+<p>The former (<code>docker.service</code>) is a service unit that not only executes the <code>dockerd</code> daemon, but it also keeps track of its liveness and makes sure that this is only initialized after some dependencies are met.</p>
+<p>It looks like this (with comments added by me):</p>
+<div><pre><code data-lang="cfg"><span>[Unit]</span>
+<span># Here we specify some of the dependencies that `dockerd` has.</span>
+<span># Although `After` only configures service startup order,</span>
+<span># We place a strict dependency on `docker.socket`.</span>
+<span>#</span>
+<span># - `network-online` is a target that waits until the network is</span>
+<span>#   considered up. After this target is met, it&#39;s supposed that</span>
+<span>#   connections to network resources can be established.</span>
+<span>#</span>
+<span># - `firewalld.service` lets us wait for any firewalld configs to</span>
+<span>#   go on before docker starts. Under a regular ubuntu installation</span>
+<span>#   this target generally doesn&#39;t exist.</span>
+<span>#</span>
+<span># - `docker.socket` makes us start after the socket activation.</span>
+<span>#</span>
+<span>After</span><span>=</span><span>network-online.target docker.socket firewalld.service</span>
+
+<span># `Wants=` establishes a weak dependency on something.</span>
+<span># This means that in contrast with `Requires=`, if something goes </span>
+<span># wrong with it, it can still proceed.</span>
+<span>Wants</span><span>=</span><span>network-online.target</span>
+
+<span># Enforces a hard dependency on `docker.socket` unit - if it fails,</span>
+<span># then this service will also fail.</span>
+<span>Requires</span><span>=</span><span>docker.socket</span>
+
+
+<span>[Service]</span>
+<span># Makes use of what&#39;s specified in ExecStart as the main process</span>
+<span># of the service and then only proceeds to activate other dependencies</span>
+<span># (i.e., other units that specify a dependency on this service) after</span>
+<span># the process (dockerd) sends a notification to systemd via `sd_notify`.</span>
+<span>#</span>
+<span># See moby/cmd/dockerd/daemon_linux.go to check the `notifySystem` call.</span>
+<span>Type</span><span>=</span><span>notify</span>
+<span>ExecStart</span><span>=</span><span>/usr/bin/dockerd -H fd://</span>
+<span>ExecReload</span><span>=</span><span>/bin/kill -s HUP $MAINPID</span>
+<span>LimitNOFILE</span><span>=</span><span>1048576</span>
+<span>LimitNPROC</span><span>=</span><span>infinity</span>
+<span>LimitCORE</span><span>=</span><span>infinity</span>
+<span>TasksMax</span><span>=</span><span>infinity</span>
+<span>TimeoutStartSec</span><span>=</span><span>0</span>
+
+<span># As systemd can act as a Linux containers daemon, this clearly conflicts</span>
+<span># with the interests of the docker daemon over the containers controlled</span>
+<span># by docker.</span>
+<span>#</span>
+<span># Specifying `delegate=yes` we make systemd grant all the resource control</span>
+<span># to the main process started by `ExecStart`.</span>
+<span>Delegate</span><span>=</span><span>yes</span>
+<span>KillMode</span><span>=</span><span>process</span>
+<span>Restart</span><span>=</span><span>on-failure</span>
+<span>StartLimitBurst</span><span>=</span><span>3</span>
+<span>StartLimitInterval</span><span>=</span><span>60s</span>
+
+
+<span>[Install]</span>
+<span>WantedBy</span><span>=</span><span>multi-user.target</span>
+</code></pre></div><p>Having those two files and the binaries, we can get Docker running from a set of binaries.</p>
+<p>Let’s now generate them then.</p>
+<h3 id="building-right-from-the-docker-ce-repository">Building right from the docker-ce repository</h3>
+<p>Although I’m not from Docker Inc, it seems like all the docker packaging for the community edition happens with what’s there in the <a href="https://github.com/docker/docker-ce">docker/docker-ce</a> repository.</p>
+<p>Let’s make use of such repository then:</p>
+<div><pre><code data-lang="sh"><span># Clone the docker-ce repository to somewhere</span>
+git clone https://github.com/docker/docker-ce
+<span>cd</span> ./docker-ce
+
+<span># Checkout to the tag you want.</span>
+<span># ps.: you can gather the list of tags by </span>
+<span># running git tag.</span>
+git checkout v18.03.1-ce
+
+<span># Having `make` installed, perform the build of </span>
+<span># the static binaries.</span>
+<span>#</span>
+<span># This will invoke a series of build steps that</span>
+<span># make use of the source code that lives under</span>
+<span># the `components` directory.</span>
+<span>#</span>
+<span># ps.: you&#39;re required to have a running `docker`</span>
+<span># daemon to proceed (`dockerd` is built using docker).</span>
+<span>#</span>
+<span># If you&#39;re curious, on a `t2.medium` machine without</span>
+<span># any previous runs of this command (i.e, zero cache),</span>
+<span># this takes the following `time`:</span>
+<span>#       real	9m44.885s</span>
+<span>#       user	0m9.320s</span>
+<span>#       sys	0m0.634s</span>
+make static <span>DOCKER_BUILD_PKGS</span><span>=</span>static-linux
+
+
+<span># Check that results from the build</span>
+tree ./components/packaging/static/build/linux
+
+./components/packaging/static/build/linux
+├── docker
+│   ├── docker
+│   ├── docker-containerd
+│   ├── docker-containerd-ctr
+│   ├── docker-containerd-shim
+│   ├── dockerd
+│   ├── docker-init
+│   ├── docker-proxy
+│   └── docker-runc
+└── docker-18.03.1-ce.tgz
+</code></pre></div><p>That’s it! Send that <code>.tgz</code> to the machines you want, unpack it to the desired destination (<code>/usr/bin</code> if you don’t want to change the systemd scripts) and you’re done.</p>
+<p>If all you wanted was a way to build docker from the ground and have the binaries, you can stop here.</p>
+<h3 id="modifying-docker-the-daemon-from-the-main-repository">Modifying docker (the daemon) from the main repository</h3>
+<p>Because <code>docker-ce</code> is just a repository that gathers three others (<code>docker/docker-ce-packaging</code>, <code>moby/moby</code> and <code>docker/cli</code>), it’s better to keep our modifications under a fork of the real thing (<code>moby/moby</code>) and then (optionally) use a fork of <code>docker-ce</code> to centralize our modifications.</p>
+<p>When cloning <code>moby/moby</code> you’ll notice that the process of producing binaries is fairly straightforward: having <code>docker</code> already running, issue <code>make binary</code> and you’ll have a <code>bundles</code> directory filled with the daemon binaries.</p>
+<div><pre><code data-lang="sh"><span># `docker/docker` has been renamed to `moby/moby`, </span>
+<span># but given that I want to keep the golang import</span>
+<span># paths working, cloning from `docker/docker` makes</span>
+<span># things easier.</span>
+git clone https://github.com/docker/docker
+
+<span># Set up the git remotes to have my fork&#39;s source</span>
+<span># code in.</span>
+git remote set-url origin https://github.com/cirocosta/docker
+git remote add upstream https://github.com/docker/docker
+
+<span># Grab the code</span>
+git fetch --all
+
+<span># Check out to a branch with the modifications</span>
+git checkout privileged
+
+<span># Build the binaries</span>
+make binary
+</code></pre></div><p>Being <code>dockerd</code> made up of several components (like <code>swarmkit</code> and <code>libnetwork</code>), make sure that when you update those, you also update <code>moby/moby</code>’s references (there’s a <code>vendor.conf</code> file there that <a href="https://github.com/LK4D4/vndr">vndr</a> - the vendoring tool - uses to fetch the dependencies). Thankfully, it’s very easy to make use of a fork in <code>vendor.conf</code> - you specify the import path, the git reference of your modified content and then the fork.</p>
+<p>For instance, having modified <code>docker/swarmkit</code>, I updated <code>vendor.conf</code>:</p>
+<pre><code>IMPORT PATH                GIT REF       MY FORK
+github.com/docker/swarmkit 268f203dda... https://github.com/cirocosta/swarmkit
+</code></pre><p>ps.: the same is true for other repositories, like <code>docker/cli</code>.</p>
+<p>If all you need is a modified daemon (and not a client), then now you’re done - distribute the binaries and you’re good.</p>
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>It looks like the Docker contributors have spent a big time making sure that building Docker is not hard. What bothered me a bit is that it’s quite huge when it comes to dependencies - updating a dependency (using <code>vndr</code>) will end up in fetching a bunch of repositories.</p>
+<p>Aside from the dependency complexity (which is understandable), I felt that the process was pretty straightforward - now I get why there are so many contributors.</p>
+<p>If you had any question or spotted a mistake, please let me know - I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter!</p>
+<p>Have a good one!</p>
+<p><em>finis</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

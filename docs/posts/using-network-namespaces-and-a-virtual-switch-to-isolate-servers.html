@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Using network namespaces and a virtual switch to isolate servers | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/using-network-namespaces-and-bridge-to-isolate-servers/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Using network namespaces and a virtual switch to isolate servers</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>I’ve been working on an <code>tc + ebpf</code>-based load-balancer that I’ll soon talk about here in this blog, and one of the things I wanted to do was test such load-balancing feature.</p>
+<p>In my line of thought, I wondered: if I’m going to redirect the traffic by changing the destination address of the packets, that means that I’ll need somehow to have a different internet set up in the machine where I could put processes listening on those addresses.</p>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/lb-overview.svg" alt="Representation of the load-balancing architecture "/>
+
+    
+</figure>
+
+<p>Having worked with Docker and implemented a tiny container runtime myself, it seemed clear that going with network namespaces, virtual interfaces and bridging would get the job done.</p>
+<p>How these two relate to each other become clearer after looking at what jobs they do:</p>
+<ul>
+<li>network namespaces, according to <code>man 7 network_namespaces</code>:</li>
+</ul>
+<blockquote>
+<p>Network  namespaces  provide  isolation  of the system resources associated with networking: network devices, IPv4 and IPv6 protocol stacks, IP routing tables, firewall rules, the /proc/net directory, the /sys/class/net directory, various files under /proc/sys/net, port numbers (sockets), and so on.</p>
+</blockquote>
+<ul>
+<li>
+<p>virtual interfaces provide us with virtualized representations of physical network interfaces; and</p>
+</li>
+<li>
+<p>the bridge gives us the virtual equivalent of a switch.</p>
+</li>
+</ul>
+<p>That said, we can combine these three virtual components and create a virtual network inside the host without the need of VMs. Very lightweight (and with a single dependency - <code>iproute2</code>).</p>
+<h3 id="setting-up">Setting up</h3>
+<p>Assuming we want to simulate load-balancing across two different servers, that would mean that we’d set up the machine to have:</p>
+<ul>
+<li>two network namespace (in this case, we can think of each network namespace as a different computer);</li>
+<li>two veth pairs (we can think of each pair as two ethernet cards with a cable between them); and</li>
+<li>a bridge device that provides the routing to these two namespaces (we can think of this device as a switch).</li>
+</ul>
+<figure>
+    <img width="100%" height="100%" src="https://ops.tips/blog/-/images/namespaces-setup.svg" alt="Representation of linux namespaces playing together with a virtual switch "/>
+
+    
+</figure>
+
+<p>First, let’s start with the namespaces:</p>
+<div><pre><code data-lang="sh"><span># Making use of the `ip` command from the `iproute2` </span>
+<span># package we&#39;re able to create the namespaces.</span>
+<span>#</span>
+<span># By convention, network namespace handles created by</span>
+<span># iproute2 live under `/var/run/netns` (although they</span>
+<span># could live somewhere, like `docker` does with its</span>
+<span># namespaces - /var/run/docker/netns`).</span>
+ip netns add namespace1
+ip netns add namespace2
+
+<span># Check that iproute2 indeed creates the files</span>
+<span># under `/var/run/netns`.</span>
+tree /var/run/netns/
+/var/run/netns/
+├── namespace1
+└── namespace2
+
+</code></pre></div><p>Once the namespaces have been set up, we can confirm the isolation by taking advantage of <code>ip netns exec</code> and executing some commands there:</p>
+<div><pre><code data-lang="sh"><span># List all the interfaces with their corresponding</span>
+<span># configurations.</span>
+<span>#</span>
+<span># We can verify that inside the namespace, only the</span>
+<span># loopback interface has been set.</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ip address show
+1: lo: &lt;LOOPBACK&gt; mtu <span>65536</span> qdisc noop state DOWN group default qlen <span>1000</span>
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</code></pre></div><p>At this point, we can start creating the veth pairs and associating one of their sides to their respective namespaces.</p>
+<div><pre><code data-lang="sh"><span># Create the two pairs.</span>
+ip link add veth1 <span>type</span> veth peer name br-veth1
+ip link add veth2 <span>type</span> veth peer name br-veth2
+
+<span># Associate the non `br-` side</span>
+<span># with the corresponding namespace</span>
+ip link <span>set</span> veth1 netns namespace1
+ip link <span>set</span> veth2 netns namespace2
+</code></pre></div><p>These pairs act as tunnels between the namespaces (for instance, <code>namespace1</code> and the default namespace).</p>
+<p>Now that the namespaces have an additional interface, check out that they’re actually there:</p>
+<div><pre><code data-lang="sh"><span># Differently from before, now we see the</span>
+<span># extra interface (veth1) that we just added.</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ip address show
+1: lo: &lt;LOOPBACK&gt; mtu <span>65536</span> qdisc noop state DOWN group default qlen <span>1000</span>
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+30: veth1@if29: &lt;BROADCAST,MULTICAST&gt; mtu <span>1500</span> qdisc noop state DOWN group default qlen <span>1000</span>
+    link/ether d2:92:25:3c:79:c5 brd ff:ff:ff:ff:ff:ff link-netnsid <span>0</span>
+</code></pre></div><p>As we can see, the <code>veth</code> interface has no IPV4 address associated with it.</p>
+<p>We can do so by making use of <code>ip addr add</code> from within the corresponding network namespaces:</p>
+<div><pre><code data-lang="sh"><span># Assign the address 192.168.1.11 with netmask 255.255.255.0</span>
+<span># (see the `/24` mask there) to `veth1`.</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ip addr add 192.168.1.11/24 dev veth1
+
+
+<span># Verify that the ip address has been set.</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ip address show
+1: lo: &lt;LOOPBACK&gt; mtu <span>65536</span> qdisc noop state DOWN group default qlen <span>1000</span>
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+30: veth1@if29: &lt;BROADCAST,MULTICAST&gt; mtu <span>1500</span> qdisc noop state DOWN group default qlen <span>1000</span>
+    link/ether d2:92:25:3c:79:c5 brd ff:ff:ff:ff:ff:ff link-netnsid <span>0</span>
+    inet 192.168.1.2/24 scope global veth1
+       valid_lft forever preferred_lft forever
+
+
+<span># Repeat the process, assigning the address 192.168.1.12 with </span>
+<span># netmask 255.255.255.0 to `veth2`.</span>
+ip netns <span>exec</span> namespace2 <span>\
+</span><span></span>        ip addr add 192.168.1.12/24 dev veth2
+</code></pre></div><p>Although we have both IPs and interfaces set, we can’t establish communication with them.</p>
+<p>That’s because there’s no interface in the default namespace that can send the traffic to those namespaces - we didn’t either configure addresses to the other side of the veth pairs or configured a bridge device.</p>
+<p>With the creation of the bridge device, we’re then able to provide the necessary routing, properly forming the network:</p>
+<div><pre><code data-lang="sh"><span># Create the bridge device naming it `br1`</span>
+<span># and set it up:</span>
+ip link add name br1 <span>type</span> bridge
+ip link <span>set</span> br1 up
+
+<span># Check that the device has been created.</span>
+ip link <span>|</span> grep br1
+33: br1: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span>1500</span> qdisc noqueue state UNKNOWN mode DEFAULT group default qlen <span>1000</span>
+</code></pre></div><p>With the bridge created, now it’s time to connect the bridge-side of the veth pair to the bridge device:</p>
+<div><pre><code data-lang="sh"><span># Set the bridge veths from the default</span>
+<span># namespace up.</span>
+ip link <span>set</span> br-veth1 up
+ip link <span>set</span> br-veth2 up
+
+<span># Set the veths from the namespaces up too.</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ip link <span>set</span> veth1 up
+ip netns <span>exec</span> namespace2 <span>\
+</span><span></span>        ip link <span>set</span> veth2 up
+
+<span># Add the br-veth* interfaces to the bridge</span>
+<span># by setting the bridge device as their master.</span>
+ip link <span>set</span> br-veth1 master br1
+ip link <span>set</span> br-veth2 master br1
+
+<span># Check that the bridge is the master of the two</span>
+<span># interfaces that we set (i.e., that the two interfaces</span>
+<span># have been added to it).</span>
+bridge link show br1
+29: br-veth1@if30: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu <span>1500</span> master br1 state disabled priority <span>32</span> cost <span>2</span>
+31: br-veth2@if32: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu <span>1500</span> master br1 state disabled priority <span>32</span> cost <span>2</span>
+</code></pre></div><p>Now, it’s a matter of giving this bridge device an address so that we can target such IP in our machine’s routing table making it a target for connections to those interfaces that we added to it:</p>
+<div><pre><code data-lang="sh"><span># Set the address of the `br1` interface (bridge device)</span>
+<span># to 192.168.1.10/24 and also set the broadcast address</span>
+<span># to 192.168.1.255 (the `+` symbol sets  the host bits to</span>
+<span># 255).</span>
+ip addr add 192.168.1.10/24 brd + dev br1
+</code></pre></div><p>Checking our routing table (from the default namespace), we can see that any requests with a destination to our namespaces (<code>192.168.1.0/24</code>) go through our bridge device:</p>
+<div><pre><code data-lang="sh">default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric <span>100</span>
+10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15
+10.0.2.2 dev enp0s3 proto dhcp scope link src 10.0.2.15 metric <span>100</span>
+192.168.1.0/24 dev br1 proto kernel scope link src 192.168.1.10 <span># &lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</span>
+</code></pre></div><p>We can verify that we indeed have connectivity:</p>
+<div><pre><code data-lang="sh"><span># Check the connectivity from the default namespace (host)</span>
+ping 192.168.1.12
+PING 192.168.1.12 <span>(</span>192.168.1.12<span>)</span> 56<span>(</span>84<span>)</span> bytes of data.
+<span>64</span> bytes from 192.168.1.12: <span>icmp_seq</span><span>=</span><span>1</span> <span>ttl</span><span>=</span><span>64</span> <span>time</span><span>=</span>0.050 ms
+<span>64</span> bytes from 192.168.1.12: <span>icmp_seq</span><span>=</span><span>2</span> <span>ttl</span><span>=</span><span>64</span> <span>time</span><span>=</span>0.061 ms
+
+<span># We can also reach the interface of the other namespace</span>
+<span># given that we have a route to it.</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ip route
+192.168.1.0/24 dev veth1 proto kernel scope link src 192.168.1.11
+
+<span># Let&#39;s reach the other then iface then.</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ping 192.168.1.12
+</code></pre></div><p>Given that the routing table from <code>namespace1</code> doesn’t have a default gateway, it can’t reach any other machine from outside the <code>192.168.1.0/24</code> range.</p>
+<div><pre><code data-lang="sh"><span># Try to reach Google&#39;s DNS servers (8.8.8.8).</span>
+<span>#</span>
+<span># Given that there&#39;s no route for something that doesn&#39;t </span>
+<span># match the `192.168.1.0/24` range, 8.8.8.8 should be unreachable.</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ping 8.8.8.8
+connect: Network is unreachable
+</code></pre></div><p>To fix that, the first step is giving the namespaces a default gateway route:</p>
+<div><pre><code data-lang="sh"><span># Execute the command to add the default gateway in all</span>
+<span># the network namespaces under `/var/run/netns`.</span>
+<span>#</span>
+<span># The command is going to add a default gateway which should</span>
+<span># be used for all connections that doesn&#39;t match the other</span>
+<span># specific routes. </span>
+<span>#</span>
+<span># 192.168.1.10 corresponds to the address assigned to the</span>
+<span># bridge device - reachable from both namespaces, as well as</span>
+<span># the host machine.</span>
+ip -all netns <span>exec</span> <span>\
+</span><span></span>        ip route add default via 192.168.1.10
+
+<span># Check how the routing table looks inside the namespace</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ip route
+default via 192.168.1.10 dev veth1
+192.168.1.0/24 dev veth1 proto kernel scope link src 192.168.1.11
+</code></pre></div><p>Show we be able to reach the internet now? Not yet.</p>
+<div><pre><code data-lang="sh"><span># Try to reach Google&#39;s DNS servers (8.8.8.8).</span>
+ip netns <span>exec</span> namespace1 <span>\
+</span><span></span>        ping 8.8.8.8
+        PING 8.8.8.8 <span>(</span>8.8.8.8<span>)</span> 56<span>(</span>84<span>)</span> bytes of data.
+^C
+--- 8.8.8.8 ping statistics ---
+<span>3</span> packets transmitted, <span>0</span> received, 100% packet loss, <span>time</span> 2043ms
+</code></pre></div><p>Although the network is now reachable, there’s no way that we can have responses back - packets from external networks can’t be sent directly to our <code>192.168.1.0/24</code> network.</p>
+<p>To get around that, we can make use of NAT (network address translation) by placing an <code>iptables</code> rule in the <code>POSTROUTING</code> chain of the <code>nat</code> table:</p>
+<div><pre><code data-lang="sh"><span># -t specifies the table to which the commands</span>
+<span># should be directed to. By default it&#39;s `filter`.</span>
+<span>#</span>
+<span># -A specifies that we&#39;re appending a rule to the</span>
+<span># chain the we tell the name after it;</span>
+<span>#</span>
+<span># -s specifies a source address (with a mask in </span>
+<span># this case).</span>
+<span>#</span>
+<span># -j specifies the target to jump to (what action to</span>
+<span># take).</span>
+iptables <span>\
+</span><span></span>        -t nat <span>\
+</span><span></span>        -A POSTROUTING <span>\
+</span><span></span>        -s 192.168.1.0/24 <span>\
+</span><span></span>        -j MASQUERADE
+</code></pre></div><p>Although <code>NAT</code> is set to work for the packets originating from <code>192.168.1.0/24</code>, there’s still (yet another) one more configuration to do: enable packet forwarding (maybe this is already active in your case):</p>
+<div><pre><code data-lang="sh"><span># Enable ipv4 ip forwarding</span>
+sysctl -w net.ipv4.ip_forward<span>=</span><span>1</span>
+
+<span># Send some packets to 8.8.8.8</span>
+ip netns <span>exec</span> namespace1 ping 8.8.8.8
+PING 8.8.8.8 <span>(</span>8.8.8.8<span>)</span> 56<span>(</span>84<span>)</span> bytes of data.
+<span>64</span> bytes from 8.8.8.8: <span>icmp_seq</span><span>=</span><span>1</span> <span>ttl</span><span>=</span><span>61</span> <span>time</span><span>=</span><span>43</span> ms
+<span>64</span> bytes from 8.8.8.8: <span>icmp_seq</span><span>=</span><span>2</span> <span>ttl</span><span>=</span><span>61</span> <span>time</span><span>=</span><span>35</span> ms
+</code></pre></div><p>Now (finally), we’re good! We have connectivity all the way:</p>
+<ul>
+<li>the host can direct traffic to an application inside a namespace;</li>
+<li>an application inside a namespace can direct traffic to an application in the host;</li>
+<li>an application inside a namespace can direct traffic to another application in another namespace; and</li>
+<li>an application inside a namespace can access the internet.</li>
+</ul>
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>Did we need bridge at all? That depends.</p>
+<p>If the intention was to have the communication going through the host to a namespace (or vice-versa) directly, just setting the pairs would be enough.</p>
+<p>Just in case you spot any mistake, please let me know! I’m <a href="https://twitter.com/cirowrc">cirowrc</a> on Twitter.</p>
+<p>Have a good one!</p>
+<p><em>finis</em></p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

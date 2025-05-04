@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>(Very) Basic Intro to Hash Functions (SHA-256, MD5, etc) | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/very-basic-intro-to-hash-functions-sha-256-md-5-etc/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>(Very) Basic Intro to Hash Functions (SHA-256, MD5, etc)</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Hash functions are used to securely store passwords, find duplicate records, quickly store and retrieve data, among other useful computational tasks. As a practical example, all user passwords on <a href="https://www.boot.dev/">boot.dev</a> are hashed using <a href="https://blog.boot.dev/cryptography/bcrypt-step-by-step/">Bcrypt</a> to ensure that if an attacker were ever to gain access to our database our user’s passwords wouldn’t be compromised.</p>
+<p>I want to focus on several important features of <a href="https://blog.boot.dev/cryptography/what-is-cryptography/">cryptographic</a> hash functions, arguably the most important features:</p>
+<ul>
+<li>Hash functions scramble data deterministically</li>
+<li>No matter the input, the output of a hash function always has the same size</li>
+<li>The original data can not be retrieved from the scrambled data (one-way function)</li>
+</ul>
+<h2 id="other-hash-function-explainers">
+  <span> Other hash function explainers</span> <a href="#other-hash-function-explainers">🔗</a></h2>
+<p>If you’re looking for an explanation of a different hash function, we may have you covered</p>
+<ul>
+<li><a href="https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/">How SHA-2 Works Step by Step</a></li>
+<li><a href="https://blog.boot.dev/cryptography/very-basic-intro-to-the-scrypt-hash/">(Very) Basic Intro to the Scrypt Hash</a></li>
+<li><a href="https://blog.boot.dev/cryptography/bcrypt-step-by-step/">Bcrypt Step by Step</a></li>
+</ul>
+<h2 id="hash-functions-scramble-data-deterministically">
+  <span> Hash Functions Scramble Data Deterministically</span> <a href="#hash-functions-scramble-data-deterministically">🔗</a></h2>
+<p>Think of a Rubix cube.</p>
+<p><img src="https://blog.boot.dev/img/800/1_-PWqlRo2P97cfzZAbdVMlA-300x169.jpeg" alt="completed rubix cube "/></p>
+<p>I start with the cube unscrambled. If I start twisting randomly, by the end I will end up with something that does not resemble anything close to what I started with. Also, if I were to start over and do the exact same series of moves, I would be able to repeatedly get the exact same outcome. Even though the outcome may <em>appear</em> random, it isn’t at all. That is what <strong>deterministic</strong> means.</p>
+<p>Determinism is important for securely storing a password. For instance, let’s pretend my password is “iLoveBitcoin”</p>
+<p>I can use a hash function to scramble it:</p>
+<blockquote>
+<p>iLoveBitcoin → “2f5sfsdfs5s1fsfsdf98ss4f84sfs6d5fs2d1fdf15”</p>
+</blockquote>
+<p>Now, if anyone were to see the scrambled version, they wouldn’t know my original password! This is important because it means that as a website developer, I only need to store the hash (scrambled data) of my user’s password to be able to verify them. When the user signs up, I hash the password and store it in my database. When the user logs in, I just hash what they typed in and compare the two hashes. Because a given input always produces the same hash, this works every time.</p>
+<p>If a website stores passwords in plain-text (not hashed) it is a huge breach of security. If someone were to hack that site’s database and find all the emails stored with plain-text passwords, they could then use those combinations and try them on other websites.</p>
+<h2 id="no-matter-the-input-the-output-is-the-same-size">
+  <span> No Matter the Input, the Output is the Same Size</span> <a href="#no-matter-the-input-the-output-is-the-same-size">🔗</a></h2>
+<p>If I hash a single word the output will be a certain size (in the case of SHA-256, a particular hashing function, the size is 256 bits). If I hash a book, the output will be <em>the same size</em>.</p>
+<p>This is another important feature because it can save us computing time. A classic example is using a hash as a key in a data map. A data map is a simple structure used in computer science to store data.</p>
+<p><img src="https://blog.boot.dev/img/800/1_5Hj62cCTpkVekPwVaS0q_g.gif" alt="key value database "/></p>
+<p><a href="http://www.ingenioussql.com/tag/key-value-store/">source</a></p>
+<p>When a program stores data in a map, a key and value are given to the map. When a program wants to access the value, it can give the appropriate key to the map and receive the corresponding value. Data maps are good because they can find data <em>instantly.</em> The key is used as an address that the computer can find immediately, instead of taking hours searching through millions of records.</p>
+<p>Because keys are like addresses, they can’t be too large. If I want to store books in a data map I can hash the contents of the book and use the hash as a key. As a programmer, I can simply use the hash to look up the contents of the book instead of trying to sort through thousands of records by title, author, etc.</p>
+<h2 id="how-do-they-work">
+  <span> How Do They Work?</span> <a href="#how-do-they-work">🔗</a></h2>
+<p>Here is the real challenge of writing this article. I’m going to keep it extremely simple and omit the actual implementation details while giving you a basic idea of what the computer actually does when it hashes some data.</p>
+<p>Let’s walk through an example algorithm I’m making up on the fly for this demonstration, <strong>LANEHASH:</strong></p>
+<ul>
+<li>We start with some data to hash</li>
+</ul>
+<blockquote>
+<p>iLoveBitcoin</p>
+</blockquote>
+<ul>
+<li>I convert the letters and numbers into 1’s and 0’s (All data in computers are stored in 1’s and 0’s, different patterns of 1’s and 0’s represent different letters)</li>
+</ul>
+<blockquote>
+<p>iLoveBitcoin→ 100010100000101111</p>
+</blockquote>
+<ul>
+<li>At this point we go through various predetermined steps to transform our data. The steps can be anything, the important thing is that whenever we use LANEHASH we need to use the same steps so that our algorithm is deterministic.</li>
+<li>We move the first four bits from the left side to the right</li>
+</ul>
+<blockquote>
+<p><strong>1000</strong>10100000101111 → 10100000101111<strong>1000</strong></p>
+</blockquote>
+<ul>
+<li>We separate every other bit</li>
+</ul>
+<blockquote>
+<p><strong>1</strong>0<strong>1</strong>0<strong>0</strong>0<strong>0</strong>0<strong>1</strong>0<strong>1</strong>1<strong>1</strong>1<strong>1</strong>0<strong>0</strong>0 → 110011110 &amp; 000001100</p>
+</blockquote>
+<ul>
+<li>We convert those two parts into base 10 numbers. Base 10 is the “normal” number system that we all learned in school. (all binary data really just number, you can look up how it converts binary to base 10 easily online elsewhere)</li>
+</ul>
+<blockquote>
+<p>110011110 → 414</p>
+<p>000001100→ 12</p>
+</blockquote>
+<ul>
+<li>We multiply the two numbers together</li>
+</ul>
+<blockquote>
+<p>414 *12 = 4968</p>
+</blockquote>
+<ul>
+<li>We square that number</li>
+</ul>
+<blockquote>
+<p>4968 ^ 2 = 24681024</p>
+</blockquote>
+<ul>
+<li>We convert that number back to binary</li>
+</ul>
+<blockquote>
+<p>24681024 →1011110001001101001000000</p>
+</blockquote>
+<ul>
+<li>We chop 9 bits off the right side to get exactly 16 bits</li>
+</ul>
+<blockquote>
+<p>1011110001001101<strong>001000000</strong> → 1011110001001101</p>
+</blockquote>
+<ul>
+<li>We convert that binary data back to English</li>
+</ul>
+<blockquote>
+<p>1011110001001101 → “8sj209dsns02k2”</p>
+</blockquote>
+<p>As you can see, if you start with the same word at the beginning, you will always get the same output at the end. However, if you even change one letter, the outcome will be drastically changed.</p>
+<h2 id="disclaimer">
+  <span> Disclaimer</span> <a href="#disclaimer">🔗</a></h2>
+<p>On the steps where I convert from English to binary, and from binary to English, I followed no pattern. Don’t let that confuse you. There are many <a href="https://blog.boot.dev/bitcoin/base64-vs-base58-encoding/">different ways to convert binary data to English</a> and back, I just didn’t want to get hung up on that in this article.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

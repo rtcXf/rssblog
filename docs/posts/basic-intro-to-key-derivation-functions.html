@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Basic Intro to Key Derivation Functions | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/cryptography/key-derivation-functions/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Basic Intro to Key Derivation Functions</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>A Key Derivation Function, or KDF, is a <a href="https://blog.boot.dev/cryptography/what-is-cryptography/">cryptographic algorithm</a> that derives one or more secret keys from a secret value. If you’ve ever needed to store a password in a database or create a private key from a password, you may have used a KDF. Some examples of popular KDFs are <a href="https://en.wikipedia.org/wiki/Argon2">Argon2</a>, <a href="https://blog.boot.dev/cryptography/very-basic-intro-to-the-scrypt-hash/">Scrypt</a>, and <a href="https://en.wikipedia.org/wiki/PBKDF2">PBKDF2</a>.</p>
+<h2 id="are-kdfs-just-hash-functions">
+  <span> Are KDFs Just Hash Functions?</span> <a href="#are-kdfs-just-hash-functions">🔗</a></h2>
+<p>No, but there is overlap. To understand KDFs, let’s first go through a quick refresher on <a href="https://blog.boot.dev/cryptography/very-basic-intro-to-hash-functions-sha-256-md-5-etc/">hash functions.</a></p>
+<p>Some hash functions for example:</p>
+<ul>
+<li><a href="https://blog.boot.dev/cryptography/how-sha-2-works-step-by-step-sha-256/">SHA-256</a></li>
+<li>MD5</li>
+</ul>
+<p>A hash function takes an input and creates an output. In most password hashing scenarios it looks something like this:</p>
+<pre tabindex="0"><code>sha256(&#34;password123&#34;) -&gt; ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f
+</code></pre><p>The function must have the following properties:</p>
+<ul>
+<li>It scrambles data deterministically (Same input, same output)</li>
+<li>No matter the input, the output of a hash function always has the same size</li>
+<li>It cannot retrieve the input from the output (one-way function)</li>
+</ul>
+<h2 id="so-whats-the-difference">
+  <span> So What’s the Difference?</span> <a href="#so-whats-the-difference">🔗</a></h2>
+<p>There are different types of KDFs. Some are based on stream or block ciphers, but in this article, we will focus on the most common type, hash-based key derivation functions.</p>
+<p>As it turns out, all hash-based KDFs are secure hash functions, but not all hash functions are hashed-based KDFs.</p>
+<p><img src="https://blog.boot.dev/img/800/Capture-1.png" alt="kdf vs hash "/></p>
+<p>In addition to the properties of a hash function, KDFs can serve the following purposes:</p>
+<ul>
+<li>Key Stretching</li>
+<li>Key Whitening</li>
+<li>Key Separation</li>
+<li>Key Strengthening</li>
+</ul>
+<p>Let’s look at each case separately, with the following definition of our general KDF in mind:</p>
+<pre tabindex="0"><code>derivedKey = keyDerivationFunction(originalKey, salt, difficulty)
+</code></pre><p><strong>Salt</strong> is random data used to protect against pre-computation attacks or rainbow tables.</p>
+<p><strong>Difficulty</strong> can be used to make the KDF slower via intense computation, memory, or parallelism requirements. This protects against brute force attacks because it will take an attacker longer per guess.</p>
+<h2 id="key-stretching">
+  <span> Key Stretching</span> <a href="#key-stretching">🔗</a></h2>
+<p>Key stretching is the most common use case for the average developer. The idea is to take a key with low entropy (security or randomness) and stretch it into a longer key that is more secure. Passwords are undoubtedly a great example. For example, many websites use Bcrypt to stretch keys:</p>
+<pre tabindex="0"><code>passwordForDB = bcrypt(password, salt, difficulty)
+</code></pre><h2 id="key-separation">
+  <span> Key Separation</span> <a href="#key-separation">🔗</a></h2>
+<p>KDFs allow child keys to be created from a master key. This can be used in applications like Bitcoin where child keys can control sections of a wallet. However, only the master has full control. This is done through the use of different salts. For example:</p>
+<pre tabindex="0"><code>childOne = kdf(masterKey, saltOne, difficulty)
+childTwo = kdf(masterKey, saltTwo, difficulty)
+childThree = kdf(masterKey, saltThree, difficulty)
+</code></pre><h2 id="key-strengthening">
+  <span> Key Strengthening</span> <a href="#key-strengthening">🔗</a></h2>
+<p>Strengthing extends a key with a random salt, but then <a href="https://en.wikipedia.org/wiki/Key_derivation_function">deletes the salt</a> so it can’t be used again. This makes the resulting key stronger without adding significant vulnerabilities to the system.</p>
+<h2 id="should-i-use-kdfs">
+  <span> Should I Use KDFs?</span> <a href="#should-i-use-kdfs">🔗</a></h2>
+<p>Yes. Most often when storing passwords in databases, but also if any of these other use cases fall into the domain of your code. Tweet me if you have comments or questions. To read more check out the <a href="https://eprint.iacr.org/2010/264">HKDF paper</a>.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

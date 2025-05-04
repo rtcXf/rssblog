@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A UDP server and client in Go | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/udp-client-and-server-in-go/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>A UDP server and client in Go</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>While it’s prevalent to see implementations of TCP servers in Golang, it’s not very common to see the same when it comes to UDP.</p>
+<p>Besides the many differences between UDP and TCP, using Go it feels like these are pretty much alike, except for little details that arise from each protocol specifics.</p>
+<p>If you feel like some Golang UDP knowledge would be valuable, make sure you stick to the end.</p>
+<p>As an extra, this article also covers the underlying differences between TCP and UDP when it comes to the syscalls that Golang uses under the hood, as well as some analysis of what the Kernel does when those syscalls get called.</p>
+<p>Stay tuned!</p>
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#sending-udp-packets-using-go">Sending UDP packets using Go</a></li>
+<li><a href="#address-resolution">Address resolution</a></li>
+<li><a href="#tcp-dialing-vs-udp-dialing">TCP Dialing vs UDP Dialing</a></li>
+<li><a href="#writing-to-a-udp-connection">Writing to a UDP “connection”</a></li>
+<li><a href="#receiving-from-a-udp-connection-in-a-client">Receiving from a UDP “connection” in a client</a></li>
+<li><a href="#receiving-from-a-udp-connection-in-a-server">Receiving from a UDP “connection” in a server</a></li>
+<li><a href="#a-udp-server-in-go">A UDP Server in Go</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h3 id="overview">Overview</h3>
+<p>As a goal for the blog post, the final implementation should look like an “echo channel”, where whatever a client writes to the server, the server echoes back.</p>
+<pre><code>        .---&gt; HELLO!! --&gt;-.
+        |                 |
+client -*                 *--&gt; server --.
+   ^                                    |
+   |                                    |
+   *---&lt;----- HELLO!! ---------&lt;--------*
+</code></pre><p>Being UDP a protocol that doesn’t guarantee reliable delivery, it might be the case that the server receives the message, and it might be the case that the client receives the echo back from the server.</p>
+<p>The flow <strong>might</strong> complete successfully (or not).</p>
+<pre><code>        .---&gt; HELLO!! --&gt;-.
+        |                 |
+client -*                 *--&gt; server --.
+                                        |
+                                        |
+            whoops, lost! -----&lt;--------*
+</code></pre><p>Not being connection-oriented, the client won’t really “establish a connection”, like in TCP; whenever a message arrives at the server, it won’t “write a response back to the connection”, it will only direct a message to the address that wrote to it.</p>
+<p>With that in mind, the flow should look like this:</p>
+<pre><code>TIME    DESCRIPTION
+
+t0      client and server exist
+
+          client                         server
+          10.0.0.1                       10.0.0.2
+
+
+t1      client sends a message to the server
+
+          client      ------------&gt;      server
+          10.0.0.1         msg           10.0.0.2
+                       (from:10.0.0.1)
+                       (to:  10.0.0.2)
+
+
+t2      server receives the message, then it takes
+        the address of the sender and then prepares
+        another message with the same contents and
+        then writes it back to the client
+
+          client      &lt;------------      server
+          10.0.0.1         msg2          10.0.0.2
+                       (from:10.0.0.1)
+                       (to:  10.0.0.2)
+
+
+t3      client receives the message
+
+          client                         server
+          10.0.0.1                       10.0.0.2
+        
+           thxx!! :D :D
+
+
+ps.: ports omitted for brevity
+</code></pre><p>That said, let’s see how that story rolls out in Go.</p>
+
+
+<h3 id="sending-udp-packets-using-go">Sending UDP packets using Go</h3>
+<p>Kicking off with the whole implementation at once (full of comments), we can start depicting it, understanding piece by piece, until the point that we can understand each and every interaction that happens behind the scenes.</p>
+<div><pre><code data-lang="go"><span>// client wraps the whole functionality of a UDP client that sends
+</span><span>// a message and waits for a response coming back from the server
+</span><span>// that it initially targetted.
+</span><span></span><span>func</span> <span>client</span><span>(</span><span>ctx</span> <span>context</span><span>.</span><span>Context</span><span>,</span> <span>address</span> <span>string</span><span>,</span> <span>reader</span> <span>io</span><span>.</span><span>Reader</span><span>)</span> <span>(</span><span>err</span> <span>error</span><span>)</span> <span>{</span>
+	<span>// Resolve the UDP address so that we can make use of DialUDP
+</span><span></span>	<span>// with an actual IP and port instead of a name (in case a
+</span><span></span>	<span>// hostname is specified).
+</span><span></span>	<span>raddr</span><span>,</span> <span>err</span> <span>:=</span> <span>net</span><span>.</span><span>ResolveUDPAddr</span><span>(</span><span>&#34;udp&#34;</span><span>,</span> <span>address</span><span>)</span>
+	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+		<span>return</span>
+	<span>}</span>
+
+	<span>// Although we&#39;re not in a connection-oriented transport,
+</span><span></span>	<span>// the act of `dialing` is analogous to the act of performing
+</span><span></span>	<span>// a `connect(2)` syscall for a socket of type SOCK_DGRAM:
+</span><span></span>	<span>// - it forces the underlying socket to only read and write
+</span><span></span>	<span>//   to and from a specific remote address.
+</span><span></span>	<span>conn</span><span>,</span> <span>err</span> <span>:=</span> <span>net</span><span>.</span><span>DialUDP</span><span>(</span><span>&#34;udp&#34;</span><span>,</span> <span>nil</span><span>,</span> <span>raddr</span><span>)</span>
+	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+		<span>return</span>
+	<span>}</span>
+
+	<span>// Closes the underlying file descriptor associated with the,
+</span><span></span>	<span>// socket so that it no longer refers to any file.
+</span><span></span>	<span>defer</span> <span>conn</span><span>.</span><span>Close</span><span>()</span>
+
+	<span>doneChan</span> <span>:=</span> <span>make</span><span>(</span><span>chan</span> <span>error</span><span>,</span> <span>1</span><span>)</span>
+
+	<span>go</span> <span>func</span><span>()</span> <span>{</span>
+		<span>// It is possible that this action blocks, although this
+</span><span></span>		<span>// should only occur in very resource-intensive situations:
+</span><span></span>		<span>// - when you&#39;ve filled up the socket buffer and the OS
+</span><span></span>		<span>//   can&#39;t dequeue the queue fast enough.
+</span><span></span>		<span>n</span><span>,</span> <span>err</span> <span>:=</span> <span>io</span><span>.</span><span>Copy</span><span>(</span><span>conn</span><span>,</span> <span>reader</span><span>)</span>
+		<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+			<span>doneChan</span> <span>&lt;-</span> <span>err</span>
+			<span>return</span>
+		<span>}</span>
+
+		<span>fmt</span><span>.</span><span>Printf</span><span>(</span><span>&#34;packet-written: bytes=%d\n&#34;</span><span>,</span> <span>n</span><span>)</span>
+
+		<span>buffer</span> <span>:=</span> <span>make</span><span>([]</span><span>byte</span><span>,</span> <span>maxBufferSize</span><span>)</span>
+
+		<span>// Set a deadline for the ReadOperation so that we don&#39;t
+</span><span></span>		<span>// wait forever for a server that might not respond on
+</span><span></span>		<span>// a resonable amount of time.
+</span><span></span>		<span>deadline</span> <span>:=</span> <span>time</span><span>.</span><span>Now</span><span>().</span><span>Add</span><span>(</span><span>*</span><span>timeout</span><span>)</span>
+		<span>err</span> <span>=</span> <span>conn</span><span>.</span><span>SetReadDeadline</span><span>(</span><span>deadline</span><span>)</span>
+		<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+			<span>doneChan</span> <span>&lt;-</span> <span>err</span>
+			<span>return</span>
+		<span>}</span>
+
+		<span>nRead</span><span>,</span> <span>addr</span><span>,</span> <span>err</span> <span>:=</span> <span>conn</span><span>.</span><span>ReadFrom</span><span>(</span><span>buffer</span><span>)</span>
+		<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+			<span>doneChan</span> <span>&lt;-</span> <span>err</span>
+			<span>return</span>
+		<span>}</span>
+
+		<span>fmt</span><span>.</span><span>Printf</span><span>(</span><span>&#34;packet-received: bytes=%d from=%s\n&#34;</span><span>,</span>
+			<span>nRead</span><span>,</span> <span>addr</span><span>.</span><span>String</span><span>())</span>
+
+		<span>doneChan</span> <span>&lt;-</span> <span>nil</span>
+	<span>}()</span>
+
+	<span>select</span> <span>{</span>
+	<span>case</span> <span>&lt;-</span><span>ctx</span><span>.</span><span>Done</span><span>():</span>
+		<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;cancelled&#34;</span><span>)</span>
+		<span>err</span> <span>=</span> <span>ctx</span><span>.</span><span>Err</span><span>()</span>
+	<span>case</span> <span>err</span> <span>=</span> <span>&lt;-</span><span>doneChan</span><span>:</span>
+	<span>}</span>
+
+	<span>return</span>
+<span>}</span>
+</code></pre></div><p>Having the client code, we can now depict it, exploring each of its nuances.</p>
+<h3 id="address-resolution">Address resolution</h3>
+<p>Before we even start creating a socket and carrying about sending the information to the server, the first thing that happens is a name resolution that translates a given name (like, <code>google.com</code>) into a set of IP addresses (like, <code>8.8.8.8</code>).</p>
+<p>The way we do that in our code is with the call to <a href="https://golang.org/pkg/net/#ResolveUDPAddr">net.ResolveUDPAddr</a>, which in a Unix environment, goes all the way down to performing the DNS resolution via the following stack:</p>
+<div><pre><code data-lang="css"><span>(</span><span>in</span> <span>a</span> <span>given</span> <span>goroutine</span> <span>...)</span>
+    <span>&gt;&gt;</span>  <span>0</span>  <span>0x00000000004e5dc5</span> <span>in</span> <span>net</span><span>.(*</span><span>Resolver</span><span>)</span><span>.</span><span>goLookupIPCNAMEOrder</span>
+           <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>dnsclient_unix</span><span>.</span><span>go</span><span>:</span><span>553</span>
+    <span>&gt;&gt;</span>  <span>1</span>  <span>0x00000000004fbe69</span> <span>in</span> <span>net</span><span>.(*</span><span>Resolver</span><span>)</span><span>.</span><span>lookupIP</span>
+           <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>lookup_unix</span><span>.</span><span>go</span><span>:</span><span>101</span>
+        <span>2</span>  <span>0x0000000000514948</span> <span>in</span> <span>net</span><span>.(*</span><span>Resolver</span><span>)</span><span>.</span><span>lookupIP-fm</span>
+           <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>lookup</span><span>.</span><span>go</span><span>:</span><span>207</span>
+        <span>3</span>  <span>0x000000000050faca</span> <span>in</span> <span>net</span><span>.</span><span>glob</span><span>.</span><span>.</span><span>func1</span>
+           <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>hook</span><span>.</span><span>go</span><span>:</span><span>19</span>
+    <span>&gt;&gt;</span>  <span>4</span>  <span>0x000000000051156c</span> <span>in</span> <span>net</span><span>.(*</span><span>Resolver</span><span>)</span><span>.</span><span>LookupIPAddr</span><span>.</span><span>func1</span>
+           <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>lookup</span><span>.</span><span>go</span><span>:</span><span>221</span>
+        <span>5</span>  <span>0x00000000004d4f7c</span> <span>in</span> <span>internal</span><span>/</span><span>singleflight</span><span>.(*</span><span>Group</span><span>)</span><span>.</span><span>doCall</span>
+           <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>internal</span><span>/</span><span>singleflight</span><span>/</span><span>singleflight</span><span>.</span><span>go</span><span>:</span><span>95</span>
+        <span>6</span>  <span>0x000000000045d9c1</span> <span>in</span> <span>runtime</span><span>.</span><span>goexit</span>
+           <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>runtime</span><span>/</span><span>asm_amd64</span><span>.</span><span>s</span><span>:</span><span>1333</span>
+
+<span>(</span><span>in</span> <span>another</span> <span>goroutine</span><span>...)</span>
+<span>0</span>  <span>0x0000000000431a74</span> <span>in</span> <span>runtime</span><span>.</span><span>gopark</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>runtime</span><span>/</span><span>proc</span><span>.</span><span>go</span><span>:</span><span>303</span>
+<span>1</span>  <span>0x00000000004416dd</span> <span>in</span> <span>runtime</span><span>.</span><span>selectgo</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>runtime</span><span>/</span><span>select</span><span>.</span><span>go</span><span>:</span><span>313</span>
+<span>2</span>  <span>0x00000000004fa3f6</span> <span>in</span> <span>net</span><span>.(*</span><span>Resolver</span><span>)</span><span>.</span><span>LookupIPAddr</span>           <span>&lt;&lt;</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>lookup</span><span>.</span><span>go</span><span>:</span><span>227</span>
+<span>3</span>  <span>0x00000000004f6ae9</span> <span>in</span> <span>net</span><span>.(*</span><span>Resolver</span><span>)</span><span>.</span><span>internetAddrList</span>       <span>&lt;&lt;</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>ipsock</span><span>.</span><span>go</span><span>:</span><span>279</span>
+<span>4</span>  <span>0x000000000050807d</span> <span>in</span> <span>net</span><span>.</span><span>ResolveUDPAddr</span>                     <span>&lt;&lt;</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>udpsock</span><span>.</span><span>go</span><span>:</span><span>82</span>
+<span>5</span>  <span>0x000000000051e63b</span> <span>in</span> <span>main</span><span>.</span><span>main</span>
+   <span>at</span> <span>./</span><span>resolve</span><span>.</span><span>go</span><span>:</span><span>14</span>
+<span>6</span>  <span>0x0000000000431695</span> <span>in</span> <span>runtime</span><span>.</span><span>main</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>runtime</span><span>/</span><span>proc</span><span>.</span><span>go</span><span>:</span><span>201</span>
+<span>7</span>  <span>0x000000000045d9c1</span> <span>in</span> <span>runtime</span><span>.</span><span>goexit</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>runtime</span><span>/</span><span>asm_amd64</span><span>.</span><span>s</span><span>:</span><span>1333</span>
+</code></pre></div><p>If I’m not mistaken, the overall process looks like this:</p>
+<ol>
+<li>it checks if we’re giving an already IP address or a hostname; if a hostname, then</li>
+<li>looks up the host using the local resolver according to the lookup order specified by the system; then,</li>
+<li>eventually performs an actual DNS request asking for records for such domain; then,</li>
+<li>if all of that succeeds, a list of IP addresses is retrieved and then sorted out according to an <a href="https://tools.ietf.org/html/rfc6724">RFC</a>; which gives us the highest priority IP from the list.</li>
+</ol>
+<p>Follow the stack trace above and you should be able to see by yourself the source code where the “magic” happens (it’s an interesting thing to do!).</p>
+<p>With an IP address chosen, we can proceed.</p>
+<p>note.: this process is <strong>not</strong> different for TCP.</p>
+
+
+<h3 id="tcp-dialing-vs-udp-dialing">TCP Dialing vs UDP Dialing</h3>
+<p>Instead of using a regular <a href="https://golang.org/pkg/net/#Dial"><code>Dial</code></a> commonly used with TCP, for our UDP client, a different method was used: <a href="https://golang.org/pkg/net/#DialUDP"><code>DialUDP</code></a>.</p>
+<p>The reason for that is that we can enforce the type of address passed, as well as receive a specialized connection: the “concrete type” <a href="https://golang.org/pkg/net/#UDPConn"><code>UDPConn</code></a> instead of the generic <a href="https://golang.org/pkg/net/#Conn"><code>Conn</code></a> interface.</p>
+<p>Although both <code>Dial</code> and <code>DialUDP</code> might sound like the same (even when it comes to the syscalls used while talking to the kernel), they end up being pretty different concerning the network stack implementation.</p>
+<p>For instance, we can check that both methods use <a href="http://man7.org/linux/man-pages/man2/connect.2.html"><code>connect(2)</code></a> under the hood:</p>
+<ul>
+<li>TCP</li>
+</ul>
+<div><pre><code data-lang="go"><span>// TCP - performs an actual `connect` under the hood,
+</span><span>// trying to establish an actual connection with the
+</span><span>// other side.
+</span><span></span><span>net</span><span>.</span><span>Dial</span><span>(</span><span>&#34;tcp&#34;</span><span>,</span> <span>&#34;1.1.1.1:53&#34;</span><span>)</span>
+
+<span>// strace -f -e trace=network ./main
+</span><span>//  [pid  4891] socket(
+</span><span></span>        <span>AF_INET</span><span>,</span> 
+ <span>-----</span><span>&gt;</span> <span>SOCK_STREAM</span><span>|</span><span>SOCK_CLOEXEC</span><span>|</span><span>SOCK_NONBLOCK</span><span>,</span> 
+        <span>IPPROTO_IP</span><span>)</span> <span>=</span> <span>3</span>
+<span>//  [pid  4891] connect(3, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr(&#34;1.1.1.1&#34;)}, 16) = -1 EINPROGRESS (Operation now in progress)
+</span><span></span><span>...</span>
+</code></pre></div><ul>
+<li>UDP</li>
+</ul>
+<div><pre><code data-lang="go"><span>// UDP - calls `connect` just like TCP, but given that
+</span><span>// the arguments are different (it&#39;s not SOCK_STREAM),
+</span><span>// the semantics differ - it constrains the socket 
+</span><span>// regarding to whom it might communicate with.
+</span><span></span><span>net</span><span>.</span><span>Dial</span><span>(</span><span>&#34;udp&#34;</span><span>,</span> <span>&#34;1.1.1.1:53&#34;</span><span>)</span>
+
+<span>// strace -f -e trace=network ./main
+</span><span>// [pid  5517] socket(
+</span><span></span>        <span>AF_INET</span><span>,</span> 
+ <span>-----</span><span>&gt;</span> <span>SOCK_DGRAM</span><span>|</span><span>SOCK_CLOEXEC</span><span>|</span><span>SOCK_NONBLOCK</span><span>,</span> 
+        <span>IPPROTO_IP</span><span>)</span> <span>=</span> <span>3</span>
+<span>// [pid  5517] connect(3, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr(&#34;1.1.1.1&#34;)}, 16) = 0
+</span><span></span><span>...</span>
+</code></pre></div><p>While they’re pretty much the same, from the documentation we can see how they are semantically different depending on the way we configure the <code>socket</code> created via the <code>socket(2)</code> call that happens before <code>connect(2)</code>:</p>
+<blockquote>
+<p>If the socket sockfd is of type <strong>SOCK_DGRAM</strong>, then addr is the address to which datagrams are sent by default, and the only address from which datagrams are received.</p>
+</blockquote>
+<blockquote>
+<p>If the socket is of type <strong>SOCK_STREAM</strong> or SOCK_SEQ‐PACKET,  this  call  attempts  to  make a connection to the socket that is bound to the address specified by addr.</p>
+</blockquote>
+<p>Should we be able to verify that with the TCP transport the <code>Dial</code> method would perform the act of really connecting to the other side? Sure!</p>
+<div><pre><code data-lang="sh">./tools/funccount -p <span>$(</span>pidof main<span>)</span> <span>&#39;tcp_*&#39;</span>
+Tracing <span>316</span> functions <span>for</span> <span>&#34;tcp_*&#34;</span>... Hit Ctrl-C to end.
+^C
+FUNC                                    COUNT
+tcp_small_queue_check.isra.28               <span>1</span>
+tcp_current_mss                             <span>1</span>
+tcp_schedule_loss_probe                     <span>1</span>
+tcp_mss_to_mtu                              <span>1</span>
+tcp_write_queue_purge                       <span>1</span>
+tcp_write_xmit                              <span>1</span>
+tcp_select_initial_window                   <span>1</span>
+tcp_fastopen_defer_connect                  <span>1</span>
+tcp_mtup_init                               <span>1</span>
+tcp_v4_connect                              <span>1</span>
+tcp_v4_init_sock                            <span>1</span>
+tcp_rearm_rto.part.61                       <span>1</span>
+tcp_close                                   <span>1</span>
+tcp_connect                                 <span>1</span>
+tcp_send_fin                                <span>1</span>
+tcp_rearm_rto                               <span>1</span>
+tcp_tso_segs                                <span>1</span>
+tcp_event_new_data_sent                     <span>1</span>
+tcp_check_oom                               <span>1</span>
+tcp_clear_retrans                           <span>1</span>
+tcp_init_xmit_timers                        <span>1</span>
+tcp_init_sock                               <span>1</span>
+tcp_initialize_rcv_mss                      <span>1</span>
+tcp_assign_congestion_control               <span>1</span>
+tcp_sync_mss                                <span>1</span>
+tcp_init_tso_segs                           <span>1</span>
+tcp_stream_memory_free                      <span>1</span>
+tcp_setsockopt                              <span>1</span>
+tcp_chrono_stop                             <span>2</span>
+tcp_rbtree_insert                           <span>2</span>
+tcp_set_state                               <span>2</span>
+tcp_established_options                     <span>2</span>
+tcp_transmit_skb                            <span>2</span>
+tcp_v4_send_check                           <span>2</span>
+tcp_rate_skb_sent                           <span>2</span>
+tcp_options_write                           <span>2</span>
+tcp_poll                                    <span>2</span>
+tcp_release_cb                              <span>4</span>
+tcp_v4_md5_lookup                           <span>4</span>
+tcp_md5_do_lookup                           <span>4</span>
+</code></pre></div><p>In the case of UDP though, in theory, it merely takes care of marking the socket for reads and writes to the specified address.</p>
+<p>Going through the same process that we did for TCP (going further from looking at the syscall interface), we can trace the underlying kernel methods used by both <code>DialUDP</code> and <code>Dial</code> to see how they differ:</p>
+<div><pre><code data-lang="sh">./tools/funccount -p <span>$(</span>pidof main<span>)</span> <span>&#39;udp_*&#39;</span>
+Tracing <span>57</span> functions <span>for</span> <span>&#34;udp_*&#34;</span>... Hit Ctrl-C to end.
+^C
+FUNC                                    COUNT
+udp_v4_rehash                               <span>1</span>
+udp_poll                                    <span>1</span>
+udp_v4_get_port                             <span>1</span>
+udp_lib_close                               <span>1</span>
+udp_lib_lport_inuse                         <span>1</span>
+udp_init_sock                               <span>1</span>
+udp_lib_unhash                              <span>1</span>
+udp_lib_rehash                              <span>1</span>
+udp_lib_get_port                            <span>1</span>
+udp_destroy_sock                            <span>1</span>
+
+</code></pre></div><p>Much… Much less.</p>
+<p>If we go even further, try to explore what happens at each of these calls, we can notice how <code>connect(2)</code> in the case of TCP ends up really transmitting data (to establish perform the handshake, for instance):</p>
+<div><pre><code data-lang="sh">PID     TID     COMM            FUNC
+<span>6747</span>    <span>6749</span>    main            tcp_transmit_skb
+        tcp_transmit_skb+0x1
+        tcp_v4_connect+0x3f5
+        __inet_stream_connect+0x238
+        inet_stream_connect+0x3b
+        SYSC_connect+0x9e
+        sys_connect+0xe
+        do_syscall_64+0x73
+        entry_SYSCALL_64_after_hwframe+0x3d
+</code></pre></div><p>While in the case of UDP, nothing is transmitted, just some set up is performed:</p>
+<div><pre><code data-lang="sh">PID     TID     COMM            FUNC
+<span>6815</span>    <span>6817</span>    main            ip4_datagram_connect
+        ip4_datagram_connect+0x1 <span>[</span>kernel<span>]</span>
+        SYSC_connect+0x9e <span>[</span>kernel<span>]</span>
+        sys_connect+0xe <span>[</span>kernel<span>]</span>
+        do_syscall_64+0x73 <span>[</span>kernel<span>]</span>
+        entry_SYSCALL_64_after_hwframe+0x3d <span>[</span>kernel<span>]</span>
+</code></pre></div><p>If you’re not convinced yet that these two are <strong>really</strong> different (in the sense that the TCP one sends packets to establish the connection, while UDP doesn’t), we can set up some triggers in the network stack to tell us whenever packets flow:</p>
+<div><pre><code data-lang="sh"><span># By creating a rule that will only match</span>
+<span># packets destined at `1.1.1.1` and that</span>
+<span># match a specific protocol, we&#39;re able</span>
+<span># to see what happens at the time that</span>
+<span># `connect(2)` happens with a given protocol</span>
+<span># or another.</span>
+iptables <span>\
+</span><span></span>        --table filter <span>\
+</span><span></span>        --insert OUTPUT <span>\
+</span><span></span>        --jump LOG <span>\
+</span><span></span>        --protocol udp <span>\
+</span><span></span>        --destination 1.1.1.1 <span>\
+</span><span></span>        --log-prefix<span>=</span><span>&#34;[UDP] &#34;</span>
+
+iptables <span>\
+</span><span></span>        --table filter <span>\
+</span><span></span>        --insert OUTPUT <span>\
+</span><span></span>        --jump LOG <span>\
+</span><span></span>        --protocol tcp <span>\
+</span><span></span>        --destination 1.1.1.1 <span>\
+</span><span></span>        --log-prefix<span>=</span><span>&#34;[TCP] &#34;</span>
+</code></pre></div><p>Now, run <code>Dial</code> against a TCP target and <code>DialUDP</code> target and compare the differences.</p>
+<p>You should only see <code>[TCP]</code> logs:</p>
+<div><pre><code data-lang="haskell"><span>[</span><span>46260.105662</span><span>]</span> <span>[</span><span>TCP</span><span>]</span> <span>IN</span><span>=</span> <span>OUT</span><span>=</span><span>enp0s3</span> <span>DST</span><span>=</span><span>1.1</span><span>.</span><span>1.1</span> <span>SYN</span> <span>URGP</span><span>=</span><span>0</span>
+<span>[</span><span>46260.120454</span><span>]</span> <span>[</span><span>TCP</span><span>]</span> <span>IN</span><span>=</span> <span>OUT</span><span>=</span><span>enp0s3</span> <span>DST</span><span>=</span><span>1.1</span><span>.</span><span>1.1</span> <span>ACK</span> <span>URGP</span><span>=</span><span>0</span>
+<span>[</span><span>46260.120718</span><span>]</span> <span>[</span><span>TCP</span><span>]</span> <span>IN</span><span>=</span> <span>OUT</span><span>=</span><span>enp0s3</span> <span>DST</span><span>=</span><span>1.1</span><span>.</span><span>1.1</span> <span>ACK</span> <span>FIN</span> <span>URGP</span><span>=</span><span>0</span>
+<span>[</span><span>46260.150452</span><span>]</span> <span>[</span><span>TCP</span><span>]</span> <span>IN</span><span>=</span> <span>OUT</span><span>=</span><span>enp0s3</span> <span>DST</span><span>=</span><span>1.1</span><span>.</span><span>1.1</span> <span>ACK</span> <span>URGP</span><span>=</span><span>0</span>
+</code></pre></div>
+
+<h3 id="writing-to-a-udp-connection">Writing to a UDP “connection”</h3>
+<p>With our UDP socket properly created and configured for a specific address, we’re now on time to go through the “write” path - when we actually take some data and write to the <code>UDPConn</code> object received from <code>net.DialUDP</code>.</p>
+<p>A sample program that just sends a little bit of data to a given UDP server would be as follow:</p>
+<div><pre><code data-lang="go"><span>// Perform the address resolution and also
+</span><span>// specialize the socket to only be able
+</span><span>// to read and write to and from such
+</span><span>// resolved address.
+</span><span></span><span>conn</span><span>,</span> <span>err</span> <span>:=</span> <span>net</span><span>.</span><span>Dial</span><span>(</span><span>&#34;udp&#34;</span><span>,</span> <span>*</span><span>addr</span><span>)</span>
+<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+        <span>panic</span><span>(</span><span>err</span><span>)</span>
+<span>}</span>
+<span>defer</span> <span>conn</span><span>.</span><span>Close</span><span>()</span>
+
+<span>// Call the `Write()` method of the implementor
+</span><span>// of the `io.Writer` interface.
+</span><span></span><span>n</span><span>,</span> <span>err</span> <span>=</span> <span>fmt</span><span>.</span><span>Fprintf</span><span>(</span><span>conn</span><span>,</span> <span>&#34;something&#34;</span><span>)</span>
+</code></pre></div><p>Given that <code>conn</code> returned by <code>Dial</code> implements the <code>io.Writer</code> interface, we can make use of something like <code>fmt.Fprintf</code> (that takes an <code>io.Writer</code> as its first argument) as let it call <code>Write()</code> with the message we pass to it.</p>
+
+
+<p>Under the hood, <a href="https://golang.org/pkg/net/#UDPConn"><code>UDPConn</code></a> implements the <code>Write()</code> method from the <a href="https://golang.org/pkg/io/#Writer"><code>io.Writer</code></a> interface by being a composition of <a href="https://github.com/golang/go/blob/a0e7f12771c2e84e626dcf5e30da5d62a3b1adf6/src/net/net.go#L164-L166"><code>conn</code></a>, a struct that implements the most basic methods regarding writing to and reading from a given file descriptor:</p>
+<div><pre><code data-lang="go"><span>type</span> <span>conn</span> <span>struct</span> <span>{</span>
+	<span>fd</span> <span>*</span><span>netFD</span>
+<span>}</span>
+
+<span>// Write implements the Conn Write method.
+</span><span></span><span>func</span> <span>(</span><span>c</span> <span>*</span><span>conn</span><span>)</span> <span>Write</span><span>(</span><span>b</span> <span>[]</span><span>byte</span><span>)</span> <span>(</span><span>int</span><span>,</span> <span>error</span><span>)</span> <span>{</span>
+	<span>if</span> <span>!</span><span>c</span><span>.</span><span>ok</span><span>()</span> <span>{</span>
+		<span>return</span> <span>0</span><span>,</span> <span>syscall</span><span>.</span><span>EINVAL</span>
+	<span>}</span>
+	<span>n</span><span>,</span> <span>err</span> <span>:=</span> <span>c</span><span>.</span><span>fd</span><span>.</span><span>Write</span><span>(</span><span>b</span><span>)</span>
+	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+		<span>err</span> <span>=</span> <span>&amp;</span><span>OpError</span><span>{</span><span>Op</span><span>:</span> <span>&#34;write&#34;</span><span>,</span> <span>Net</span><span>:</span> <span>c</span><span>.</span><span>fd</span><span>.</span><span>net</span><span>,</span> <span>Source</span><span>:</span> <span>c</span><span>.</span><span>fd</span><span>.</span><span>laddr</span><span>,</span> <span>Addr</span><span>:</span> <span>c</span><span>.</span><span>fd</span><span>.</span><span>raddr</span><span>,</span> <span>Err</span><span>:</span> <span>err</span><span>}</span>
+	<span>}</span>
+	<span>return</span> <span>n</span><span>,</span> <span>err</span>
+<span>}</span>
+
+
+<span>// UDPConn is the implementation of the Conn 
+</span><span>// and PacketConn interfaces for UDP network 
+</span><span>// connections.
+</span><span></span><span>type</span> <span>UDPConn</span> <span>struct</span> <span>{</span>
+	<span>conn</span>
+<span>}</span>
+</code></pre></div><p>Now, knowing that in the end <code>fmt.Fprintf(conn, &#34;something&#34;)</code> ends up in a <code>write(2)</code> to a file descriptor (the UDP socket), we can investigate even further and see how does the kernel path look for such <code>write(2)</code> call:</p>
+<div><pre><code data-lang="sh">PID     TID     COMM            FUNC
+<span>14502</span>   <span>14502</span>   write.out       ip_send_skb
+        ip_send_skb+0x1 
+        udp_sendmsg+0x3b5 
+        inet_sendmsg+0x2e 
+        sock_sendmsg+0x3e 
+        sock_write_iter+0x8c 
+        new_sync_write+0xe7 
+        __vfs_write+0x29 
+        vfs_write+0xb1 
+        sys_write+0x55 
+        do_syscall_64+0x73 
+        entry_SYSCALL_64_after_hwframe+0x3d 
+</code></pre></div><p>At that point, the packet should be on its way to the other side of the communication channel.</p>
+<h3 id="receiving-from-a-udp-connection-in-a-client">Receiving from a UDP “connection” in a client</h3>
+<p>The act of receiving from <code>UDPConn</code> can be seen as pretty much the same as the “write path”, except that at this time, a buffer is supplied (so that it can get filled with the contents that arrive), and we don’t really know how long we have to wait for the content to arrive.</p>
+<p>For instance, we could have the following code path for reading from a known address:</p>
+<div><pre><code data-lang="go"><span>buf</span> <span>:=</span> <span>make</span><span>([]</span><span>byte</span><span>,</span> <span>*</span><span>bufSize</span><span>)</span>
+<span>_</span><span>,</span> <span>err</span> <span>=</span> <span>conn</span><span>.</span><span>Read</span><span>(</span><span>buf</span><span>)</span>
+</code></pre></div><p>This would turn into a <code>read(2)</code> syscall under the hood, which would then go through <code>vfs</code> and turn into a <code>read</code> from a socket:</p>
+<div><pre><code data-lang="sh"><span>22313</span>   <span>22313</span>   <span>read</span>            __skb_recv_udp
+        __skb_recv_udp+0x1 
+        inet_recvmsg+0x51 
+        sock_recvmsg+0x43 
+        sock_read_iter+0x90 
+        new_sync_read+0xe4 
+        __vfs_read+0x29 
+        vfs_read+0x8e 
+        sys_read+0x55 
+        do_syscall_64+0x73 
+        entry_SYSCALL_64_after_hwframe+0x3d 
+</code></pre></div><p>Something important to remember is that when it comes to reading from the socket, that’s going to be a blocking operation.</p>
+<p>Given that a message might never return from such socket, we can get stuck waiting forever.</p>
+<p>To avoid such situation, we can set a reading deadline that would kill the whole thing in case we wait for too long:</p>
+<div><pre><code data-lang="go"><span>buf</span> <span>:=</span> <span>make</span><span>([]</span><span>byte</span><span>,</span> <span>*</span><span>bufSize</span><span>)</span>
+
+<span>// Sets the read deadline for now + 15seconds.
+</span><span>// If you plan to read from the same connection again,
+</span><span>// make sure you expand the deadline before reading
+</span><span>// it.
+</span><span></span><span>conn</span><span>.</span><span>SetReadDeadline</span><span>(</span><span>time</span><span>.</span><span>Now</span><span>().</span><span>Add</span><span>(</span><span>15</span> <span>*</span> <span>time</span><span>.</span><span>Second</span><span>))</span>
+<span>_</span><span>,</span> <span>err</span> <span>=</span> <span>conn</span><span>.</span><span>Read</span><span>(</span><span>buf</span><span>)</span>
+</code></pre></div><p>Now, In case the other end takes too long to answer:</p>
+<pre><code>read udp 10.0.2.15:41745-&gt;1.1.1.1:53: i/o timeout
+</code></pre><h3 id="receiving-from-a-udp-connection-in-a-server">Receiving from a UDP “connection” in a server</h3>
+<p>While that’s great for the <code>client</code> (we know whom we’re reading from), it’s not for a server.</p>
+<p>The reason why is that at the server side, we don’t know who we’re reading from (the address is unknown).</p>
+<p>Differently from the case of a TCP server where we have <code>accept(2)</code> which returns to the server implementor the connection that the server can write to, in the case of UDP, there’s no such thing as a “connection to write to”. There’s only a “whom to write to”, that can be retrieved by inspecting the packet that arrived.</p>
+<pre><code>WITH READ
+
+  &#34;Hmmm, let me write something to
+   my buddy at 1.1.1.1:53&#34;
+
+   client --.
+            |
+            | client: n, err := udpConn.Write(buf)
+            | server: n, err := udpConn.Read(buf)
+            |
+            *---&gt; server
+                  &#34;Oh, somebody wrote me something!
+                   I&#39;d like to write back to him/her,
+                   but, what&#39;s his/her address?
+                   
+                   I don&#39;t have a connection... I need
+                   an address to write to! I can&#39;t to
+                   a thing now!&#34;
+
+
+
+WITH READFROM
+
+   client --.
+            |
+            | client: n, err := udpConn.Write(buf)
+            | server: n, address, err := udpConn.Read(buf)
+            |
+            *---&gt; server
+                  &#34;Oh, looking at the packet, I can
+                   see that my friend Jane wrote to me,
+                   I can see that from `address`!
+                   
+                   Let me answer her back!&#34;
+</code></pre><p>For that reason, on the server, we need the specialized connection: <a href="https://golang.org/pkg/net/#UDPConn"><code>UDPConn</code></a>.</p>
+<p>Such specialized connection is able of giving us <code>ReadFrom</code>, a method that instead of just reading from a file descriptor and adding the contents to a buffer, it also inspects the headers of the packet and gives us information about who sent the package.</p>
+<p>Its usage looks like this:</p>
+<div><pre><code data-lang="go"><span>buffer</span> <span>:=</span> <span>make</span><span>([]</span><span>byte</span><span>,</span> <span>1024</span><span>)</span>
+
+<span>// Given a buffer that is meant to hold the
+</span><span>// contents from the messages arriving at the
+</span><span>// socket that `udpConn` wraps, it blocks until
+</span><span>// messages arrive. 
+</span><span>//
+</span><span>// For each message arriving, `ReadFrom` unwraps
+</span><span>// the message, getting information about the
+</span><span>// sender from the protocol headers and then
+</span><span>// fills the buffer with the data.
+</span><span></span><span>n</span><span>,</span> <span>addr</span><span>,</span> <span>err</span> <span>:=</span> <span>udpConn</span><span>.</span><span>ReadFrom</span><span>(</span><span>buffer</span><span>)</span>
+<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+        <span>panic</span><span>(</span><span>err</span><span>)</span>
+<span>}</span>
+</code></pre></div><p>An interesting way of trying to understand how things work under the hood is looking at the <a href="https://en.wikipedia.org/wiki/Plan_9_from_Bell_Labs">plan9</a> implementation (<a href="https://github.com/golang/go/blob/a0e7f12771c2e84e626dcf5e30da5d62a3b1adf6/src/net/udpsock_plan9.go#L14-L28"><code>net/udpsock_plan9.go</code></a>).</p>
+<p>Here’s how it looks (with comments of my own):</p>
+<div><pre><code data-lang="go"><span>func</span> <span>(</span><span>c</span> <span>*</span><span>UDPConn</span><span>)</span> <span>readFrom</span><span>(</span><span>b</span> <span>[]</span><span>byte</span><span>)</span> <span>(</span><span>n</span> <span>int</span><span>,</span> <span>addr</span> <span>*</span><span>UDPAddr</span><span>,</span> <span>err</span> <span>error</span><span>)</span> <span>{</span>
+        <span>// creates a buffer a little bit bigger than
+</span><span></span>        <span>// the one we provided (to account for the header of
+</span><span></span>        <span>// the UDP headers)
+</span><span></span>	<span>buf</span> <span>:=</span> <span>make</span><span>([]</span><span>byte</span><span>,</span> <span>udpHeaderSize</span><span>+</span><span>len</span><span>(</span><span>b</span><span>))</span>
+
+        <span>// reads from the underlying file descriptor (this might
+</span><span></span>        <span>// block).
+</span><span></span>	<span>m</span><span>,</span> <span>err</span> <span>:=</span> <span>c</span><span>.</span><span>fd</span><span>.</span><span>Read</span><span>(</span><span>buf</span><span>)</span>
+	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+		<span>return</span> <span>0</span><span>,</span> <span>nil</span><span>,</span> <span>err</span>
+	<span>}</span>
+	<span>if</span> <span>m</span> <span>&lt;</span> <span>udpHeaderSize</span> <span>{</span>
+		<span>return</span> <span>0</span><span>,</span> <span>nil</span><span>,</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;short read reading UDP header&#34;</span><span>)</span>
+	<span>}</span>
+
+        <span>// strips out the parts that were not readen
+</span><span></span>	<span>buf</span> <span>=</span> <span>buf</span><span>[:</span><span>m</span><span>]</span>
+
+        <span>// interprets the UDP header
+</span><span></span>	<span>h</span><span>,</span> <span>buf</span> <span>:=</span> <span>unmarshalUDPHeader</span><span>(</span><span>buf</span><span>)</span>
+        
+        <span>// copies the data back to our supplied buffer
+</span><span></span>        <span>// so that we only receive the data, not the header.
+</span><span></span>	<span>n</span> <span>=</span> <span>copy</span><span>(</span><span>b</span><span>,</span> <span>buf</span><span>)</span>
+	<span>return</span> <span>n</span><span>,</span> <span>&amp;</span><span>UDPAddr</span><span>{</span><span>IP</span><span>:</span> <span>h</span><span>.</span><span>raddr</span><span>,</span> <span>Port</span><span>:</span> <span>int</span><span>(</span><span>h</span><span>.</span><span>rport</span><span>)},</span> <span>nil</span>
+<span>}</span>
+</code></pre></div><p>Naturally, under Linux, that’s not the path that <code>readFrom</code> takes. It uses <code>recvfrom</code> which does the whole “UDP header interpretation” under the hood, but the idea is the same (except that with <code>plan9</code> it’s all done in userspace).</p>
+<p>To verify the fact that under Linux we’re using <code>recvfrom</code>, we trace <code>UDPConn.ReadFrom</code> down (you can use <a href="https://github.com/derekparker/delve"><code>delve</code></a> for that):</p>
+<div><pre><code data-lang="css"><span>0</span>  <span>0x00000000004805b8</span> <span>in</span> <span>syscall</span><span>.</span><span>recvfrom</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>syscall</span><span>/</span><span>zsyscall_linux_amd64</span><span>.</span><span>go</span><span>:</span><span>1641</span>
+<span>1</span>  <span>0x000000000047e84f</span> <span>in</span> <span>syscall</span><span>.</span><span>Recvfrom</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>syscall</span><span>/</span><span>syscall_unix</span><span>.</span><span>go</span><span>:</span><span>262</span>
+<span>2</span>  <span>0x0000000000494281</span> <span>in</span> <span>internal</span><span>/</span><span>poll</span><span>.(*</span><span>FD</span><span>)</span><span>.</span><span>ReadFrom</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>internal</span><span>/</span><span>poll</span><span>/</span><span>fd_unix</span><span>.</span><span>go</span><span>:</span><span>215</span>
+<span>3</span>  <span>0x00000000004f5f4e</span> <span>in</span> <span>net</span><span>.(*</span><span>netFD</span><span>)</span><span>.</span><span>readFrom</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>fd_unix</span><span>.</span><span>go</span><span>:</span><span>208</span>
+<span>4</span>  <span>0x0000000000516ab1</span> <span>in</span> <span>net</span><span>.(*</span><span>UDPConn</span><span>)</span><span>.</span><span>readFrom</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>udpsock_posix</span><span>.</span><span>go</span><span>:</span><span>47</span>
+<span>5</span>  <span>0x00000000005150a4</span> <span>in</span> <span>net</span><span>.(*</span><span>UDPConn</span><span>)</span><span>.</span><span>ReadFrom</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>net</span><span>/</span><span>udpsock</span><span>.</span><span>go</span><span>:</span><span>121</span>
+<span>6</span>  <span>0x0000000000526bbf</span> <span>in</span> <span>main</span><span>.</span><span>server</span><span>.</span><span>func1</span>
+   <span>at</span> <span>./</span><span>main</span><span>.</span><span>go</span><span>:</span><span>65</span>
+<span>7</span>  <span>0x000000000045e1d1</span> <span>in</span> <span>runtime</span><span>.</span><span>goexit</span>
+   <span>at</span> <span>/</span><span>usr</span><span>/</span><span>local</span><span>/</span><span>go</span><span>/</span><span>src</span><span>/</span><span>runtime</span><span>/</span><span>asm_amd64</span><span>.</span><span>s</span><span>:</span><span>1333</span>
+</code></pre></div><p>At the kernel level, we can also check what are the methods involved:</p>
+<div><pre><code data-lang="sh"><span>24167</span>   <span>24167</span>   go-sample-udp   __skb_recv_udp
+        __skb_recv_udp+0x1 
+        inet_recvmsg+0x51 
+        sock_recvmsg+0x43 
+        SYSC_recvfrom+0xe4 
+        sys_recvfrom+0xe 
+        do_syscall_64+0x73 
+        entry_SYSCALL_64_after_hwframe+0x3d 
+</code></pre></div><h3 id="a-udp-server-in-go">A UDP Server in Go</h3>
+<p>Now, going to the server-side implementation, here’s how the code would look like (heavily commented):</p>
+<div><pre><code data-lang="go"><span>// maxBufferSize specifies the size of the buffers that
+</span><span>// are used to temporarily hold data from the UDP packets
+</span><span>// that we receive.
+</span><span></span><span>const</span> <span>maxBufferSize</span> <span>=</span> <span>1024</span>
+
+<span>// server wraps all the UDP echo server functionality.
+</span><span>// ps.: the server is capable of answering to a single
+</span><span>// client at a time.
+</span><span></span><span>func</span> <span>server</span><span>(</span><span>ctx</span> <span>context</span><span>.</span><span>Context</span><span>,</span> <span>address</span> <span>string</span><span>)</span> <span>(</span><span>err</span> <span>error</span><span>)</span> <span>{</span>
+	<span>// ListenPacket provides us a wrapper around ListenUDP so that
+</span><span></span>	<span>// we don&#39;t need to call `net.ResolveUDPAddr` and then subsequentially
+</span><span></span>	<span>// perform a `ListenUDP` with the UDP address.
+</span><span></span>	<span>//
+</span><span></span>	<span>// The returned value (PacketConn) is pretty much the same as the one
+</span><span></span>	<span>// from ListenUDP (UDPConn) - the only difference is that `Packet*`
+</span><span></span>	<span>// methods and interfaces are more broad, also covering `ip`.
+</span><span></span>	<span>pc</span><span>,</span> <span>err</span> <span>:=</span> <span>net</span><span>.</span><span>ListenPacket</span><span>(</span><span>&#34;udp&#34;</span><span>,</span> <span>address</span><span>)</span>
+	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+		<span>return</span>
+	<span>}</span>
+
+	<span>// `Close`ing the packet &#34;connection&#34; means cleaning the data structures
+</span><span></span>	<span>// allocated for holding information about the listening socket.
+</span><span></span>	<span>defer</span> <span>pc</span><span>.</span><span>Close</span><span>()</span>
+
+	<span>doneChan</span> <span>:=</span> <span>make</span><span>(</span><span>chan</span> <span>error</span><span>,</span> <span>1</span><span>)</span>
+	<span>buffer</span> <span>:=</span> <span>make</span><span>([]</span><span>byte</span><span>,</span> <span>maxBufferSize</span><span>)</span>
+
+	<span>// Given that waiting for packets to arrive is blocking by nature and we want
+</span><span></span>	<span>// to be able of canceling such action if desired, we do that in a separate
+</span><span></span>	<span>// go routine.
+</span><span></span>	<span>go</span> <span>func</span><span>()</span> <span>{</span>
+		<span>for</span> <span>{</span>
+			<span>// By reading from the connection into the buffer, we block until there&#39;s
+</span><span></span>			<span>// new content in the socket that we&#39;re listening for new packets.
+</span><span></span>			<span>//
+</span><span></span>			<span>// Whenever new packets arrive, `buffer` gets filled and we can continue
+</span><span></span>			<span>// the execution.
+</span><span></span>			<span>//
+</span><span></span>			<span>// note.: `buffer` is not being reset between runs.
+</span><span></span>			<span>//	  It&#39;s expected that only `n` reads are read from it whenever
+</span><span></span>			<span>//	  inspecting its contents.
+</span><span></span>			<span>n</span><span>,</span> <span>addr</span><span>,</span> <span>err</span> <span>:=</span> <span>pc</span><span>.</span><span>ReadFrom</span><span>(</span><span>buffer</span><span>)</span>
+			<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+				<span>doneChan</span> <span>&lt;-</span> <span>err</span>
+				<span>return</span>
+			<span>}</span>
+
+			<span>fmt</span><span>.</span><span>Printf</span><span>(</span><span>&#34;packet-received: bytes=%d from=%s\n&#34;</span><span>,</span>
+				<span>n</span><span>,</span> <span>addr</span><span>.</span><span>String</span><span>())</span>
+
+			<span>// Setting a deadline for the `write` operation allows us to not block
+</span><span></span>			<span>// for longer than a specific timeout.
+</span><span></span>			<span>//
+</span><span></span>			<span>// In the case of a write operation, that&#39;d mean waiting for the send
+</span><span></span>			<span>// queue to be freed enough so that we are able to proceed.
+</span><span></span>			<span>deadline</span> <span>:=</span> <span>time</span><span>.</span><span>Now</span><span>().</span><span>Add</span><span>(</span><span>*</span><span>timeout</span><span>)</span>
+			<span>err</span> <span>=</span> <span>pc</span><span>.</span><span>SetWriteDeadline</span><span>(</span><span>deadline</span><span>)</span>
+			<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+				<span>doneChan</span> <span>&lt;-</span> <span>err</span>
+				<span>return</span>
+			<span>}</span>
+
+			<span>// Write the packet&#39;s contents back to the client.
+</span><span></span>			<span>n</span><span>,</span> <span>err</span> <span>=</span> <span>pc</span><span>.</span><span>WriteTo</span><span>(</span><span>buffer</span><span>[:</span><span>n</span><span>],</span> <span>addr</span><span>)</span>
+			<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+				<span>doneChan</span> <span>&lt;-</span> <span>err</span>
+				<span>return</span>
+			<span>}</span>
+
+			<span>fmt</span><span>.</span><span>Printf</span><span>(</span><span>&#34;packet-written: bytes=%d to=%s\n&#34;</span><span>,</span> <span>n</span><span>,</span> <span>addr</span><span>.</span><span>String</span><span>())</span>
+		<span>}</span>
+	<span>}()</span>
+
+	<span>select</span> <span>{</span>
+	<span>case</span> <span>&lt;-</span><span>ctx</span><span>.</span><span>Done</span><span>():</span>
+		<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;cancelled&#34;</span><span>)</span>
+		<span>err</span> <span>=</span> <span>ctx</span><span>.</span><span>Err</span><span>()</span>
+	<span>case</span> <span>err</span> <span>=</span> <span>&lt;-</span><span>doneChan</span><span>:</span>
+	<span>}</span>
+
+	<span>return</span>
+<span>}</span>
+</code></pre></div><p>As you might have noticed, it’s not all that different from the client! The reason why is that not having an actual connection involved (like in TCP), both client and servers end up going through the same path: preparing a socket to read and write from and to, then checking the content from the packets and doing the same thing over and over again.</p>
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>It was great to go through this exploration, checking what’s going on behind the scenes in the Go source code (very well written, by the way), as well as in the Kernel.</p>
+<p>I think I finally got a great workflow when it comes to debugging with <a href="https://github.com/derekparker/delve">Delve</a> and verifying the Kernel functions with <a href="https://github.com/iovisor/bcc">bcc</a>, maybe I’ll write about that soon - let me know if that’d be interesting!</p>
+<p>If you have any questions, please let me know! I’m <a href="https://twitter.com/cirowrc">@cirowrc</a> on Twitter, and I’d love to receive your feedback.</p>
+<p>Have a good one!</p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

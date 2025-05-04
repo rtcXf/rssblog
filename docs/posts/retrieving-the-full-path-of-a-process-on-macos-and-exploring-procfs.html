@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retrieving the full path of a process on MacOS (and exploring procfs) | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://ops.tips/blog/macos-pid-absolute-path-and-procfs-exploration/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Retrieving the full path of a process on MacOS (and exploring procfs)</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><article itemtype="http://schema.org/NewsArticle">
+    <section itemprop="articleBody">
+      <p>Hey,</p>
+<p>Another day I was trying to make sure that a given process that I was running was using a specific binary that I had built, but I couldn’t figure out: <code>ps</code> would only show me the non-absolute path.</p>
+<div><pre><code data-lang="sh"><span># How could I know what is the absolute path of the</span>
+<span># `hugo` binary, assuming that I could have multiple</span>
+<span># `hugo` binaries in `$PATH`?</span>
+ps
+  PID TTY           TIME CMD
+ <span>4153</span> ttys000    5:14.98 hugo serve     <span>&lt;&lt;&lt;</span>
+ <span>9035</span> ttys001    0:00.04 /Applications/iTerm.app/Content...
+ <span>9037</span> ttys001    0:00.10 -bash
+ <span>9086</span> ttys001    0:02.27 /usr/local/Cellar/macvim/8.1-15...
+ <span>9236</span> ttys002    0:00.04 /Applications/iTerm.app/Content...
+ <span>9238</span> ttys002    0:00.10 -bash
+</code></pre></div><p>If I were using Linux though, I thought, that’d be easy: head to <code>/proc</code>, search for the <code>pid</code> of the process and then check what <code>exe</code> links to; done.</p>
+<div><pre><code data-lang="sh"><span># (on a Linux machine ...)</span>
+<span>#</span>
+<span># See `hugo` will still not show up with the absolute path</span>
+<span># like on MacOS.</span>
+ps aux <span>|</span> grep hugo
+ubuntu    <span>2275</span>  0.0  0.0 <span>101852</span>   <span>748</span> pts/0    Sl+  00:26   0:00 hugo serve
+
+<span># Given that the proc filesystem can provide us with some</span>
+<span># more information about the process, check out the `exe`</span>
+<span># link (which should provide a link to the actual executable).</span>
+stat /proc/2275/exe
+  File: /proc/2275/exe -&gt; /usr/local/bin/hugo
+  Size: <span>0</span>         	Blocks: <span>0</span>          IO Block: <span>1024</span>   symbolic link
+Device: 4h/4d	Inode: <span>140106</span>      Links: <span>1</span>
+Access: <span>(</span>0777/lrwxrwxrwx<span>)</span>  Uid: <span>(</span> 1001/  ubuntu<span>)</span>   Gid: <span>(</span> 1001/  ubuntu<span>)</span>
+Access: 2018-09-24 00:26:37.167004005 +0000
+Modify: 2018-09-24 00:26:27.391004005 +0000
+Change: 2018-09-24 00:26:27.391004005 +0000
+ Birth: -
+</code></pre></div><p>In this post, I go through how we can gather such information on a MacOS, and what the <code>procfs</code> in Linux is all about.</p>
+<p><em>tl;dr: <code>/proc</code> on Linux is dope; on MacoS: compile a little code that uses <a href="https://opensource.apple.com/source/xnu/xnu-2422.1.72/libsyscall/wrappers/libproc/libproc.h.auto.html"><code>proc_pidpath</code></a> from <code>libproc</code>, or install <a href="https://github.com/cirocosta/pidpath"><code>pidpath</code></a>.</em></p>
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON&#39;T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<ul>
+<li><a href="#the-proc-filesystem-in-linux">The /proc filesystem in Linux</a></li>
+<li><a href="#procfs-under-the-hood">procfs under the hood</a></li>
+<li><a href="#the-libproc-library-in-macos">The libproc library in MacOS</a></li>
+<li><a href="#a-golang-binary-that-suits-linux-and-macos">A Golang binary that suits Linux and MacOS</a></li>
+<li><a href="#closing-thoughts">Closing thoughts</a></li>
+</ul>
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<h3 id="the-proc-filesystem-in-linux">The /proc filesystem in Linux</h3>
+<p>In “Linux land”, there’s this thing called “procfs”.</p>
+<p>It’s a virtual filesystem - in the sense that there are no real regular files in your disk that map to the filesystem representation - that allows a user (in userspace) to perform some introspection about its current running process and others as well.</p>
+<p>From <a href="https://www.kernel.org/doc/Documentation/filesystems/proc.txt">the kernel docs</a>:</p>
+<blockquote>
+<p>The proc file system acts as an interface to internal data structures in the kernel.</p>
+</blockquote>
+<blockquote>
+<p>It  can  be  used to obtain information about the system and to change certain kernel parameters at runtime (<a href="https://linux.die.net/man/8/sysctl">sysctl</a>).</p>
+</blockquote>
+<p>The way the interaction with it is set up is pretty nifty:</p>
+<ul>
+<li>each process receives a given path under <code>/proc</code> (like, <code>/proc/&lt;pid&gt;</code>), and then</li>
+<li>as subdirectories of this path, various other files and subdirectories are present to allow deeper introspection about the specific pid.</li>
+</ul>
+<div><pre><code data-lang="sh"><span># Display the files and directories present at the</span>
+<span># very root of `/proc`.</span>
+<span>#</span>
+<span># Here we can find the list of PIDs that we can access,</span>
+<span># as well as some more system-wide information and </span>
+<span># settings that we can tweak.</span>
+ls -lah /proc
+total 4.0K
+dr-xr-xr-x <span>124</span> root     root       <span>0</span> Sep <span>24</span> 23:56 .
+drwxr-xr-x  <span>24</span> root     root    4.0K Sep <span>24</span> 23:57 ..
+dr-xr-xr-x   <span>9</span> root     root       <span>0</span> Sep <span>24</span> 23:56 <span>1</span>
+dr-xr-xr-x   <span>9</span> root     root       <span>0</span> Sep <span>25</span> 00:54 <span>2016</span>
+dr-xr-xr-x   <span>9</span> root     root       <span>0</span> Sep <span>24</span> 23:57 <span>417</span>
+...
+-r--r--r--   <span>1</span> root     root       <span>0</span> Sep <span>25</span> 01:25 sched_debug
+-r--r--r--   <span>1</span> root     root       <span>0</span> Sep <span>25</span> 01:25 schedstat
+dr-xr-xr-x   <span>4</span> root     root       <span>0</span> Sep <span>25</span> 01:25 scsi
+lrwxrwxrwx   <span>1</span> root     root       <span>0</span> Sep <span>24</span> 23:56 self -&gt; <span>2574</span>
+...
+
+
+<span># Getting into a specific pid path, we&#39;re able to</span>
+<span># gather more information about the specifics of</span>
+<span># a given process.</span>
+ls -lah /proc/472
+total <span>0</span>
+dr-xr-xr-x   <span>9</span> root root <span>0</span> Sep <span>24</span> 23:57 .
+dr-xr-xr-x <span>123</span> root root <span>0</span> Sep <span>24</span> 23:56 ..
+...
+lrwxrwxrwx   <span>1</span> root root <span>0</span> Sep <span>25</span> 01:30 cwd -&gt; /
+-r--------   <span>1</span> root root <span>0</span> Sep <span>25</span> 01:30 environ
+lrwxrwxrwx   <span>1</span> root root <span>0</span> Sep <span>24</span> 23:57 exe -&gt; /lib/systemd/systemd-udevd
+dr-x------   <span>2</span> root root <span>0</span> Sep <span>24</span> 23:57 fd
+lrwxrwxrwx   <span>1</span> root root <span>0</span> Sep <span>25</span> 01:30 root -&gt; /
+-rw-r--r--   <span>1</span> root root <span>0</span> Sep <span>25</span> 01:30 sched
+...
+</code></pre></div><p>Not only that, <code>procfs</code> is very helpful when you’re not sure if a process is blocked on something you didn’t expect (like a <code>write(2)</code> to an <code>nfs</code> mount point that is malformed due to a bad set of servers not responding), or something simple as your process sleeping when you didn’t want to:</p>
+<div><pre><code data-lang="sh"><span># Sleep for 33 days on the background</span>
+sleep 33d <span>&amp;</span>
+<span>[</span>1<span>]</span> <span>2786</span>
+
+
+<span># Check what&#39;s the state of the process</span>
+cat /proc/2786/stat
+<span>2786</span> <span>(</span>sleep<span>)</span> S ...
+ <span>|</span>     <span>|</span>     <span>|</span>
+ <span>|</span>     <span>|</span>     <span>`</span>-&gt; state <span>(</span>interruptible sleep<span>)</span>
+ <span>|</span>     <span>`</span>-&gt; <span>command</span> being run <span>(</span>sleep <span>command</span><span>)</span>
+ <span>`</span>-&gt; process id <span>(</span>the pid we used before<span>)</span>
+
+
+<span># Check what&#39;s the stack trace (from the kernel</span>
+<span># perspective) that led the process to this </span>
+<span># sleep state</span>
+cat /proc/2786/stack
+<span>[</span>&lt;0&gt;<span>]</span> hrtimer_nanosleep+0xd8/0x1d0
+<span>[</span>&lt;0&gt;<span>]</span> SyS_nanosleep+0x72/0xa0
+<span>[</span>&lt;0&gt;<span>]</span> do_syscall_64+0x73/0x130
+<span>[</span>&lt;0&gt;<span>]</span> entry_SYSCALL_64_after_hwframe+0x3d/0xa2
+<span>[</span>&lt;0&gt;<span>]</span> 0xffffffffffffffff
+</code></pre></div><h3 id="procfs-under-the-hood">procfs under the hood</h3>
+<p>What’s interesting about being virtual is that the implementation of <code>procfs</code> is able to generate the representation of the filesystem on the fly - whenever you issue an I/O call like <code>read(2)</code>, Linux answers back with what you asked for, be it the list of file descriptors opened by a given process, or the list of environment variables that were set at process startup time.</p>
+<p>For instance, if tracing the execution of <code>cat /proc/&lt;pid&gt;/meminfo</code> down, we can find the path that the <code>read(2)</code> syscall takes:</p>
+<div><pre><code data-lang="sh"><span># stack trace of `cat /proc/&lt;pid&gt;/meminfo`</span>
+        meminfo_proc_show
+        proc_reg_read
+        __vfs_read
+        vfs_read
+        sys_read
+        do_syscall_64
+        entry_SYSCALL_64_after_hwframe
+
+
+<span># stack trace of `cat /file.txt` </span>
+<span># on an ext4 mount point</span>
+        ext4_file_read_iter
+        __vfs_read
+        vfs_read
+        sys_read
+        do_syscall_64
+        entry_SYSCALL_64_after_hwframe
+</code></pre></div><p>Very different from a regular <code>read</code> (as shown in the second stack trace), there’s no real file on disk being accessed - just <code>meminfo_proc_show</code> returning the contents related to what the user asked for: virtual memory stuff.</p>
+<p>By the way, if you’re interested in knowing more about related subjects, a <strong>great</strong> reference for this type of knowledge is <a href="https://amzn.to/2QWyXp9">The Linux Programming Interface: A Linux and UNIX System Programming Handbook</a>.</p>
+<p>Now to MacOS.</p>
+<h3 id="the-libproc-library-in-macos">The libproc library in MacOS</h3>
+<p>Differently from Linux, it feels like we can’t know all that much about how things work on MacOS.</p>
+<p>After searching a bit on how to accomplish how to gather information about a process, <code>libproc</code> showed up.</p>
+<p>As mentioned in <a href="https://opensource.apple.com/source/xnu/xnu-2422.1.72/libsyscall/wrappers/libproc/libproc.h.auto.html"><code>libproc.h</code></a>:</p>
+<div><pre><code data-lang="c"><span>/*
+</span><span> * This header file contains private interfaces 
+</span><span> * to obtain process information.
+</span><span> *
+</span><span> * These interfaces are subject to change in future releases.
+</span><span> */</span>
+</code></pre></div><p>One thing to note:</p>
+<ul>
+<li>the interfaces are <strong>private</strong> - no guaranteed compatibility with future releases.</li>
+</ul>
+<p>This has been elucidated by an Apple staff member on <a href="https://forums.developer.apple.com/thread/46963">post</a> at the Apple’s developer forum regarding gathering process information:</p>
+<blockquote>
+<p>[…] Apple has not put a lot of effort into providing APIs for getting this sort of information.</p>
+</blockquote>
+<blockquote>
+<p>What APIs that do exist were either inherited from OS X’s predecessor OSs or were added <strong>primarily to meet our internal requirements rather than the needs for third-party developers</strong>.</p>
+</blockquote>
+<blockquote>
+<p>Thus, you will find a lot of places where these APIs are: incomplete; incorrect; poorly documented and aren’t as binary compatible as they should be.</p>
+</blockquote>
+<p>Anyway, we can still make use of it - more specifically, we can make use of <code>proc_pidpath</code>, a method that takes a <code>pid</code> (the <code>pid</code> of the process that we want to know more about), a buffer where the path should be written to, and the buffer size.</p>
+<div><pre><code data-lang="c"><span>int</span> <span>proc_pidpath</span><span>(</span>
+  <span>int</span> <span>pid</span><span>,</span>              <span>// pid of the process to know more about
+</span><span></span>  <span>void</span> <span>*</span> <span>buffer</span><span>,</span>        <span>// buffer to fill with the abs path
+</span><span></span>  <span>uint32_t</span>  <span>buffersize</span>  <span>// size of the buffer
+</span><span></span><span>);</span>
+</code></pre></div><p>That said, we can go ahead and create our Go binary that can handle both Linux and MacOS by specifying two different compilation targets.</p>
+<h3 id="a-golang-binary-that-suits-linux-and-macos">A Golang binary that suits Linux and MacOS</h3>
+<p>Given that <code>libproc</code> will not be a thing under Linux, we can start by creating a <code>pidpath_linux.go</code> file that is meant to be compiled only on Linux, and another file, <code>pidpath_darwin.go</code>, aimed at MacOS machines.</p>
+<p>The Linux one is rather simple: it follows the <code>/proc/&lt;pid&gt;/exe</code> symlink, and that’s it:</p>
+<div><pre><code data-lang="go"><span>// +build linux
+</span><span></span><span>package</span> <span>main</span>
+
+<span>import</span> <span>(</span>
+	<span>&#34;os&#34;</span>
+	<span>&#34;strconv&#34;</span>
+<span>)</span>
+
+<span>func</span> <span>GetExePathFromPid</span><span>(</span><span>pid</span> <span>int</span><span>)</span> <span>(</span><span>path</span> <span>string</span><span>,</span> <span>err</span> <span>error</span><span>)</span> <span>{</span>
+	<span>path</span><span>,</span> <span>err</span> <span>=</span> <span>os</span><span>.</span><span>Readlink</span><span>(</span><span>&#34;/proc/&#34;</span> <span>+</span> <span>strconv</span><span>.</span><span>Itoa</span><span>(</span><span>pid</span><span>)</span> <span>+</span> <span>&#34;/exe&#34;</span><span>)</span>
+	<span>return</span>
+<span>}</span>
+</code></pre></div><p>The MacOS version though, needs a little bit more.</p>
+<p>Given that we’d access <code>libproc</code> via C, we can leverage <a href="https://golang.org/cmd/cgo/">CGO</a>.</p>
+<div><pre><code data-lang="go"><span>// +build darwin
+</span><span></span><span>package</span> <span>main</span>
+
+<span>// #include &lt;libproc.h&gt;
+</span><span>// #include &lt;stdlib.h&gt;
+</span><span>// #include &lt;errno.h&gt;
+</span><span></span><span>import</span> <span>&#34;C&#34;</span>
+
+<span>import</span> <span>(</span>
+	<span>&#34;fmt&#34;</span>
+	<span>&#34;unsafe&#34;</span>
+<span>)</span>
+
+<span>// bufSize references the constant that the implementation
+</span><span>// of proc_pidpath uses under the hood to make sure that
+</span><span>// no overflows happen.
+</span><span>//
+</span><span>// See https://opensource.apple.com/source/xnu/xnu-2782.40.9/libsyscall/wrappers/libproc/libproc.c
+</span><span></span><span>const</span> <span>bufSize</span> <span>=</span> <span>C</span><span>.</span><span>PROC_PIDPATHINFO_MAXSIZE</span>
+
+<span>func</span> <span>GetExePathFromPid</span><span>(</span><span>pid</span> <span>int</span><span>)</span> <span>(</span><span>path</span> <span>string</span><span>,</span> <span>err</span> <span>error</span><span>)</span> <span>{</span>
+        <span>// Allocate in the C heap a string (char* terminated
+</span><span></span>        <span>// with `/0`) of size `bufSize` and then make sure
+</span><span></span>        <span>// that we free that memory that gets allocated
+</span><span></span>        <span>// in C (see the `defer` below).
+</span><span></span>	<span>buf</span> <span>:=</span> <span>C</span><span>.</span><span>CString</span><span>(</span><span>string</span><span>(</span><span>make</span><span>([]</span><span>byte</span><span>,</span> <span>bufSize</span><span>)))</span>
+	<span>defer</span> <span>C</span><span>.</span><span>free</span><span>(</span><span>unsafe</span><span>.</span><span>Pointer</span><span>(</span><span>buf</span><span>))</span>
+
+        <span>// Call the C function `proc_pidpath` from the included
+</span><span></span>        <span>// header file (libproc.h).
+</span><span></span>	<span>ret</span><span>,</span> <span>err</span> <span>:=</span> <span>C</span><span>.</span><span>proc_pidpath</span><span>(</span><span>C</span><span>.</span><span>int</span><span>(</span><span>pid</span><span>),</span> <span>unsafe</span><span>.</span><span>Pointer</span><span>(</span><span>buf</span><span>),</span> <span>bufSize</span><span>)</span>
+	<span>if</span> <span>ret</span> <span>&lt;=</span> <span>0</span> <span>{</span>
+		<span>err</span> <span>=</span> <span>fmt</span><span>.</span><span>Errorf</span><span>(</span><span>&#34;failed to retrieve pid path: %v&#34;</span><span>,</span> <span>err</span><span>)</span>
+		<span>return</span>
+	<span>}</span>
+
+        <span>// Convert the C string back to a Go string.
+</span><span></span>	<span>path</span> <span>=</span> <span>C</span><span>.</span><span>GoString</span><span>(</span><span>buf</span><span>)</span>
+	<span>return</span>
+<span>}</span>
+</code></pre></div><p>That done, we can now consume <code>GetExePathFromPid</code> in our application.</p>
+<p>To see that in place, check out <a href="https://github.com/cirocosta/pidpath">cirocosta/pidpath</a>.</p>
+<h3 id="closing-thoughts">Closing thoughts</h3>
+<p>It was interesting to me to check out how different things are in MacOS land.</p>
+<p>Although I use a Macbook Pro as a personal computer (and a Mac at work), I’ve not really paid attention to these little details.</p>
+<p>Also, <code>/proc</code> is just <strong>so</strong> valuable! Definitely worth knowing more about other functionality over there. Make sure you check out <a href="https://amzn.to/2QWyXp9">The Linux Programming Interface: A Linux and UNIX System Programming Handbook</a>.</p>
+<p>If you have any questions, or suggestions to improve this blog post, please let me know! I’m <a href="https://twitter.com/cirowrc">cirowrc</a>, and I’d love to chat.</p>
+<p>Have a good one!</p>
+
+    </section>
+  </article></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>
