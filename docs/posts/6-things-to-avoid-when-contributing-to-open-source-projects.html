@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>6 Things to Avoid When Contributing to Open-Source Projects | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/open-source/contributing-to-open-source/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>6 Things to Avoid When Contributing to Open-Source Projects</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>With <a href="https://hacktoberfest.digitalocean.com/">#HacktoberFest</a> being a thing, there has been an influx of devs desperately trying to contribute to their favorite Open-Source projects. Unfortunately, many of these pull requests have been a waste of time, with the maintainers ultimately unable to use the contributions. Maintainers don’t want to waste their time reviewing bad PRs, and contributors don’t want to waste their time writing code that will never make it into production.</p>
+<p>Let’s take a look at some common pitfalls that developers fall prey to when working on an open-source project.</p>
+<h2 id="1-pull-requests-should-handle-one-thing">
+  <span> 1. Pull Requests Should Handle ONE Thing</span> <a href="#1-pull-requests-should-handle-one-thing">🔗</a></h2>
+<p>Don’t open a PR like this:</p>
+<ul>
+<li>Fixes bug #543</li>
+<li>Adds new linting rules</li>
+<li>Includes feature #456</li>
+</ul>
+<p>Your PR should do <em>one thing</em>. Large diffs increase the cognitive load of the reviewer and make it easier to get your code into the main branch. If you have beef with multiple issues in a project then open multiple PRs.</p>
+<h2 id="2-dont-break-consistency">
+  <span> 2. Don’t Break Consistency</span> <a href="#2-dont-break-consistency">🔗</a></h2>
+<p>This one happens the most often to me in my own projects. Well-intentioned developers open pull requests with any of the following annoyances:</p>
+<ul>
+<li>Omitting semicolons in a project that prefers them</li>
+<li>Using spaces in a project that has clearly been using tabs</li>
+<li>Introducing snake_case in a camelCase repo</li>
+</ul>
+<p>When you contribute to an existing project, use the existing styling. No one gives two hoots about your preference on the “<a href="https://www.youtube.com/watch?v=SsoOG6ZeyUI">tabs vs spaces</a>” debate in the context of this pull request.</p>
+<p>If you think styling needs to change, see points #1 and #3.</p>
+<h2 id="3-dont-start-work-without-approval">
+  <span> 3. Don’t Start Work Without Approval</span> <a href="#3-dont-start-work-without-approval">🔗</a></h2>
+<p>If you hop into a GitHub repo and find something you don’t like, don’t immediately open a pull request. Follow these steps instead:</p>
+<ul>
+<li>Is there already an issue logged? If not, make one.</li>
+<li>If there is an issue, reach out to the maintainers (just comment on the issue) and let them know you are working on it, and give a quick overview of how you will address it. If they have problems with that approach, they will likely let you know.</li>
+<li>Start work on your PR.</li>
+</ul>
+<p>This will help mitigate the creation of pointless PRs that will never be accepted on the basis of a flawed premise.</p>
+<h2 id="4-dont-re-open-known-problemssolutions">
+  <span> 4. Don’t Re-Open Known Problems/Solutions</span> <a href="#4-dont-re-open-known-problemssolutions">🔗</a></h2>
+<p>Some codebases have thousands of open issues, take the <a href="https://github.com/golang/go">Go language</a> project or the <a href="https://github.com/kelseyhightower/nocode">nocode repository</a> as an example. No one wants to read your duplicate issue or review your duplicate pull request. Make sure there isn’t an existing open <em>or closed</em> issue for what you are trying to address.</p>
+<h2 id="5-squash-those-commits">
+  <span> 5. Squash Those Commits</span> <a href="#5-squash-those-commits">🔗</a></h2>
+<p>Not every project will require (or care) about <a href="https://github.com/wprig/wprig/wiki/How-to-squash-commits">commit squashing</a>. That said, there are no projects that require <em>not</em> squashing commits. To be on the safe side just give ’em a squash.</p>
+<h2 id="6-be-meaningful">
+  <span> 6. Be Meaningful</span> <a href="#6-be-meaningful">🔗</a></h2>
+<p>Rewording documentation and other frivolous changes make you look like <a href="https://github.com/whatwg/html/pulls?q=is%3Apr+is%3Aclosed+label%3Aspam">these assholes</a>. This particularly <a href="https://github.com/whatwg/html/pull/6075">atrocious example</a> is not only scoped to pointless documentation changes but actually makes the documentation <em>worse</em>.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

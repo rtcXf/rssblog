@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NLP is Hard Because Even Humans Don&#39;t Agree | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/misc/building-an-nlp-engine-is-hard-but-not-as-hard-as-defining-terms/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>NLP is Hard Because Even Humans Don&#39;t Agree</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>In my full-time role at <a href="https://www.nuvi.com/blog/strategic-decision-making-nuvis-all-new-language-engine">Nuvi</a>, I’ve been lucky enough to work on a team where we’re able to push the boundaries in the natural language processing field. We built out several different “facets” that we score text on, including sentiment, emotion, vulgarity, tense, and currently, we’re working on promotion detection.</p>
+<p>While the technical side of NLP is hard, one of the hardest things was unexpected - defining the boundaries between the categories in question. Which words count as vulgar? Does anticipation entail positive emotions? Can a single tweet exude anger and fear at the same time despite being opposites according to Plutchik? In this article, we’ll explore some of these questions and how we ended up answering them.</p>
+<h2 id="emotion-facets">
+  <span> Emotion Facets</span> <a href="#emotion-facets">🔗</a></h2>
+<p>The eight emotions we set out to build a classification engine for are defined by <a href="https://www.6seconds.org/2020/08/11/plutchik-wheel-emotions/">Plutchik’s wheel</a>:</p>
+<ul>
+<li>Anger</li>
+<li>Fear</li>
+<li>Joy</li>
+<li>Sadness</li>
+<li>Trust</li>
+<li>Disgust</li>
+<li>Anticipation</li>
+<li>Surprise</li>
+</ul>
+<p>Our emotion detection is based on a probabilistic algorithm that requires training and test data from human-annotations. To get a high-quality dataset, we found early on that simply telling our annotators to categorize sentences as to whether or not the author was expressing “anticipation” wasn’t <em>nearly</em> enough instruction. Once we got down to the brass tacks of some specific examples, we found that <em>we didn’t even agree internally</em> on classifications in many instances.</p>
+<p>Let’s look at some of the examples we had trouble with as a team and go over the conclusions we came to. If you have thoughts be sure to <a href="https://twitter.com/wagslane">tweet at me</a> and let me know what you think.</p>
+<p>Keep in mind that the definition of anticipation according to <a href="https://languages.oup.com/google-dictionary-en/">Oxford</a> is “The action of anticipating something; expectation or prediction.” In other words, we’re looking for when someone is showing forethought, making a prediction, etc. Here are some examples we agreed on quickly as expressing “anticipation”:</p>
+<ul>
+<li>“I can’t wait to go to the movie theater again!”</li>
+<li>“I’m so excited for sports to come back, can’t happen soon enough!”</li>
+<li>“Tesla stock is way too high, it’s going to tank soon.”</li>
+</ul>
+<p>The first one we had trouble with was:</p>
+<blockquote>
+<p>I’m so nervous to go back to the office. Working from home has been great.</p>
+</blockquote>
+<p>Some of us had the idea that “anticipation” carried a connotation of “being excited”. In other words, you can’t really anticipate something if you <em>don’t want</em> it to happen. We eventually decided that this isn’t a useful definition for several reasons. First, we already do sentiment classification separately, so baking positive sentiment into the anticipation facet isn’t super helpful. Second, the opposite of anticipation in our emotion wheel is “surprise”. We all agreed that surprises can be good or bad. It stands to reason the surpise’s opposite, anticipation, should behave the same way.</p>
+<p>The next problematic example arose a few days later:</p>
+<blockquote>
+<p>I don’t know if I’m going to win</p>
+</blockquote>
+<p>One of my teammates made the point that this sentence expresses apprehension, which can be considered a form of anticipation. I played devil’s advocate saying that “I don’t know” is the polar opposite of a prediction, how can that be anticipation?</p>
+<p>In the end, we found that we had to provide paragraph-long explanations of each category to our annotators, complete with examples of what is and isn’t counted as a part of the category in question.</p>
+<h2 id="vulgarity-detection">
+  <span> Vulgarity Detection</span> <a href="#vulgarity-detection">🔗</a></h2>
+<p>NSFW Disclaimer: <em>I’m going to talk about our vulgarity detection, and will need to say some naughty words. If you find that offensive turn back now!</em></p>
+<p>The way the current iteration of our vulgarity engine works is to take a piece of text as input, for example:</p>
+<blockquote>
+<p>“Well hot damn those potatos hit the spot!”</p>
+</blockquote>
+<p>And output a fractional score from 0-1 representing how likely the text is to contain vulgar text. For the above sample, it might be something like <code>.75</code> Which brings us to our first problem, <strong>what do <em>we</em> consider to be vulgar?</strong></p>
+<p>According to one of my teammates “damn”, “shit” and “hell” aren’t bad words. However, while <em>he may not</em> consider them to be, <em><a href="https://www.cs.cmu.edu/~biglou/resources/bad-words.txt">many people do</a></em>. We’re left in the interesting position of trying to rank all the vulgar words. Here are some of the biggest issues we ran into with vulgarity:</p>
+<h3 id="not-all-bad-words-are-created-equally">
+  <span> Not all bad words are created equally</span> <a href="#not-all-bad-words-are-created-equally">🔗</a></h3>
+<p>Most people would loosely agree with the following ranking from most vulgar -&gt; to least vulgar :</p>
+<ul>
+<li>Fuck</li>
+<li>Bitch</li>
+<li>Shit</li>
+<li>Damn</li>
+<li>Hell</li>
+</ul>
+<h3 id="religious--culture-specific">
+  <span> Religious / Culture Specific</span> <a href="#religious--culture-specific">🔗</a></h3>
+<p>However, problems arise when people of different religious beliefs examine the list. A Christian person may consider the following list accurate:</p>
+<ul>
+<li>Fuck</li>
+<li>Bitch</li>
+<li>Jesus Christ!</li>
+<li>Oh my God!</li>
+<li>Shit</li>
+<li>Damn</li>
+<li>Hell</li>
+</ul>
+<p>Whereas the atheist/agnostic/pagan may not consider “Jesus Christ!” or “Oh my God!” to deserve to be on the list at all.</p>
+<h3 id="geographically-specific">
+  <span> Geographically Specific</span> <a href="#geographically-specific">🔗</a></h3>
+<p>If you’re from England proper, you may also expect a few additional words:</p>
+<ul>
+<li>Fuck</li>
+<li>Wanker</li>
+<li>Bitch</li>
+<li>Shit</li>
+<li>Bloody</li>
+<li>Damn</li>
+<li>Hell</li>
+</ul>
+<p>In the end, we ended up mixing the concept of probability and intensity for the sake of simplicity and we’ve found that our clients are happy with the result. For example, the presence of an intensely “bad” word that’s recognized by basically everyone as vulgar will have a higher weight in the probability calculation than one which is weaker or not accepted by everyone as “bad”.</p>
+<p><code>vulgarity_weight = intensity * acceptance</code></p>
+<p>Once we started looking at everything as a fluid spectrum it became much easier to agree amongst ourselves what constitutes “vulgarity”. My coworker who claimed “shit”, “damn”, and “hell” aren’t vulgar easily admitted that they’re <em>more vulgar</em> than trivial interjections like “crap”, “dang”, or “heck”.</p>
+
+<p>The project we’re working on currently has also turned out to be a vague and difficult one to pin down. The goal is to classify text as to whether it’s promotional or not, but we’ve had a hard time defining what we want. For example, we all agreed quickly that the following we classify as :promotional&#34;:</p>
+<ul>
+<li>“We are doing a sweet promo this week! Sign up for 20% off”</li>
+<li>“Our new product just launched, be sure to check it out”</li>
+<li>“GORGEOUS 😍 previously owned Gucci backpack for $1700😍😍 ⭐️WE SHIP ⭐️ Call the store to purchase 555-555-5555 📲”</li>
+</ul>
+<p>The following however posed an interesting problem:</p>
+<blockquote>
+<p>Do I want a $42 @gucci lipstick yes I do…. can I afford it right now No I cant but it’s soooo good!!!!!!!</p>
+</blockquote>
+<p>While it’s obviously promoting Gucci, it isn’t actually soliciting direct action from the reader. There’s no call to action. Is this a requirement of a solicitation as scored by Nuvi? We’re not sure yet - but we’re figuring that out.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

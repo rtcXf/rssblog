@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Go-CoNLLU - Some Much Needed Machine Learning Support in Go | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/open-source/go-conllu-some-much-needed-machine-learning-support-in-go/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Go-CoNLLU - Some Much Needed Machine Learning Support in Go</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Python is commonly seen as the AI/ML language, but is often a dull blade due to unsafe typing and being slow, like <em>really</em> slow. Many popular natural language processing toolkits only have Python APIs, and we want to see that change. At <a href="https://nuvi.com">Nuvi</a>, a <a href="https://bulk.ly/social-media-tools/">social media marketing tool</a>, we use Go for the majority of our data processing tasks because we can write <em>simple</em> and <em>fast</em> code. Today we are open-sourcing a tool that has helped make our ML lives easier in Go. Say hello to <a href="https://github.com/nuvi/go-conllu">go-conllu</a>.</p>
+<h2 id="what-is-conll-u">
+  <span> What is CoNLL-U?</span> <a href="#what-is-conll-u">🔗</a></h2>
+<p>The Conference on Natural Language Learning (CoNNL) has created multiple file-formats for storing natural language annotations. <a href="https://universaldependencies.org/format.html">CoNLL-U</a> is one such format and is used by the <a href="https://universaldependencies.org/">Universal Dependency Project</a>, which hosts many annotations of textual data. To use these corpora, we need a parser that makes it simple for developers to utilize the data.</p>
+<p><img src="https://blog.boot.dev/img/800/logo-ud.png" alt="Universal Dependencies Machine Learning Logo"/></p>
+<p>Universal Dependencies</p>
+<h2 id="how-does-go-conllu-help">
+  <span> How Does Go-Conllu Help?</span> <a href="#how-does-go-conllu-help">🔗</a></h2>
+<p><a href="https://github.com/nuvi/go-conllu">Go-conllu</a> parses conllu data. It is a simple and reliable way to import conllu data into your application as Go structs.</p>
+<p><a href="https://godoc.org/github.com/nuvi/go-conllu">The GoDoc can be found here with the specifics</a></p>
+<p>Let’s take a look at the example quick-start code from the Readme. First, download the package.</p>
+<pre tabindex="0"><code>go get github.com/nuvi/go-conllu
+</code></pre><p>Then in a new project:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span>	<span>&#34;log&#34;</span>
+</span></span><span><span>
+</span></span><span><span>	<span>conllu</span> <span>&#34;github.com/nuvi/go-conllu&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>sentences</span><span>,</span> <span>err</span> <span>:=</span> <span>conllu</span><span>.</span><span>ParseFile</span><span>(</span><span>&#34;path/to/model.conllu&#34;</span><span>)</span>
+</span></span><span><span>	<span>if</span> <span>err</span> <span>!=</span> <span>nil</span> <span>{</span>
+</span></span><span><span>		<span>log</span><span>.</span><span>Fatal</span><span>(</span><span>err</span><span>)</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>for</span> <span>_</span><span>,</span> <span>sentence</span> <span>:=</span> <span>range</span> <span>sentences</span> <span>{</span>
+</span></span><span><span>		<span>for</span> <span>_</span><span>,</span> <span>token</span> <span>:=</span> <span>range</span> <span>sentence</span><span>.</span><span>Tokens</span> <span>{</span>
+</span></span><span><span>			<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>token</span><span>)</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>		<span>fmt</span><span>.</span><span>Println</span><span>()</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>All the sentences and tokens in the corpus will be printed to the console.</p>
+<p>If you need a .conllu corpus file you can download the Universal Dependencies English training model here: <a href="https://raw.githubusercontent.com/UniversalDependencies/UD_English-EWT/master/en_ewt-ud-train.conllu">en_ewt-ud</a><a href="https://raw.githubusercontent.com/UniversalDependencies/UD_English-EWT/master/en_ewt-ud-train.conllu">-</a><a href="https://raw.githubusercontent.com/UniversalDependencies/UD_English-EWT/master/en_ewt-ud-train.conllu">train.conllu</a></p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Concatenating with strings.Builder Quickly in Golang | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/strings-builder-concatenation-golang/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Concatenating with strings.Builder Quickly in Golang</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>The Go standard library makes concatenating strings easy. Concatenation is just a fancy word for adding strings together to make a larger string. For example, if we concatenate <code>&#34;hello&#34;</code>, <code>&#34; &#34;</code> and <code>&#34;world&#34;</code> we’d get <code>&#34;hello world&#34;</code>.</p>
+<p>The built-in <a href="https://golang.org/pkg/fmt/#Sprintf"><code>fmt.Sprintf</code></a> function takes a format and a variadic list of interfaces as input.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>Sprintf</span><span>(</span><span>format</span> <span>string</span><span>,</span> <span>a</span> <span>...</span><span>interface</span><span>{})</span> <span>string</span>
+</span></span></code></pre></div><p>The formatting option lets us template out how the final string will look, then we can add inputs that will be interpolated into the string.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>s</span> <span>:=</span> <span>fmt</span><span>.</span><span>Sprintf</span><span>(</span><span>&#34;%v has been subscribed since %v.\n&#34;</span><span>,</span> <span>user</span><span>.</span><span>Name</span><span>,</span> <span>user</span><span>.</span><span>CreatedAt</span><span>)</span>
+</span></span></code></pre></div><p><code>%v</code> is a simple token that will be replaced by the default format of whatever the given arguments are. In our case, it was a <code>string</code> and a <a href="https://blog.boot.dev/golang/golang-date-time/">time.Time</a>. Check out the <a href="https://golang.org/pkg/fmt">documentation</a> for all the formatting options.</p>
+<h2 id="efficient-string-concatenation">
+  <span> Efficient string concatenation</span> <a href="#efficient-string-concatenation">🔗</a></h2>
+<p>Go 1.10+ released the awesome <a href="https://golang.org/pkg/strings/#Builder"><code>strings.Builder</code></a> type, which lets us more efficiently build strings. Because it minimizes memory copying, <code>strings.Builder</code> is a high-performance option when it comes to doing bulk string concatenation.</p>
+<h3 id="quickly-writing-a-user-list---example">
+  <span> Quickly writing a user list - example</span> <a href="#quickly-writing-a-user-list---example">🔗</a></h3>
+<p>First, let’s create an empty builder.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>var</span> <span>builder</span> <span>strings</span><span>.</span><span>Builder</span>
+</span></span></code></pre></div><p>Next, let’s add a title string to our list.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>b</span><span>.</span><span>WriteString</span><span>(</span><span>&#34;user list\n&#34;</span><span>)</span>
+</span></span></code></pre></div><p>Now we’ll iterate from 0-9, and for each number write a line containing “<code>user #{i}</code>”. Because <code>strings.Builder</code> implements the <code>io.Writer</code> <a href="https://blog.boot.dev/golang/golang-interfaces/">interface</a>, we can use the standard <code>fmt.Fprintf</code> function.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>10</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Fprintf</span><span>(</span><span>&amp;</span><span>b</span><span>,</span> <span>&#34;user #%d\n&#34;</span><span>,</span> <span>i</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>To actually print the full string we can use the <code>String()</code> method.</p>
+<p>Full code:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>    <span>&#34;fmt&#34;</span>
+</span></span><span><span>    <span>&#34;strings&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>var</span> <span>b</span> <span>strings</span><span>.</span><span>Builder</span>
+</span></span><span><span>    <span>b</span><span>.</span><span>WriteString</span><span>(</span><span>&#34;user list\n&#34;</span><span>)</span>
+</span></span><span><span>    <span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>10</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>        <span>fmt</span><span>.</span><span>Fprintf</span><span>(</span><span>&amp;</span><span>b</span><span>,</span> <span>&#34;user #%d\n&#34;</span><span>,</span> <span>i</span><span>)</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>b</span><span>.</span><span>String</span><span>())</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="preallocation-for-more-speed">
+  <span> Preallocation for more speed</span> <a href="#preallocation-for-more-speed">🔗</a></h2>
+<p>If you really want to speed up your string building, and you already know the size of your final string, you can use the builder’s <a href="https://golang.org/pkg/strings/#Builder.Grow"><code>Grow()</code></a> method to preallocate the size of the buffer. This saves your code from needing to grow the memory dynamically.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// Grow grows b&#39;s capacity, if necessary, to guarantee space for another n bytes.
+</span></span></span><span><span><span>// After Grow(n), at least n bytes can be written to b without another allocation.
+</span></span></span><span><span><span>// If n is negative, Grow panics.
+</span></span></span><span><span><span></span><span>func</span> <span>(</span><span>b</span> <span>*</span><span>Builder</span><span>)</span> <span>Grow</span><span>(</span><span>n</span> <span>int</span><span>)</span>
+</span></span></code></pre></div><p>So to preallocate for our example we could do the following.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>    <span>&#34;fmt&#34;</span>
+</span></span><span><span>    <span>&#34;strings&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>var</span> <span>b</span> <span>strings</span><span>.</span><span>Builder</span>
+</span></span><span><span>    <span>b</span><span>.</span><span>Grow</span><span>(</span><span>90</span><span>)</span> <span>// we will be writing 90 bytes
+</span></span></span><span><span><span></span>    <span>b</span><span>.</span><span>WriteString</span><span>(</span><span>&#34;user list\n&#34;</span><span>)</span>
+</span></span><span><span>    <span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>10</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>        <span>fmt</span><span>.</span><span>Fprintf</span><span>(</span><span>&amp;</span><span>b</span><span>,</span> <span>&#34;user #%d\n&#34;</span><span>,</span> <span>i</span><span>)</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>b</span><span>.</span><span>String</span><span>())</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

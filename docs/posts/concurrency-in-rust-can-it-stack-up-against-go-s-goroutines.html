@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Concurrency In Rust; Can It Stack Up Against Go&#39;s Goroutines? | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/rust/concurrency-in-rust-can-it-stack-up-against-gos-goroutines/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Concurrency In Rust; Can It Stack Up Against Go&#39;s Goroutines?</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>One of the primary goals of the Go programming language is to make concurrency simpler, faster, and more efficient. With Rust growing in popularity let’s see how its concurrency mechanisms stack up against Go’s.</p>
+<h2 id="a-refresher-on-goroutines">
+  <span> A Refresher On Goroutines</span> <a href="#a-refresher-on-goroutines">🔗</a></h2>
+<p>In Go, concurrency is accomplished by spawning new <a href="https://tour.golang.org/concurrency/1">goroutines</a>:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span>	<span>&#34;time&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>go</span> <span>func</span><span>()</span> <span>{</span>
+</span></span><span><span>		<span>for</span> <span>{</span>
+</span></span><span><span>			<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;one second passed&#34;</span><span>)</span>
+</span></span><span><span>			<span>time</span><span>.</span><span>Sleep</span><span>(</span><span>time</span><span>.</span><span>Second</span><span>)</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>	<span>}()</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;waiting 10 secs for goroutine&#34;</span><span>)</span>
+</span></span><span><span>	<span>time</span><span>.</span><span>Sleep</span><span>(</span><span>time</span><span>.</span><span>Second</span> <span>*</span> <span>10</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>In the example above, we use the <em>go</em> keyword to signify that we want to run the provided anonymous function in a goroutine. Execution at that point splits - execution continues on the main thread, but the runtime is now running the goroutine in parallel.</p>
+<p>Goroutines are lightweight and take advantage of all of the processing power available. If two goroutines are running they will efficiently use at most two cores. If one hundred goroutines are running they will use at most one hundred cores, but can efficiently run on as few as one.</p>
+<h2 id="what-about-rust">
+  <span> What About Rust?</span> <a href="#what-about-rust">🔗</a></h2>
+<p>In Rust, there are two approaches we can take to run code concurrently. <a href="https://rust-lang.github.io/async-book/01_getting_started/04_async_await_primer.html">Async/Await</a>, and <a href="https://doc.rust-lang.org/book/ch16-01-threads.html">threading</a>. Async/Await is a paradigm that is orthogonal to threading, which means that it has the potential to run tasks on a single thread OR on multiple threads depending on the <a href="https://docs.rs/futures/0.2.1/futures/executor/index.html">executor</a> that is used.</p>
+<p>Threading on its own makes use of multiple cores and uses typical operating-system threads.</p>
+<h2 id="asyncawait">
+  <span> Async/Await</span> <a href="#asyncawait">🔗</a></h2>
+<p>Let’s take a look at async first. and don’t forget to add the following dependencies to your project’s <code>Cargo.toml</code>:</p>
+<div><pre tabindex="0"><code data-lang="toml"><span><span><span>[</span><span>dependencies</span><span>]</span>
+</span></span><span><span><span>futures</span> <span>=</span> <span>&#34;0.3.5&#34;</span>
+</span></span><span><span><span>async-std</span> <span>=</span> <span>&#34;1.5.0&#34;</span>
+</span></span></code></pre></div><div><pre tabindex="0"><code data-lang="rust"><span><span><span>use</span><span> </span><span>std</span>::<span>time</span>::<span>Duration</span><span>;</span><span>
+</span></span></span><span><span><span></span><span>use</span><span> </span><span>futures</span>::<span>executor</span>::<span>block_on</span><span>;</span><span>
+</span></span></span><span><span><span></span><span>use</span><span> </span><span>async_std</span>::<span>task</span><span>;</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>future</span><span> </span><span>=</span><span> </span><span>async_main</span><span>();</span><span>
+</span></span></span><span><span><span>    </span><span>block_on</span><span>(</span><span>future</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>async</span><span> </span><span>fn</span> <span>async_main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>print_for_five</span><span>(</span><span>&#34;await 1&#34;</span><span>).</span><span>await</span><span>;</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>async_one</span><span> </span><span>=</span><span> </span><span>print_for_five</span><span>(</span><span>&#34;async 1&#34;</span><span>);</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>async_two</span><span> </span><span>=</span><span> </span><span>print_for_five</span><span>(</span><span>&#34;async 2&#34;</span><span>);</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>    </span><span>futures</span>::<span>join!</span><span>(</span><span>async_one</span><span>,</span><span> </span><span>async_two</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>async</span><span> </span><span>fn</span> <span>print_for_five</span><span>(</span><span>msg</span>: <span>&amp;</span><span>str</span><span>)</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>for</span><span> </span><span>_</span><span> </span><span>in</span><span> </span><span>0</span><span>..</span><span>5</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>task</span>::<span>sleep</span><span>(</span><span>Duration</span>::<span>from_secs</span><span>(</span><span>1</span><span>)).</span><span>await</span><span>;</span><span>
+</span></span></span><span><span><span>        </span><span>println!</span><span>(</span><span>&#34;one second has passed: </span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>msg</span><span>)</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>We start by creating a new async function, <em>async_main</em>, then use the <em>block_on</em> executor to block and execute <em>async_main</em>. Because <em>async_main</em> is an asynchronous function, we are able to <em>await</em> other async functions inside of it, as well as execute them concurrently.</p>
+<p>The first call in <em>async_main</em> is an <em>await</em> on our async <em>print_for_five</em> function which prints the message “one second has passed: await 1” once each second for 5 seconds. Because we used the <em>await</em> keyword, <em>async_main</em> will block and wait for <em>print_for_five</em>.</p>
+<p>Next, we create two futures (very similar to JavaScript <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">promises</a>) by calling <em>print_for_five</em> anew with new messages. The futures do not begin execution until the next line where we use the <em>join</em> macro. <em>Join</em> executes the futures concurrently and blocks until all the futures have completed. Join is very similar to JavaScript’s <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all">PromiseAll</a>.</p>
+<p>The program will print the following:</p>
+<pre tabindex="0"><code>one second has passed: await 1
+one second has passed: await 1
+one second has passed: await 1
+one second has passed: await 1
+one second has passed: await 1
+one second has passed: async 1
+one second has passed: async 2
+one second has passed: async 1
+one second has passed: async 2
+one second has passed: async 1
+one second has passed: async 2
+one second has passed: async 1
+one second has passed: async 2
+one second has passed: async 1
+one second has passed: async 2
+</code></pre><p>Where the last ten lines are all printed within five seconds of each other because <code>print_for_five(&#34;async 1&#34;)</code> and <code>print_for_five(&#34;async 2&#34;)</code> were executed concurrently.</p>
+<p>The <code>block_on</code> executor that we used blocks the main thread, which means that all the concurrency happened on a single thread.</p>
+<h2 id="rusts-threading">
+  <span> Rust’s Threading</span> <a href="#rusts-threading">🔗</a></h2>
+<p>Threading in Rust takes advantage of multi-core hardware. When a new thread is spawned, the operating system knows that these separate threads of the program can be executed in parallel on different cores at exactly the same time.</p>
+<p>Let’s take a look at the following example:</p>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>use</span><span> </span><span>std</span>::<span>thread</span><span>;</span><span>
+</span></span></span><span><span><span></span><span>use</span><span> </span><span>std</span>::<span>time</span>::<span>Duration</span><span>;</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>thread</span>::<span>spawn</span><span>(</span><span>||</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>for</span><span> </span><span>_</span><span> </span><span>in</span><span> </span><span>1</span><span>..</span><span>10</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>            </span><span>println!</span><span>(</span><span>&#34;Hello after 1 second from the spawned thread&#34;</span><span>);</span><span>
+</span></span></span><span><span><span>            </span><span>thread</span>::<span>sleep</span><span>(</span><span>Duration</span>::<span>from_millis</span><span>(</span><span>1000</span><span>));</span><span>
+</span></span></span><span><span><span>        </span><span>}</span><span>
+</span></span></span><span><span><span>    </span><span>});</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>    </span><span>for</span><span> </span><span>_</span><span> </span><span>in</span><span> </span><span>1</span><span>..</span><span>5</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>println!</span><span>(</span><span>&#34;Hello after 1 second from the main thread&#34;</span><span>);</span><span>
+</span></span></span><span><span><span>        </span><span>thread</span>::<span>sleep</span><span>(</span><span>Duration</span>::<span>from_millis</span><span>(</span><span>1000</span><span>));</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>We spawn a new thread using the standard library’s <em>spawn</em> function. The <em>spawn</em> function take a closure as its argument and executes it in parallel. As you can see by running the program, it only takes five seconds to print all ten statements because each thread is sleeping independently.</p>
+<h2 id="which-is-best">
+  <span> Which is Best?</span> <a href="#which-is-best">🔗</a></h2>
+<p>You’ve heard it before but no approach is <em>best</em>, they are all just <em>different</em>. I argue that Go is the best at keeping it <strong>simple</strong>. Go provides only one method (goroutines) to achieve concurrency, and the syntax is elegant. Rust provides two methods which are tailored to different problems.</p>
+<h2 id="goroutines-vs-asyncawait">
+  <span> Goroutines vs Async/Await</span> <a href="#goroutines-vs-asyncawait">🔗</a></h2>
+<p>Goroutines are very different from async/await. Async/Await explicitly accomplishes concurrency, but not necessarily parallelism. In other words, while async/await <em>logically</em> executes two functions at once, it doesn’t always <em>practically</em> do so. It all depends on the <a href="https://docs.rs/futures/0.2.1/futures/executor/index.html">executor</a> that is used.</p>
+<p><img src="https://blog.boot.dev/img/800/Untitled.jpg" alt=""/></p>
+<p>Async/Await is a useful paradigm for programs that have heavy I/O wait times but aren’t doing long-running compute-heavy workloads.</p>
+<p>Async/Await can also be good for many short-lived async tasks where new operating system threads would be clunky and expensive.</p>
+<h2 id="goroutines-vs-threading">
+  <span> Goroutines vs Threading</span> <a href="#goroutines-vs-threading">🔗</a></h2>
+<p>Goroutines are more lightweight and efficient than operating-system threads. As a result, a program can spawn more total goroutines than threads. Goroutines also start and clean themselves up faster than threads due to less system overhead.</p>
+<p>The big advantage of traditional threading (like that of Rust) over the goroutine model is that no runtime is required. Each Go executable is compiled with a small runtime which manages goroutines, while Rust avoids that extra fluff in the binary.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Create a Custom Toggle Switch Component in Vue.js | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/how-to-create-a-custom-toggle-switch-component-in-vue-js/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Create a Custom Toggle Switch Component in Vue.js</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Custom toggle switches are a pain to code from scratch. So many lines for such a simple UI widget! In this quick tutorial, we will learn how to build a fully encapsulated toggle switch component in Vue.js. The component we’re building is used currently on <a href="https://www.boot.dev/">boot.dev’s login page</a>. Go take a look to see a live demo.</p>
+<h2 id="the-html-template">
+  <span> The HTML Template</span> <a href="#the-html-template">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>template</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>div</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>span</span>
+</span></span><span><span>      <span>class</span><span>=</span><span>&#34;toggle-wrapper&#34;</span>
+</span></span><span><span>      <span>role</span><span>=</span><span>&#34;checkbox&#34;</span>
+</span></span><span><span>      <span>:aria-checked</span><span>=</span><span>&#34;value.toString()&#34;</span>
+</span></span><span><span>      <span>tabindex</span><span>=</span><span>&#34;0&#34;</span>
+</span></span><span><span>      <span>@</span><span>click</span><span>=</span><span>&#34;toggle&#34;</span>
+</span></span><span><span>      <span>@</span><span>keydown</span><span>.</span><span>space</span><span>.</span><span>prevent</span><span>=</span><span>&#34;toggle&#34;</span>
+</span></span><span><span>    <span>&gt;</span>
+</span></span><span><span>      <span>&lt;</span><span>span</span>
+</span></span><span><span>        <span>class</span><span>=</span><span>&#34;toggle-background&#34;</span>
+</span></span><span><span>        <span>:class</span><span>=</span><span>&#34;backgroundStyles&#34;</span>
+</span></span><span><span>      <span>/&gt;</span>
+</span></span><span><span>      <span>&lt;</span><span>span</span>
+</span></span><span><span>        <span>class</span><span>=</span><span>&#34;toggle-indicator&#34;</span>
+</span></span><span><span>        <span>:style</span><span>=</span><span>&#34;indicatorStyles&#34;</span> 
+</span></span><span><span>      <span>/&gt;</span>
+</span></span><span><span>    <span>&lt;/</span><span>span</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>template</span><span>&gt;</span>
+</span></span></code></pre></div><p>The toggle-wrapper is what it sounds like, the parent div for our component. The toggle-background will be the pill-shaped oval and the toggle-indicator is the circle that we will animate to move back and forth.</p>
+<h2 id="the-javascript">
+  <span> The JavaScript</span> <a href="#the-javascript">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>export</span> <span>default</span> <span>{</span>
+</span></span><span><span>  <span>props</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>value</span><span>:</span><span>{</span>
+</span></span><span><span>      <span>type</span><span>:</span> <span>Boolean</span><span>,</span>
+</span></span><span><span>      <span>required</span><span>:</span> <span>true</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>computed</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>backgroundStyles</span><span>()</span> <span>{</span>
+</span></span><span><span>      <span>return</span> <span>{</span>
+</span></span><span><span>        <span>&#39;gold-mid&#39;</span><span>:</span> <span>this</span><span>.</span><span>value</span><span>,</span>
+</span></span><span><span>        <span>&#39;gray-lighter&#39;</span><span>:</span> <span>!</span><span>this</span><span>.</span><span>value</span>
+</span></span><span><span>      <span>};</span>
+</span></span><span><span>    <span>},</span>
+</span></span><span><span>    <span>indicatorStyles</span><span>()</span> <span>{</span>
+</span></span><span><span>      <span>return</span> <span>{</span> <span>transform</span><span>:</span> <span>this</span><span>.</span><span>value</span> <span>?</span> <span>&#39;translateX(14px)&#39;</span> <span>:</span> <span>&#39;translateX(0)&#39;</span> <span>};</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>methods</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>toggle</span><span>()</span> <span>{</span>
+</span></span><span><span>      <span>this</span><span>.</span><span>$emit</span><span>(</span><span>&#39;input&#39;</span><span>,</span> <span>!</span><span>this</span><span>.</span><span>value</span><span>);</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>};</span>
+</span></span></code></pre></div><p>We have setup the component such that the user of the component can use the <code>v-model</code> attribute to get/set the current state of the switch. We have setup the <code>backgroundStyles</code> and <code>indicatorStyles</code> to dynamically change some CSS for us as the state updates.</p>
+<h2 id="the-css">
+  <span> The CSS</span> <a href="#the-css">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="css"><span><span><span>.</span><span>gold-mid</span><span>{</span>
+</span></span><span><span>  <span>background-color</span><span>:</span> <span>#666666</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>gray-lighter</span><span>{</span>
+</span></span><span><span>  <span>background-color</span><span>:</span> <span>#c2c2c2</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>toggle-wrapper</span> <span>{</span>
+</span></span><span><span>  <span>display</span><span>:</span> <span>inline-block</span><span>;</span>
+</span></span><span><span>  <span>position</span><span>:</span> <span>relative</span><span>;</span>
+</span></span><span><span>  <span>cursor</span><span>:</span> <span>pointer</span><span>;</span>
+</span></span><span><span>  <span>width</span><span>:</span> <span>32</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>height</span><span>:</span> <span>18</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>border-radius</span><span>:</span> <span>9999</span><span>px</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>toggle-wrapper</span><span>:</span><span>focus</span> <span>{</span>
+</span></span><span><span>  <span>outline</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>toggle-background</span> <span>{</span>
+</span></span><span><span>  <span>display</span><span>:</span> <span>inline-block</span><span>;</span>
+</span></span><span><span>  <span>border-radius</span><span>:</span> <span>9999</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>height</span><span>:</span> <span>100</span><span>%</span><span>;</span>
+</span></span><span><span>  <span>width</span><span>:</span> <span>100</span><span>%</span><span>;</span>
+</span></span><span><span>  <span>box-shadow</span><span>:</span> <span>inset</span> <span>0</span> <span>2</span><span>px</span> <span>4</span><span>px</span> <span>rgba</span><span>(</span><span>0</span><span>,</span> <span>0</span><span>,</span> <span>0</span><span>,</span> <span>0.1</span><span>);</span>
+</span></span><span><span>  <span>transition</span><span>:</span> <span>background-color</span> <span>.4</span><span>s</span> <span>ease</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>toggle-indicator</span> <span>{</span>
+</span></span><span><span>  <span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>  <span>height</span><span>:</span> <span>14</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>width</span><span>:</span> <span>14</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>left</span><span>:</span> <span>2</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>bottom</span><span>:</span> <span>2</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>background-color</span><span>:</span> <span>#ffffff</span><span>;</span>
+</span></span><span><span>  <span>border-radius</span><span>:</span> <span>9999</span><span>px</span><span>;</span>
+</span></span><span><span>  <span>box-shadow</span><span>:</span>  <span>0</span> <span>2</span><span>px</span> <span>4</span><span>px</span> <span>rgba</span><span>(</span><span>0</span><span>,</span> <span>0</span><span>,</span> <span>0</span><span>,</span> <span>0.1</span><span>);</span>
+</span></span><span><span>  <span>transition</span><span>:</span> <span>transform</span> <span>.4</span><span>s</span> <span>ease</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The only particularly interesting thing going on here is the fade in/out of the gold color on the background and the movement of the toggle-indicator. Both of these are accomplished with the <code>transition</code> CSS attribute.</p>
+<p>Hopefully this saves you some time building out one of the more common UI/UX components in Vue! It’s the small things like this that give applications the professional flourish that keep users engaged. Be sure to reach out to me directly with feedback or questions!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

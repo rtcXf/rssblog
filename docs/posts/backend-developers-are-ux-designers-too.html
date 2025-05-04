@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Backend Developers are UX Designers Too | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/backend-ux-design/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Backend Developers are UX Designers Too</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Too often I neglect the idea of UX design in backend work. The goal of user experience design is to give users a product that’s easy to use. In the world of front-end development, that typically means making it obvious how to navigate your site, using commonly-understood icons, or implementing well-contrasted colors for foreground and background, making your site easy to read.</p>
+<p>I’m here to contend that UX is extremely important in backend development as well, the difference is simply that our users are typically other developers, sometimes even internal employees, rather than users of the final product.</p>
+<h2 id="what-is-ux-user-experience-design">
+  <span> What is UX (user experience) design?</span> <a href="#what-is-ux-user-experience-design">🔗</a></h2>
+<blockquote>
+<p>User experience design (UXD, UED, or XD) is the process of supporting user behavior through usability, usefulness, and desirability provided in the interaction with a product. User experience design encompasses traditional human-computer interaction (HCI) design and extends it by addressing all aspects of a product or service as perceived by users.</p>
+<p><a href="https://en.wikipedia.org/wiki/User_experience_design">Wikipedia</a></p>
+</blockquote>
+<p>In other words, UX design is all about making it easy for your users to interact with your product, and get their tasks done in a straightforward manner.</p>
+<h2 id="examples-of-ux-design">
+  <span> Examples of UX Design</span> <a href="#examples-of-ux-design">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/door-push-handle.jpeg" alt="door push handle ux"/></p>
+<p>Bad UX Design on Door</p>
+<p>Sometimes it’s easier to understand through bad examples. In the image above, a door with a handle is clearly labeled <em>push</em>. Why does the door have a handle at all if it can’t be pulled? It’s just bad UX and gives off mixed signals. If the builder had used push plates, there would be no need for words at all. <a href="https://wagslane.dev/posts/optimize-for-simplicit-first/">Simplicity breeds understanding</a>.</p>
+<p><img src="https://blog.boot.dev/img/800/push-panel-on-door.jpg" alt=""/></p>
+<p>I like to think of good UX design as the death of user manuals. Remember user manuals? You might still get them for tools or household appliances. In the early days of software, installable CD ROMs often came with user manuals. Can you imagine needing to open a user manual to figure out how to login to Facebook? No, the goal with UX is to make your software (or product) so easy to use that you get very few questions, even without providing explicit instructions.</p>
+<h2 id="why-does-this-matter-in-backend-code">
+  <span> Why does this matter in backend code?</span> <a href="#why-does-this-matter-in-backend-code">🔗</a></h2>
+<p>It mostly comes down to one thing, <strong>clean APIs</strong>. As backend developers, our users are other developers. If you’ve ever had the misfortune of sifting through outdated or poorly written API documentation, hopefully, you’ll appreciate the point I’m trying to make here.</p>
+<p>Let’s take a look at an example of a poorly written REST API to demonstrate what I mean.</p>
+<div><pre tabindex="0"><code data-lang="md"><span><span><span># Users API - A list of endpoints
+</span></span></span><span><span><span></span>
+</span></span><span><span><span>## Create new user
+</span></span></span><span><span><span></span>
+</span></span><span><span>POST /user/create
+</span></span><span><span>
+</span></span><span><span><span>### Request body
+</span></span></span><span><span><span></span>
+</span></span><span><span>json
+</span></span><span><span>{
+</span></span><span><span>&#34;email&#34;: &#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="046e6b6c6a606b6144617c65697468612a676b69">[email protected]</a>&#34;,
+</span></span><span><span>&#34;password&#34;: &#34;somethingsecure&#34;
+</span></span><span><span>}
+</span></span><span><span>
+</span></span><span><span><span>### Response
+</span></span></span><span><span><span></span>
+</span></span><span><span>json
+</span></span><span><span>{
+</span></span><span><span>&#34;id&#34;: &#34;some-new-id&#34;
+</span></span><span><span>}
+</span></span><span><span>
+</span></span><span><span><span>## Delete user
+</span></span></span><span><span><span></span>
+</span></span><span><span>POST /users/delete/{email}
+</span></span><span><span>
+</span></span><span><span><span>## Get user
+</span></span></span><span><span><span></span>
+</span></span><span><span>GET /user/{id}
+</span></span><span><span>
+</span></span><span><span><span>## Update user
+</span></span></span><span><span><span></span>
+</span></span><span><span>PUT /user
+</span></span><span><span>
+</span></span><span><span>json
+</span></span><span><span>{
+</span></span><span><span>&#34;id&#34;: &#34;some-id-here&#34;,
+</span></span><span><span>&#34;email: &#34;<a href="https://blog.boot.dev/cdn-cgi/l/email-protection" data-cfemail="18727770767c777d587d60797568747d367b7775">[email protected]</a>&#34;,
+</span></span><span><span>&#34;password: &#34;somethingsecure&#34;
+</span></span><span><span>}
+</span></span></code></pre></div><p>There’s a lot wrong here. While this API is probably usable, it makes me want to cry. Nothing about it is obvious, and no internal patterns are adhered to. I don’t even care that much if the API isn’t very RESTful at all, but can it please be non-RESTful in a consistent way?</p>
+<h3 id="problem-1---plurality-seems-arbitrary">
+  <span> Problem #1 - Plurality seems arbitrary</span> <a href="#problem-1---plurality-seems-arbitrary">🔗</a></h3>
+<p>Some of the endpoints use <code>/users</code> while others use <code>/user</code>. When should I expect one over the other? It’s not clear so back to the user’s manual (documentation) for me I suppose.</p>
+<h3 id="problem-2---when-does-the-path-include-the-verb">
+  <span> Problem #2 - When does the path include the verb?</span> <a href="#problem-2---when-does-the-path-include-the-verb">🔗</a></h3>
+<p>The endpoints for creating and deleting users have the appropriate verb (“create” and “delete” in their path. For some reason, the <code>GET</code> endpoint operates directly on the root <code>/users</code> path. Why? I have no idea.</p>
+<h3 id="problem-3---inconsistent-use-of-http-methods">
+  <span> Problem #3 - Inconsistent use of HTTP methods</span> <a href="#problem-3---inconsistent-use-of-http-methods">🔗</a></h3>
+<p>Some APIs (GraphQL) always use <code>POST</code>, or sometimes <code>GET</code>. That’s fine, at least it’s consistent so you know what to expect. Here, it appears that we’re going to use the standard RESTful verbs, <code>GET</code>, <code>PUT</code>, <code>POST</code> and <code>DELETE</code>, but for some reason, the endpoint for deleting users uses the <code>POST</code> method, seemingly just to confuse us.</p>
+<h3 id="problem-4---inconsistent-primary-keys">
+  <span> Problem #4 - Inconsistent primary keys</span> <a href="#problem-4---inconsistent-primary-keys">🔗</a></h3>
+<p>In a RESTful-ish API, you’d expect the primary key used in a resource path to be the same. For example, updating might be <code>PUT users/{id}</code>, deleting would be <code>DELETE users/{id}</code>, etc. In this API, we see the <code>id</code> in the request body for updating, deleting uses an <code>email</code> in the path, and the <code>GET</code> endpoint simply takes an <code>id</code> in the path.</p>
+<h3 id="think-about-your-ux-if-you-do-that-youll-be-one-step-ahead-of-many-backend-engineers">
+  <span> Think about your UX. If you do that you’ll be one step ahead of many backend engineers</span> <a href="#think-about-your-ux-if-you-do-that-youll-be-one-step-ahead-of-many-backend-engineers">🔗</a></h3>
+<p>Let’s strive to make our APIs easy to understand and work with. Many companies like Stripe and Mailgun have made created entire products that are just APIs. As such, their API UX design is of utmost importance.</p>
+<p>The buck doesn’t stop with REST, It was just a quick example. If you’re writing a <a href="https://blog.boot.dev/golang/how-to-separate-library-packages-in-go/">library or package</a>, it has an API, so make sure it’s a good one. Keep your authentication protocols simple. Make decisions that simplify the lives of your users, even if it means a smidge of extra code on your end. Remember, it’s easy to change internal logic, but fixing a bad API is difficult - it requires breaking changes and major version upgrades.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

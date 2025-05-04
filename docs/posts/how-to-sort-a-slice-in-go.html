@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Sort a Slice in Go | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/sorting-in-go/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Sort a Slice in Go</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Sorting is a common task in programming, and for that reason, most languages have a default sorting algorithm in their standard library. Go is one such language. Go has gone about providing sorting functionality in one of the most elegant ways possible, via an <a href="https://blog.boot.dev/golang/golang-interfaces/">interface</a>.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>Interface</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>// Len is the number of elements in the collection.
+</span></span></span><span><span><span></span>    <span>Len</span><span>()</span> <span>int</span>
+</span></span><span><span>    <span>// Less reports whether the element with
+</span></span></span><span><span><span></span>    <span>// index i should sort before the element with index j.
+</span></span></span><span><span><span></span>    <span>Less</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>bool</span>
+</span></span><span><span>    <span>// Swap swaps the elements with indexes i and j.
+</span></span></span><span><span><span></span>    <span>Swap</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Any type that satisfies this interface can be sorted using the standard library’s <a href="https://golang.org/pkg/sort/#Sort">sort.Sort()</a> function. There is rarely a reason to sort any other way because the sort function is <code>O(n log(n))</code> in the worst case. You can take a look at the various algorithms that are used, depending on the data to be sorted, <a href="https://golang.org/src/sort/sort.go">here</a>.</p>
+<h2 id="sorting-a-slice">
+  <span> Sorting a Slice</span> <a href="#sorting-a-slice">🔗</a></h2>
+<p>The first thing to do no matter what we are sorting is to create a custom type. A custom type will allow us to implement the <code>Len()</code>, <code>Less()</code> and <code>Swap()</code> methods on it.</p>
+<p>Then we implement the methods to fulfill the <code>sort.Interface</code> interface:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>(</span><span>ms</span> <span>mySlice</span><span>)</span> <span>Len</span><span>()</span> <span>int</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>len</span><span>(</span><span>ms</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>ms</span> <span>mySlice</span><span>)</span> <span>Less</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>bool</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>ms</span><span>[</span><span>i</span><span>]</span> <span>&lt;</span> <span>ms</span><span>[</span><span>j</span><span>]</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>ms</span> <span>mySlice</span><span>)</span> <span>Swap</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>ms</span><span>[</span><span>i</span><span>],</span> <span>ms</span><span>[</span><span>j</span><span>]</span> <span>=</span> <span>ms</span><span>[</span><span>j</span><span>],</span> <span>ms</span><span>[</span><span>i</span><span>]</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Let’s test it out:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;fmt&#34;</span>
+</span></span><span><span>	<span>&#34;math/rand&#34;</span>
+</span></span><span><span>	<span>&#34;sort&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>type</span> <span>mySlice</span> <span>[]</span><span>int</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>ms</span> <span>mySlice</span><span>)</span> <span>Len</span><span>()</span> <span>int</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>len</span><span>(</span><span>ms</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>ms</span> <span>mySlice</span><span>)</span> <span>Less</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>bool</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>ms</span><span>[</span><span>i</span><span>]</span> <span>&lt;</span> <span>ms</span><span>[</span><span>j</span><span>]</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>ms</span> <span>mySlice</span><span>)</span> <span>Swap</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>ms</span><span>[</span><span>i</span><span>],</span> <span>ms</span><span>[</span><span>j</span><span>]</span> <span>=</span> <span>ms</span><span>[</span><span>j</span><span>],</span> <span>ms</span><span>[</span><span>i</span><span>]</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>ms</span> <span>:=</span> <span>mySlice</span><span>{}</span>
+</span></span><span><span>	<span>for</span> <span>i</span> <span>:=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>10</span><span>;</span> <span>i</span><span>++</span> <span>{</span>
+</span></span><span><span>		<span>ms</span> <span>=</span> <span>append</span><span>(</span><span>ms</span><span>,</span> <span>rand</span><span>.</span><span>Intn</span><span>(</span><span>100</span><span>))</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;pre-sort:&#34;</span><span>,</span> <span>ms</span><span>)</span>
+</span></span><span><span>	<span>sort</span><span>.</span><span>Sort</span><span>(</span><span>ms</span><span>)</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;post-sort:&#34;</span><span>,</span> <span>ms</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>prints:</p>
+<pre tabindex="0"><code>pre-sort: [81 87 47 59 81 18 25 40 56 0]
+post-sort: [0 18 25 40 47 56 59 81 81 87]
+</code></pre><h2 id="changing-it-up">
+  <span> Changing It Up</span> <a href="#changing-it-up">🔗</a></h2>
+<p>If we want different behavior we just change the way we <em>implement</em> the interface. For example, if we want to sort greatest to least we just change the <code>Less()</code> function:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>(</span><span>ms</span> <span>mySlice</span><span>)</span> <span>Less</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>bool</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>ms</span><span>[</span><span>i</span><span>]</span> <span>&gt;</span> <span>ms</span><span>[</span><span>j</span><span>]</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>which prints:</p>
+<pre tabindex="0"><code>pre-sort: [81 87 47 59 81 18 25 40 56 0]
+post-sort: [87 81 81 59 56 47 40 25 18 0]
+</code></pre><h2 id="other-types">
+  <span> Other Types</span> <a href="#other-types">🔗</a></h2>
+<p>Sorting integers is pretty boring. Besides, if we are just going to sort integers we can use the pre-defined <a href="https://golang.org/pkg/sort/#IntSlice">IntSlice</a> type instead of coding it all again ourselves. Let’s sort a slice of structs:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>mtgCard</span> <span>struct</span> <span>{</span>
+</span></span><span><span>	<span>manaCost</span> <span>int</span>
+</span></span><span><span>	<span>name</span>     <span>string</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>type</span> <span>mtgCards</span> <span>[]</span><span>mtgCard</span>
+</span></span></code></pre></div><p>Now we implement the sorting:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>(</span><span>mCards</span> <span>mtgCards</span><span>)</span> <span>Len</span><span>()</span> <span>int</span> <span>{</span>
+</span></span><span><span>	<span>return</span> <span>len</span><span>(</span><span>mCards</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>mCards</span> <span>mtgCards</span><span>)</span> <span>Less</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>bool</span> <span>{</span>
+</span></span><span><span>	<span>if</span> <span>mCards</span><span>[</span><span>i</span><span>].</span><span>manaCost</span> <span>&lt;</span> <span>mCards</span><span>[</span><span>j</span><span>].</span><span>manaCost</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>true</span>
+</span></span><span><span>	<span>}</span> <span>else</span> <span>if</span> <span>mCards</span><span>[</span><span>i</span><span>].</span><span>manaCost</span> <span>==</span> <span>mCards</span><span>[</span><span>j</span><span>].</span><span>manaCost</span> <span>{</span>
+</span></span><span><span>		<span>return</span> <span>mCards</span><span>[</span><span>i</span><span>].</span><span>name</span> <span>&lt;</span> <span>mCards</span><span>[</span><span>j</span><span>].</span><span>name</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>return</span> <span>false</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>(</span><span>mCards</span> <span>mtgCards</span><span>)</span> <span>Swap</span><span>(</span><span>i</span><span>,</span> <span>j</span> <span>int</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>mCards</span><span>[</span><span>i</span><span>],</span> <span>mCards</span><span>[</span><span>j</span><span>]</span> <span>=</span> <span>mCards</span><span>[</span><span>j</span><span>],</span> <span>mCards</span><span>[</span><span>i</span><span>]</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The <code>Less()</code> function we made will sort by mana cost unless there is a tie, in which case it will sort by name. Let’s test it out:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>mCards</span> <span>:=</span> <span>mtgCards</span><span>{</span>
+</span></span><span><span>		<span>{</span>
+</span></span><span><span>			<span>manaCost</span><span>:</span> <span>7</span><span>,</span>
+</span></span><span><span>			<span>name</span><span>:</span>     <span>&#34;ajani&#34;</span><span>,</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>		<span>{</span>
+</span></span><span><span>			<span>manaCost</span><span>:</span> <span>2</span><span>,</span>
+</span></span><span><span>			<span>name</span><span>:</span>     <span>&#34;liliana&#34;</span><span>,</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>		<span>{</span>
+</span></span><span><span>			<span>manaCost</span><span>:</span> <span>2</span><span>,</span>
+</span></span><span><span>			<span>name</span><span>:</span>     <span>&#34;chandra&#34;</span><span>,</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>		<span>{</span>
+</span></span><span><span>			<span>manaCost</span><span>:</span> <span>4</span><span>,</span>
+</span></span><span><span>			<span>name</span><span>:</span>     <span>&#34;garruk&#34;</span><span>,</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>		<span>{</span>
+</span></span><span><span>			<span>manaCost</span><span>:</span> <span>4</span><span>,</span>
+</span></span><span><span>			<span>name</span><span>:</span>     <span>&#34;jace&#34;</span><span>,</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>		<span>{</span>
+</span></span><span><span>			<span>manaCost</span><span>:</span> <span>5</span><span>,</span>
+</span></span><span><span>			<span>name</span><span>:</span>     <span>&#34;bolas&#34;</span><span>,</span>
+</span></span><span><span>		<span>},</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;pre-sort:&#34;</span><span>,</span> <span>mCards</span><span>)</span>
+</span></span><span><span>	<span>sort</span><span>.</span><span>Sort</span><span>(</span><span>mCards</span><span>)</span>
+</span></span><span><span>	<span>fmt</span><span>.</span><span>Println</span><span>(</span><span>&#34;post-sort:&#34;</span><span>,</span> <span>mCards</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Prints:</p>
+<pre tabindex="0"><code>pre-sort: [{7 ajani} {2 liliana} {2 chandra} {4 garruk} {4 jace} {5 bolas}]
+post-sort: [{2 chandra} {2 liliana} {4 garruk} {4 jace} {5 bolas} {7 ajani}]
+</code></pre><h2 id="dont-reinvent-it">
+  <span> Don’t Reinvent It</span> <a href="#dont-reinvent-it">🔗</a></h2>
+<p>The standard library’s sorting methods are powerful, don’t code them yourself unless you have a very extreme use case. Take a look at some of the <a href="https://golang.org/pkg/sort/">other functionality</a> provided by the sort package as well if you have time. Searching, stable sorting, and checking if a type is sorted are some pretty awesome features.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

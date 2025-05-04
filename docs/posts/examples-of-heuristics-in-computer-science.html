@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Examples of Heuristics in Computer Science | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/computer-science/examples-of-heuristics-in-computer-science/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Examples of Heuristics in Computer Science</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Heuristics in <a href="https://blog.boot.dev/computer-science/comprehensive-guide-to-learn-computer-science-online/">computer science</a> and artificial intelligence are “rules of thumb” used in algorithms to assist in finding approximate solutions to complex problems. Often, there’s simply too much data to sift through to come to a solution promptly, so a heuristic algorithm is used to trade exactness for speed. However, because heuristics are based on individual rules unique to the problem they are solving, the specifics of the heuristics vary from problem to problem.</p>
+<p>Heuristics aim to produce solutions in a <em>reasonable time frame</em> that are <em>good enough</em> for solving the problem at hand. The solution produced using a heuristic may not be the perfect or exact solution, but it’s valuable as an approximate or best-guess solution. Some problems would require hundreds of thousands of years for an exact answer, but we can produce an approximate solution almost instantly.</p>
+<h2 id="heuristic-trade-offs">
+  <span> Heuristic Trade-Offs</span> <a href="#heuristic-trade-offs">🔗</a></h2>
+<p>The entire value proposition of a heuristic is based on trade-offs. Typically we are trading accuracy for time. That said, there are several different levers we have to pull when designing a good heuristic.</p>
+<ul>
+<li><em>Optimality:</em> Many problems have multiple solutions, for example, “what is a good path to get from city A to city B? Do we need the best path, or will a good path be good enough?</li>
+<li><em>Completeness:</em> When there are multiple valid solutions to a problem do we need to find all of them? Will a subset of valid solutions suffice?</li>
+<li><em>Accuracy:</em> Many questions don’t have a correct answer. For example, “Will Tommy like a pair of boots or a pair of gloves for Christmas?” A heuristic can improve accuracy in these situations.</li>
+<li><em>Execution time</em>: The primary goal of a heuristic is to provide a quick answer that’s good enough. Some heuristics are only marginally quicker than classic methods.</li>
+</ul>
+<p>Example problems and some of their common heuristics are given below.</p>
+<h2 id="traveling-salesperson-problem-tsp">
+  <span> Traveling Salesperson Problem (TSP)</span> <a href="#traveling-salesperson-problem-tsp">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/tsp-1024x606.jpg" alt=""/></p>
+<p>The TSP is a famous <a href="https://www.boot.dev/courses/learn-algorithms-python">algorithm with a Big-O</a> complexity of <code>O(n!)</code> and asks the question:</p>
+<blockquote>
+<p>Given a list of cities and the distances between each pair of cities, what is the shortest possible route that visits each city and returns to the origin city?</p>
+</blockquote>
+<p>For a low number of cities, this question could be reasonably brute-forced. However, as the number of cities increases, it becomes increasingly difficult to come to a solution.</p>
+<p>The nearest-neighbor (NN) heuristic solves this problem nicely: the computer always picks the nearest unvisited city next on the path. NN does not always provide the best solution, but it is close enough to the best solution that the difference is often negligible for the purpose of answering the TSP. By using this heuristic, the Big-O complexity of TSP can be reduced from <code>O(n!)</code> to <code>O(n^2)</code>.</p>
+<h2 id="knapsack-problem">
+  <span> Knapsack Problem</span> <a href="#knapsack-problem">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/knapsack.jpg" alt=""/></p>
+<p>The knapsack problem poses the issue:</p>
+<blockquote>
+<p>Given a set of items, each with a weight and a value, determine the number of each item to include in a collection so that the total weight is less than or equal to a given limit and the total value is as large as possible.</p>
+</blockquote>
+<p>An example heuristic for this problem is a greedy algorithm, which sorts the items in descending order of value per weight, and then proceeds to insert them into the “sack”. This ensures the most valuably “dense” items make it into the sack first.</p>
+<h2 id="search-optimization">
+  <span> Search Optimization</span> <a href="#search-optimization">🔗</a></h2>
+<p>Search engine optimization has been sought after for as long as search engines have been around. Individuals using search engines want to find the information they are looking for as swiftly as possible. With such an incredible amount of information available, search engines must utilize heuristics to expedite the search process. At the start, a heuristic could try each possibility at each step, but as the search continues, it can choose to stop the search at any time if the current possibility is worse than the best solution already located. In this way, the search engine can be optimized for speed and correctness.</p>
+<h2 id="applying-heuristics-to-your-algorithms">
+  <span> Applying Heuristics to Your Algorithms</span> <a href="#applying-heuristics-to-your-algorithms">🔗</a></h2>
+<p>To apply heuristics to your algorithms, you need to know the solution or goal you’re looking for ahead of time. If you know your end goal, you can specify rules that can help you achieve it. If the algorithm is being designed to find out how many moves a knight can make on a square, 8x8 chessboard while visiting every square, it’s possible to create a heuristic that causes the knight to always choose the path with the most available moves afterward.</p>
+<p>However, because we’re trying to create a specific path, it may be better to create a heuristic that causes the knight to choose the path with the fewest available moves afterward. Since the available decisions are much narrower, so too are the available solutions, and so they are found more quickly.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

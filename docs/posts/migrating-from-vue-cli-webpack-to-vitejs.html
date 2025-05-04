@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Migrating From Vue-CLI &amp; Webpack to Vitejs | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/migrating-vue-webpack-to-vitejs/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Migrating From Vue-CLI &amp; Webpack to Vitejs</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p><a href="https://www.boot.dev/">Boot.dev’s web app that hosts all of my coding courses</a> is a single-page application written in Vue 2, with plans to migrate to Vue 3 <em>soon™©®</em>. In the meantime, I happened across a cool new tooling app called <a href="https://github.com/vitejs/vite">Vite</a> that promised a few things that caught my attention.</p>
+<ul>
+<li>Nearly instant development server startup time</li>
+<li>Hot module replacement out of the box</li>
+<li>Simple configuration</li>
+<li>Out-of-the-box support for ES modules</li>
+</ul>
+<p>This particularly resonated with me because my (fairly) simple app’s development server took over 10 seconds to start up with the <a href="https://cli.vuejs.org/">Vue-cli</a> and <a href="https://webpack.js.org/">Webpack</a>, and I’ve spent many hours in the past trying to configure Webpack and <a href="https://babeljs.io/">Babel</a>, when I just needed basic Vue configurations. Let’s look at some quick anecdotal comparisons before I dive into the migration guide, so you can see if the benefits of switching are worth it for you.</p>
+<div>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Vite</th>
+<th>Vue-cli + Webpack</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dev server start time</td>
+<td>~600ms</td>
+<td>~10,000ms</td>
+</tr>
+<tr>
+<td>HMR time</td>
+<td>Unsure, appears <em>instant</em></td>
+<td>~2,000ms</td>
+</tr>
+<tr>
+<td>Production build time</td>
+<td>~15s</td>
+<td>~22s</td>
+</tr>
+<tr>
+<td>Number of bundled JS files</td>
+<td>29 JS modules</td>
+<td>18 JS Modules</td>
+</tr>
+<tr>
+<td>Average JS bundle size</td>
+<td>~29kb</td>
+<td>~61kb</td>
+</tr>
+<tr>
+<td>Total JS bundle size</td>
+<td>~840kb</td>
+<td>~1098kb</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Vite vs Vue-cli + Weback</p>
+<p>Additionally, to get the 18 modules shown above using the Vue cli and webpack, I had to add comment annotations to my <code>routes.js</code> file. Out of the box the Vue-cli makes one giant bundle, which is much worse for page performance reasons. Vite splits the bundle along module lines out-of-the-box without the need for those annoying annotations.</p>
+<h2 id="migration-guide">
+  <span> Migration Guide</span> <a href="#migration-guide">🔗</a></h2>
+<p>Let’s go through the major steps of actually moving a project in Vue 2 from the Vue CLI to Vite.</p>
+<h3 id="step-1---dependencies">
+  <span> Step 1 - dependencies</span> <a href="#step-1---dependencies">🔗</a></h3>
+<p>All <code>@vue-cli...</code> dependencies need to go. For me that meant removing the following.</p>
+<pre tabindex="0"><code>- &#34;@vue/cli-plugin-babel&#34;: &#34;^4.5.6&#34;,
+- &#34;@vue/cli-plugin-eslint&#34;: &#34;^4.5.6&#34;,
+- &#34;@vue/cli-service&#34;: &#34;^4.5.6&#34;,
+</code></pre><p>These were replaced with Vite and its plugin for Vue.</p>
+<pre tabindex="0"><code>+ &#34;vite&#34;: &#34;^2.2.1&#34;,
++ &#34;vite-plugin-vue2&#34;: &#34;^1.4.4&#34;,
++ &#34;@vue/compiler-sfc&#34;: &#34;^3.0.11&#34;,
+</code></pre><p>Next, Vite supports <code>sass</code> out of the box, so I could remove my old dependencies.</p>
+<pre tabindex="0"><code>- &#34;node-sass&#34;: &#34;^4.12.0&#34;,
+- &#34;sass-loader&#34;: &#34;^10.0.2&#34;,
+</code></pre><p>And I replaced them with the bare-bones <code>sass</code> compiler, because Vite requires it to be available.</p>
+<pre tabindex="0"><code>+ &#34;sass&#34;: &#34;^1.32.11&#34;,
+</code></pre><p>Finally, because Vite only supports modern browsers (sorry if you have to support legacy stuff, Vite might not be for you) I removed babel dependencies and my <code>babel.config.js</code> file.</p>
+<pre tabindex="0"><code>- &#34;babel-eslint&#34;: &#34;^10.1.0&#34;,
+- &#34;babel-runtime&#34;: &#34;^6.26.0&#34;
+</code></pre><h3 id="moving-indexhtml">
+  <span> Moving index.html</span> <a href="#moving-indexhtml">🔗</a></h3>
+<p>Vite doesn’t store <code>index.html</code> in the <code>public</code> folder like you’re used to, instead it goes right in the root of your project, so move it there. Vite also needs an additional entry point.</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>body</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>noscript</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>strong</span><span>&gt;</span>
+</span></span><span><span>      We&#39;re sorry but this app doesn&#39;t work properly without JavaScript enabled. Please enable it to continue.
+</span></span><span><span>    <span>&lt;/</span><span>strong</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;/</span><span>noscript</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>div</span> <span>id</span><span>=</span><span>&#34;app&#34;</span><span>&gt;&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span>
+</span></span><span><span>  <span>&lt;!-- this new script is for vite --&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>script</span> <span>type</span><span>=</span><span>&#34;module&#34;</span> <span>src</span><span>=</span><span>&#34;/src/main.js&#34;</span><span>&gt;&lt;/</span><span>script</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>body</span><span>&gt;</span>
+</span></span></code></pre></div><p>You’ll also need to move your static asset references to use a simple <code>/</code> rather than <code>&lt;%= BASE_URL %&gt;</code>.</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>link</span> <span>rel</span><span>=</span><span>&#34;apple-touch-icon&#34;</span> <span>sizes</span><span>=</span><span>&#34;180x180&#34;</span> <span>href</span><span>=</span><span>&#34;/apple-touch-icon.png&#34;</span><span>&gt;</span>
+</span></span><span><span><span>&lt;</span><span>link</span> <span>rel</span><span>=</span><span>&#34;icon&#34;</span> <span>type</span><span>=</span><span>&#34;image/png&#34;</span> <span>sizes</span><span>=</span><span>&#34;32x32&#34;</span> <span>href</span><span>=</span><span>&#34;/favicon-32x32.png&#34;</span><span>&gt;</span>
+</span></span><span><span><span>&lt;</span><span>link</span> <span>rel</span><span>=</span><span>&#34;icon&#34;</span> <span>type</span><span>=</span><span>&#34;image/png&#34;</span> <span>sizes</span><span>=</span><span>&#34;16x16&#34;</span> <span>href</span><span>=</span><span>&#34;/favicon-16x16.png&#34;</span><span>&gt;</span>
+</span></span><span><span><span>&lt;</span><span>link</span> <span>rel</span><span>=</span><span>&#34;manifest&#34;</span> <span>href</span><span>=</span><span>&#34;/site.webmanifest&#34;</span><span>&gt;</span>
+</span></span></code></pre></div><h3 id="vite-config">
+  <span> Vite Config</span> <a href="#vite-config">🔗</a></h3>
+<p>Here is the <code>vite.config.js</code> I settled on, it goes in the root of the project.</p>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>import</span> <span>{</span> <span>defineConfig</span> <span>}</span> <span>from</span> <span>&#39;vite&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>{</span> <span>createVuePlugin</span> <span>}</span> <span>from</span> <span>&#39;vite-plugin-vue2&#39;</span><span>;</span>
+</span></span><span><span><span>import</span> <span>path</span> <span>from</span> <span>&#39;path&#39;</span><span>;</span>
+</span></span><span><span>
+</span></span><span><span><span>export</span> <span>default</span> <span>defineConfig</span><span>({</span>
+</span></span><span><span>  <span>plugins</span><span>:</span> <span>[</span> <span>createVuePlugin</span><span>()</span> <span>],</span>
+</span></span><span><span>  <span>server</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>port</span><span>:</span> <span>8080</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>resolve</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>alias</span><span>:</span> <span>[</span>
+</span></span><span><span>      <span>{</span>
+</span></span><span><span>        <span>find</span><span>:</span> <span>&#39;@&#39;</span><span>,</span>
+</span></span><span><span>        <span>replacement</span><span>:</span> <span>path</span><span>.</span><span>resolve</span><span>(</span><span>__dirname</span><span>,</span> <span>&#39;src&#39;</span><span>)</span>
+</span></span><span><span>      <span>}</span>
+</span></span><span><span>    <span>]</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>build</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>chunkSizeWarningLimit</span><span>:</span> <span>600</span><span>,</span>
+</span></span><span><span>    <span>cssCodeSplit</span><span>:</span> <span>false</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>});</span>
+</span></span></code></pre></div><p>The <code>resolve</code> block lets me import components using <code>@</code> as the root of the <code>src</code> directory. For example, <code>import Tooltip from &#39;@/components/Tooltip.vue&#39;;</code>.</p>
+<p>The <code>build</code> block does a couple of things, first, it increases the chunk size warning limit from the default of 500kb to 600kb. I did that just because I have a really heavy code editor component and I don’t want to see the warning every time.</p>
+<p>Secondly, my site <strong>completely broke</strong> when I let Vite split my .<code>css</code> files the way it wanted to. This actually makes me sad because I’d rather have my users only load the CSS they need as they need them. If anyone has had a similar problem please let me know how you solved it.</p>
+<h3 id="vue-extensions">
+  <span> .vue extensions</span> <a href="#vue-extensions">🔗</a></h3>
+<p>Vite explicitly requires that all <code>.vue</code> imports include the <code>.vue</code> in the path. This can be a bit tedious if you haven’t been using the extensions. All your imports need to be updated from <code>import Tooltip from &#39;@/components/Tooltip&#39;</code> to <code>import Tooltip from &#39;@/components/Tooltip.vue&#39;</code>.</p>
+<h3 id="webpack-chunking-for-lazy-loaded-routes">
+  <span> Webpack chunking for lazy-loaded routes</span> <a href="#webpack-chunking-for-lazy-loaded-routes">🔗</a></h3>
+<p>If previously you used comment annotations in Webpack to break up your bundle, you don’t need to do that anymore! Just remove them.</p>
+<p><code>const Courses = () =&gt; import(/* webpackChunkName: &#34;Courses&#34; */ &#39;@/views/Courses.vue&#39;);</code></p>
+<p>becomes</p>
+<p><code>const Courses = () =&gt; import(&#39;@/views/Courses.vue&#39;);</code></p>
+<h3 id="yarn-scripts">
+  <span> Yarn Scripts</span> <a href="#yarn-scripts">🔗</a></h3>
+<p>I use the following three scripts.</p>
+<pre tabindex="0"><code>&#34;serve&#34;: &#34;vite --open&#34;,
+&#34;preview&#34;: &#34;vite preview --open --port 8080&#34;,
+&#34;build&#34;: &#34;vite build --out-dir dist&#34;,
+&#34;lint&#34;: &#34;eslint src&#34;,
+&#34;lint:fix&#34;: &#34;eslint src --fix&#34;
+</code></pre><ul>
+<li><code>yarn serve</code> starts a development server and open your preferred browser.</li>
+<li><code>yarn build</code> builds the production files and stores them in <code>dist</code></li>
+<li><code>yarn preview</code> serves the production files locally for testing</li>
+<li><code>yarn lint</code> runs <code>eslint</code> and reports problems. You probably were using <code>vue-cli-service lint</code> before, which just ran <code>eslint</code> under the hood.</li>
+</ul>
+<h3 id="node-environment">
+  <span> Node environment</span> <a href="#node-environment">🔗</a></h3>
+<p>Vite is strict when it comes to <code>Node.js</code> code being slipped into your front-end bundle. I ran into an issue where a dependency I had required <code>global</code> to be defined. Obviously, the best thing is to not require dependencies like that, but in my case I needed it so I added a little shim in <code>index.html</code>.</p>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;!-- polyfill global because shit dependencies --&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>script</span><span>&gt;</span>
+</span></span><span><span>    <span>const</span> <span>global</span> <span>=</span> <span>globalThis</span><span>;</span>
+</span></span><span><span>  <span>&lt;/</span><span>script</span><span>&gt;</span>
+</span></span><span><span><span>&lt;!-- end polyfill --&gt;</span>
+</span></span></code></pre></div><h2 id="vue-3">
+  <span> Vue 3</span> <a href="#vue-3">🔗</a></h2>
+<p>My next migration will likely be to Vue 3, hopefully sometime this year. I’ve really just been holding out for a bit more stability, and for a few of my dependencies to support the new major version.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

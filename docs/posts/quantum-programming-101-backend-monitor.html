@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quantum Programming 101: Backend Monitor | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/misc/quantum-programming-101-backend-monitor/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Quantum Programming 101: Backend Monitor</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <h2 id="introduction">
+  <span> Introduction</span> <a href="#introduction">🔗</a></h2>
+<p>In a previous tutorial we showed how you can get basic information on all quantum devices using backend_overview().</p>
+<p>While this function is great to get information on all quantum devices at a glance it is not detailed on specific information such as qubit and gate errors. To get more detailed information on a quantum device (such as configuration and individual qubits and gates) you can use backend_monitor().</p>
+<h2 id="implementation">
+  <span> Implementation</span> <a href="#implementation">🔗</a></h2>
+<p>Unlike backend_overview() this is for getting information on a specific device so you have to pass the device name in to the function as an argument.</p>
+<p>For example to get real time information on the IBMQ Burlngton device you enter the following:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>backend_monitor</span><span>(</span><span>provider</span><span>.</span><span>backends</span><span>.</span><span>ibmq_burlington</span><span>)</span>
+</span></span></code></pre></div><p>and for another device like IBMQ Vigo:</p>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>backend_monitor</span><span>(</span><span>provider</span><span>.</span><span>backends</span><span>.</span><span>ibmq_vigo</span><span>)</span>
+</span></span></code></pre></div><h2 id="steps">
+  <span> Steps</span> <a href="#steps">🔗</a></h2>
+<ol>
+<li>Copy and paste the code below in to a python file</li>
+<li>Enter your API token in the IBMQ.enable_account(‘Insert API token here’) part</li>
+<li>Save and run</li>
+</ol>
+<h2 id="code">
+  <span> Code</span> <a href="#code">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="py"><span><span><span>from</span> <span>qiskit</span> <span>import</span> <span>IBMQ</span>
+</span></span><span><span><span>from</span> <span>qiskit.tools.monitor</span> <span>import</span> <span>backend_monitor</span>
+</span></span><span><span>
+</span></span><span><span><span>IBMQ</span><span>.</span><span>enable_account</span><span>(</span><span>&#39;ENTER API KEY HERE&#39;</span><span>)</span> <span># Insert your API token in to here</span>
+</span></span><span><span><span>provider</span> <span>=</span> <span>IBMQ</span><span>.</span><span>get_provider</span><span>(</span><span>hub</span><span>=</span><span>&#39;ibm-q&#39;</span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>backend_monitor</span><span>(</span><span>provider</span><span>.</span><span>backends</span><span>.</span><span>ibmq_burlington</span><span>)</span> <span># Function to get all information back about a quantum  device  </span>
+</span></span><span><span>
+</span></span><span><span><span>print</span><span>(</span><span>&#39;</span><span>\n</span><span>Press any key to close&#39;</span><span>)</span>
+</span></span><span><span><span>input</span><span>()</span>
+</span></span></code></pre></div><h2 id="output">
+  <span> Output</span> <a href="#output">🔗</a></h2>
+<p>After the code is ran you will be given a list of information about the device including the configuration and specific information on individual qubits and gates.</p>
+<p><img src="https://images.squarespace-cdn.com/content/v1/5d52f7bd9d7b3e0001819015/1589211299682-JRAP2BQJ68X9626WMYFM/ke17ZwdGBToddI8pDm48kMKX0W--EDmH4ALtrb_P3jhZw-zPPgdn4jUwVcJE1ZvWQUxwkmyExglNqGp0IvTJZUJFbgE-7XRK3dMEBRBhUpyjFp1amORK2t8xjWd9mAMK3AXF3CMzEIgdjV21ENu1Md21upyglknm2oG7PZ4SNRg/2020-05-11+16_23_59-Window.png?format=750w" alt="Screenshot showing the device information for the IBMQ Burlington quantum device."/></p>
+<p>Screenshot showing the device information for the IBMQ Burlington quantum device.</p>
+<p>Want to learn about Quantum Programming? Head over to <a href="https://quantumcomputinguk.org/">Quantum Computing UK</a>.</p>
+  
+
+
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simple Setup - Vue Linting in VS Code | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/simple-setup-vue-linting-in-vs-code/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Simple Setup - Vue Linting in VS Code</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I’m a <a href="https://blog.golang.org/gopher">gopher</a> by nature, so I expect consistent styling and linting in my codebases. More importantly, I don’t like to think about styling. I like to type haphazardly and then have my editor apply styles automatically on save (<code>ctrl+s</code>, <code>cmd+s</code>). If you are the same way, hopefully, this will help you in your next Vue.js project.</p>
+<h2 id="vs-code---download-and-plugin">
+  <span> VS Code - Download and Plugin</span> <a href="#vs-code---download-and-plugin">🔗</a></h2>
+<p><a href="https://code.visualstudio.com/download">Download VS Code</a></p>
+<p>After downloading VS Code, we are going to use 2 plugins. <a href="https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint">Vue 2 Snippets</a> <a href="https://marketplace.visualstudio.com/items?itemName=octref.vetur"></a>and <a href="https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint">Eslint</a>. Vue 2 Snippets will basically just provide some Vue specific auto completes, but Eslint will do the more important work of linting our code.</p>
+<p><img src="https://blog.boot.dev/img/800/Microsoft.VisualStudio.Services.Icons-2-150x150.png" alt=""/></p>
+<p>You will also want to add the following to your project using our package manager’s <strong>devDependencies</strong> if you don’t already have them:</p>
+<div><pre tabindex="0"><code data-lang="bash"><span><span>yarn add eslint --dev
+</span></span><span><span>yarn add eslint-plugin-import --dev
+</span></span><span><span>yarn add eslint-plugin-node --dev
+</span></span><span><span>yarn add eslint-plugin-promise --dev
+</span></span><span><span>yarn add eslint-plugin-standard --dev
+</span></span><span><span>yarn add eslint-plugin-vue --dev
+</span></span><span><span>yarn add @vue/eslint-config-standard --dev
+</span></span><span><span>yarn add babel-eslint --dev
+</span></span></code></pre></div><h2 id="configuring-the-settings">
+  <span> Configuring the settings</span> <a href="#configuring-the-settings">🔗</a></h2>
+<p>Now that everything is installed, we just need to do some final setup. VS Code has a GUI for setting preferences, but I tend to just use the JSON file for simplicity sake. In the root of your project ensure that you have a <strong>.vscode</strong> folder, and inside of that folder there is a <strong>settings.json</strong> file. VS Code will use these settings automatically for this directory.</p>
+<p>Paste in these configurations:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;files.eol&#34;</span><span>:</span> <span>&#34;\n&#34;</span><span>,</span>
+</span></span><span><span>  <span>&#34;editor.codeActionsOnSave&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;source.fixAll&#34;</span><span>:</span> <span>true</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>&#34;eslint.options&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;configFile&#34;</span><span>:</span> <span>&#34;.eslintrc.json&#34;</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>&#34;eslint.alwaysShowStatus&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>  <span>&#34;eslint.format.enable&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>  <span>&#34;eslint.packageManager&#34;</span><span>:</span> <span>&#34;yarn&#34;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>This accomplishes several important things.</p>
+<ul>
+<li>It specifies that we will use a <strong>.eslintrc.json</strong> file in the root of our project to configure linting settings, but</li>
+<li>Tells VS Code we use yarn. (Chane <strong>yarn</strong> to <strong>npm</strong> if that’s what you use)</li>
+<li>Fixes all linting errors on save (to the best of its ability)</li>
+<li>Forces all line endings to UNIX style (LF) instead of Windows (CRLF)</li>
+</ul>
+<h2 id="eslint-config">
+  <span> ESLint Config</span> <a href="#eslint-config">🔗</a></h2>
+<p>We need to set our linting rules:</p>
+<div><pre tabindex="0"><code data-lang="json"><span><span><span>{</span>
+</span></span><span><span>  <span>&#34;root&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>  <span>&#34;env&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;node&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>    <span>&#34;mocha&#34;</span><span>:</span> <span>true</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>&#34;extends&#34;</span><span>:</span> <span>[</span><span>&#34;eslint:recommended&#34;</span><span>,</span> <span>&#34;plugin:vue/recommended&#34;</span><span>],</span>
+</span></span><span><span>  <span>&#34;rules&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;comma-dangle&#34;</span><span>:</span> <span>&#34;error&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;quotes&#34;</span><span>:</span> <span>[</span><span>&#34;error&#34;</span><span>,</span> <span>&#34;single&#34;</span><span>],</span>
+</span></span><span><span>    <span>&#34;linebreak-style&#34;</span><span>:</span> <span>[</span><span>&#34;error&#34;</span><span>,</span> <span>&#34;unix&#34;</span><span>],</span>
+</span></span><span><span>    <span>&#34;array-bracket-spacing&#34;</span><span>:</span> <span>[</span><span>&#34;error&#34;</span><span>,</span> <span>&#34;always&#34;</span><span>],</span>
+</span></span><span><span>    <span>&#34;semi&#34;</span><span>:</span> <span>[</span><span>&#34;error&#34;</span><span>,</span> <span>&#34;always&#34;</span><span>],</span>
+</span></span><span><span>    <span>&#34;eol-last&#34;</span><span>:</span> <span>[</span><span>&#34;error&#34;</span><span>,</span> <span>&#34;always&#34;</span><span>],</span>
+</span></span><span><span>    <span>&#34;indent&#34;</span><span>:</span> <span>[</span><span>&#34;error&#34;</span><span>,</span> <span>2</span><span>]</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>&#34;parserOptions&#34;</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>&#34;parser&#34;</span><span>:</span> <span>&#34;babel-eslint&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;sourceType&#34;</span><span>:</span> <span>&#34;module&#34;</span><span>,</span>
+</span></span><span><span>    <span>&#34;allowImportExportEverywhere&#34;</span><span>:</span> <span>true</span><span>,</span>
+</span></span><span><span>    <span>&#34;ecmaVersion&#34;</span><span>:</span> <span>2019</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>You can obviously change this but this is my boilerplate for Vue CLI projects. This will do things like enforce consistent tab sizes, semicolon usage and array spacing.</p>
+<h2 id="done">
+  <span> Done!</span> <a href="#done">🔗</a></h2>
+<p>If you have any questions or if you’ve noticed that this article has become obsolete please leave a comment and let me know.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

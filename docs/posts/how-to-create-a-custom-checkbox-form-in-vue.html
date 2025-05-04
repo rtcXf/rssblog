@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Create a Custom Checkbox Form in Vue | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/javascript/how-to-create-a-custom-checkbox-form-in-vue/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Create a Custom Checkbox Form in Vue</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>You have a problem. The browser’s default checkbox form is ugly and outdated, but importing an entire library just to change the styling seems like overkill. Instead, let’s build a custom checkbox form component from scratch. It will take 15 minutes to type up, or just 3 if you just copy and paste my boilerplate code.</p>
+<p>Before we dive into how it works, you can see a live demo <a href="https://codesandbox.io/s/custom-checkbox-component-u378c?file=/src/components/Checkbox.vue">here</a>, or you can see how we are using it in production on the signup flow of boot.dev’s <a href="https://www.boot.dev/">coding courses platform.</a></p>
+<h2 id="the-html">
+  <span> The HTML</span> <a href="#the-html">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>template</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>div</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>div</span> <span>class</span><span>=</span><span>&#34;checkbox-form&#34;</span><span>&gt;</span>
+</span></span><span><span>      <span>&lt;</span><span>div</span> <span>class</span><span>=</span><span>&#34;answers&#34;</span><span>&gt;</span>
+</span></span><span><span>        <span>&lt;</span><span>label</span>
+</span></span><span><span>          <span>v-for</span><span>=</span><span>&#34;(option, i) of options&#34;</span>
+</span></span><span><span>          <span>:key</span><span>=</span><span>&#34;i&#34;</span>
+</span></span><span><span>          <span>class</span><span>=</span><span>&#34;item&#34;</span>
+</span></span><span><span>        <span>&gt;</span>
+</span></span><span><span>          <span>&lt;</span><span>span</span> <span>:for</span><span>=</span><span>&#34;option&#34;</span><span>&gt;</span>{{ option }}<span>&lt;/</span><span>span</span><span>&gt;</span>
+</span></span><span><span>          <span>&lt;</span><span>input</span>
+</span></span><span><span>            <span>:id</span><span>=</span><span>&#34;option&#34;</span>
+</span></span><span><span>            <span>v-model</span><span>=</span><span>&#34;checked&#34;</span>
+</span></span><span><span>            <span>type</span><span>=</span><span>&#34;checkbox&#34;</span>
+</span></span><span><span>            <span>:value</span><span>=</span><span>&#34;option&#34;</span>
+</span></span><span><span>            <span>@</span><span>change</span><span>=</span><span>&#34;onChange&#34;</span>
+</span></span><span><span>          <span>&gt;</span>
+</span></span><span><span>          <span>&lt;</span><span>span</span> <span>class</span><span>=</span><span>&#34;checkmark&#34;</span> <span>/&gt;</span>
+</span></span><span><span>        <span>&lt;/</span><span>label</span><span>&gt;</span>
+</span></span><span><span>      <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>template</span><span>&gt;</span>
+</span></span></code></pre></div><p>As you can see, the important thing here is that we are creating an <code>input</code> and <code>span</code> element for each option provided in the component’s props. We’ll styling these and add functionality in the next steps.</p>
+<h2 id="the-javascript">
+  <span> The JavaScript</span> <a href="#the-javascript">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>export</span> <span>default</span> <span>{</span>
+</span></span><span><span>  <span>props</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>options</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>type</span><span>:</span> <span>Array</span><span>,</span>
+</span></span><span><span>      <span>required</span><span>:</span> <span>false</span><span>,</span>
+</span></span><span><span>      <span>default</span><span>:</span> <span>()</span> <span>=&gt;</span> <span>[]</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>data</span><span>(){</span>
+</span></span><span><span>    <span>return</span> <span>{</span>
+</span></span><span><span>      <span>checked</span><span>:</span> <span>[]</span>
+</span></span><span><span>    <span>};</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>methods</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>onChange</span><span>()</span> <span>{</span>
+</span></span><span><span>      <span>this</span><span>.</span><span>$emit</span><span>(</span><span>&#39;input&#39;</span><span>,</span> <span>this</span><span>.</span><span>checked</span><span>);</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>};</span>
+</span></span></code></pre></div><p>We only require one prop: <code>options</code>, which represent all of the options available to the user. As boxes are checked, we add them to the <code>checked</code> state variable, and each time that variable changes we emit it so that the parent can stay reactive.</p>
+<h2 id="the-css">
+  <span> The CSS</span> <a href="#the-css">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="css"><span><span><span>.</span><span>checkbox-form</span> <span>{</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>flex</span><span>;</span>
+</span></span><span><span>	<span>flex-direction</span><span>:</span> <span>column</span><span>;</span>
+</span></span><span><span>	<span>align-items</span><span>:</span> <span>center</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>answers</span> <span>{</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>flex</span><span>;</span>
+</span></span><span><span>	<span>flex-direction</span><span>:</span> <span>column</span><span>;</span>
+</span></span><span><span>	<span>align-items</span><span>:</span> <span>left</span><span>;</span>
+</span></span><span><span>	<span>width</span><span>:</span> <span>100</span><span>%</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>label</span> <span>{</span>
+</span></span><span><span>	<span>margin-left</span><span>:</span> <span>1</span><span>em</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>{</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>block</span><span>;</span>
+</span></span><span><span>	<span>position</span><span>:</span> <span>relative</span><span>;</span>
+</span></span><span><span>	<span>padding-left</span><span>:</span> <span>35</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>margin-bottom</span><span>:</span> <span>12</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>cursor</span><span>:</span> <span>pointer</span><span>;</span>
+</span></span><span><span>	<span>font-size</span><span>:</span> <span>1</span><span>em</span><span>;</span>
+</span></span><span><span>	<span>height</span><span>:</span> <span>25</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>-webkit-</span><span>user-select</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span>	<span>-moz-</span><span>user-select</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span>	<span>-ms-</span><span>user-select</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span>	<span>user-select</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>flex</span><span>;</span>
+</span></span><span><span>	<span>align-items</span><span>:</span> <span>center</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>input</span> <span>{</span>
+</span></span><span><span>	<span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>	<span>opacity</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>cursor</span><span>:</span> <span>pointer</span><span>;</span>
+</span></span><span><span>	<span>height</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>width</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>checkmark</span> <span>{</span>
+</span></span><span><span>	<span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>	<span>top</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>left</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>height</span><span>:</span> <span>25</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>width</span><span>:</span> <span>25</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>background-color</span><span>:</span> <span>#c2c2c2</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span><span>:</span><span>hover</span> <span>input</span> <span>~</span> <span>.</span><span>checkmark</span> <span>{</span>
+</span></span><span><span>	<span>background-color</span><span>:</span> <span>#949494</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>input</span><span>:</span><span>checked</span> <span>~</span> <span>.</span><span>checkmark</span> <span>{</span>
+</span></span><span><span>	<span>background-color</span><span>:</span> <span>#D8A22E</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>checkmark</span><span>:</span><span>after</span> <span>{</span>
+</span></span><span><span>	<span>content</span><span>:</span> <span>&#34;&#34;</span><span>;</span>
+</span></span><span><span>	<span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>input</span><span>:</span><span>checked</span> <span>~</span> <span>.</span><span>checkmark</span><span>:</span><span>after</span> <span>{</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>block</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>.</span><span>checkmark</span><span>:</span><span>after</span> <span>{</span>
+</span></span><span><span>	<span>left</span><span>:</span> <span>9</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>top</span><span>:</span> <span>5</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>width</span><span>:</span> <span>5</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>height</span><span>:</span> <span>10</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>border</span><span>:</span> <span>solid</span> <span>white</span><span>;</span>
+</span></span><span><span>	<span>border-width</span><span>:</span> <span>0</span> <span>3</span><span>px</span> <span>3</span><span>px</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>-webkit-</span><span>transform</span><span>:</span> <span>rotate</span><span>(</span><span>45</span><span>deg</span><span>);</span>
+</span></span><span><span>	<span>-ms-</span><span>transform</span><span>:</span> <span>rotate</span><span>(</span><span>45</span><span>deg</span><span>);</span>
+</span></span><span><span>	<span>transform</span><span>:</span> <span>rotate</span><span>(</span><span>45</span><span>deg</span><span>);</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Nothing too crazy is happening here, but the main takeaway is that we’re hiding the default input completely and styling our span element to be the actual checkmark.</p>
+<h2 id="putting-it-all-together">
+  <span> Putting it All Together</span> <a href="#putting-it-all-together">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="html"><span><span><span>&lt;</span><span>template</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;</span><span>div</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;</span><span>div</span> <span>class</span><span>=</span><span>&#34;checkbox-form&#34;</span><span>&gt;</span>
+</span></span><span><span>      <span>&lt;</span><span>div</span> <span>class</span><span>=</span><span>&#34;answers&#34;</span><span>&gt;</span>
+</span></span><span><span>        <span>&lt;</span><span>label</span>
+</span></span><span><span>          <span>v-for</span><span>=</span><span>&#34;(option, i) of options&#34;</span>
+</span></span><span><span>          <span>:key</span><span>=</span><span>&#34;i&#34;</span>
+</span></span><span><span>          <span>class</span><span>=</span><span>&#34;item&#34;</span>
+</span></span><span><span>        <span>&gt;</span>
+</span></span><span><span>          <span>&lt;</span><span>span</span> <span>:for</span><span>=</span><span>&#34;option&#34;</span><span>&gt;</span>{{ option }}<span>&lt;/</span><span>span</span><span>&gt;</span>
+</span></span><span><span>          <span>&lt;</span><span>input</span>
+</span></span><span><span>            <span>:id</span><span>=</span><span>&#34;option&#34;</span>
+</span></span><span><span>            <span>v-model</span><span>=</span><span>&#34;checked&#34;</span>
+</span></span><span><span>            <span>type</span><span>=</span><span>&#34;checkbox&#34;</span>
+</span></span><span><span>            <span>:value</span><span>=</span><span>&#34;option&#34;</span>
+</span></span><span><span>            <span>@</span><span>change</span><span>=</span><span>&#34;onChange&#34;</span>
+</span></span><span><span>          <span>&gt;</span>
+</span></span><span><span>          <span>&lt;</span><span>span</span> <span>class</span><span>=</span><span>&#34;checkmark&#34;</span> <span>/&gt;</span>
+</span></span><span><span>        <span>&lt;/</span><span>label</span><span>&gt;</span>
+</span></span><span><span>      <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span>    <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span>  <span>&lt;/</span><span>div</span><span>&gt;</span>
+</span></span><span><span><span>&lt;/</span><span>template</span><span>&gt;</span>
+</span></span><span><span>
+</span></span><span><span><span>&lt;</span><span>script</span><span>&gt;</span>
+</span></span><span><span><span>export</span> <span>default</span> <span>{</span>
+</span></span><span><span>  <span>props</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>options</span><span>:</span> <span>{</span>
+</span></span><span><span>      <span>type</span><span>:</span> <span>Array</span><span>,</span>
+</span></span><span><span>      <span>required</span><span>:</span> <span>false</span><span>,</span>
+</span></span><span><span>      <span>default</span><span>:</span> <span>()</span> <span>=&gt;</span> <span>[]</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>data</span><span>(){</span>
+</span></span><span><span>    <span>return</span> <span>{</span>
+</span></span><span><span>      <span>checked</span><span>:</span> <span>[]</span>
+</span></span><span><span>    <span>};</span>
+</span></span><span><span>  <span>},</span>
+</span></span><span><span>  <span>methods</span><span>:</span> <span>{</span>
+</span></span><span><span>    <span>onChange</span><span>()</span> <span>{</span>
+</span></span><span><span>      <span>this</span><span>.</span><span>$emit</span><span>(</span><span>&#39;input&#39;</span><span>,</span> <span>this</span><span>.</span><span>checked</span><span>);</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>  <span>}</span>
+</span></span><span><span><span>};</span>
+</span></span><span><span><span>&lt;/</span><span>script</span><span>&gt;</span>
+</span></span><span><span>
+</span></span><span><span><span>&lt;</span><span>style</span> <span>scoped</span><span>&gt;</span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>{</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>flex</span><span>;</span>
+</span></span><span><span>	<span>flex-direction</span><span>:</span> <span>column</span><span>;</span>
+</span></span><span><span>	<span>align-items</span><span>:</span> <span>center</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>answers</span> <span>{</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>flex</span><span>;</span>
+</span></span><span><span>	<span>flex-direction</span><span>:</span> <span>column</span><span>;</span>
+</span></span><span><span>	<span>align-items</span><span>:</span> <span>left</span><span>;</span>
+</span></span><span><span>	<span>width</span><span>:</span> <span>100</span><span>%</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>label</span> <span>{</span>
+</span></span><span><span>	<span>margin-left</span><span>:</span> <span>1</span><span>em</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>{</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>block</span><span>;</span>
+</span></span><span><span>	<span>position</span><span>:</span> <span>relative</span><span>;</span>
+</span></span><span><span>	<span>padding-left</span><span>:</span> <span>35</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>margin-bottom</span><span>:</span> <span>12</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>cursor</span><span>:</span> <span>pointer</span><span>;</span>
+</span></span><span><span>	<span>font-size</span><span>:</span> <span>1</span><span>em</span><span>;</span>
+</span></span><span><span>	<span>height</span><span>:</span> <span>25</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>-webkit-</span><span>user-select</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span>	<span>-moz-</span><span>user-select</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span>	<span>-ms-</span><span>user-select</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span>	<span>user-select</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>flex</span><span>;</span>
+</span></span><span><span>	<span>align-items</span><span>:</span> <span>center</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>input</span> <span>{</span>
+</span></span><span><span>	<span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>	<span>opacity</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>cursor</span><span>:</span> <span>pointer</span><span>;</span>
+</span></span><span><span>	<span>height</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>width</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>checkmark</span> <span>{</span>
+</span></span><span><span>	<span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>	<span>top</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>left</span><span>:</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>height</span><span>:</span> <span>25</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>width</span><span>:</span> <span>25</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>background-color</span><span>:</span> <span>#c2c2c2</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span><span>:</span><span>hover</span> <span>input</span> <span>~</span> <span>.</span><span>checkmark</span> <span>{</span>
+</span></span><span><span>	<span>background-color</span><span>:</span> <span>#949494</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>input</span><span>:</span><span>checked</span> <span>~</span> <span>.</span><span>checkmark</span> <span>{</span>
+</span></span><span><span>	<span>background-color</span><span>:</span> <span>#D8A22E</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>checkmark</span><span>:</span><span>after</span> <span>{</span>
+</span></span><span><span>	<span>content</span><span>:</span> <span>&#34;&#34;</span><span>;</span>
+</span></span><span><span>	<span>position</span><span>:</span> <span>absolute</span><span>;</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>none</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>input</span><span>:</span><span>checked</span> <span>~</span> <span>.</span><span>checkmark</span><span>:</span><span>after</span> <span>{</span>
+</span></span><span><span>	<span>display</span><span>:</span> <span>block</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>.</span><span>checkbox-form</span> <span>.</span><span>item</span> <span>.</span><span>checkmark</span><span>:</span><span>after</span> <span>{</span>
+</span></span><span><span>	<span>left</span><span>:</span> <span>9</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>top</span><span>:</span> <span>5</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>width</span><span>:</span> <span>5</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>height</span><span>:</span> <span>10</span><span>px</span><span>;</span>
+</span></span><span><span>	<span>border</span><span>:</span> <span>solid</span> <span>white</span><span>;</span>
+</span></span><span><span>	<span>border-width</span><span>:</span> <span>0</span> <span>3</span><span>px</span> <span>3</span><span>px</span> <span>0</span><span>;</span>
+</span></span><span><span>	<span>-webkit-</span><span>transform</span><span>:</span> <span>rotate</span><span>(</span><span>45</span><span>deg</span><span>);</span>
+</span></span><span><span>	<span>-ms-</span><span>transform</span><span>:</span> <span>rotate</span><span>(</span><span>45</span><span>deg</span><span>);</span>
+</span></span><span><span>	<span>transform</span><span>:</span> <span>rotate</span><span>(</span><span>45</span><span>deg</span><span>);</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span><span>&lt;/</span><span>style</span><span>&gt;</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

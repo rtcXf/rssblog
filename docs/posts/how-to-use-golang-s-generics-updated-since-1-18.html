@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to Use Golang&#39;s Generics [Updated since 1.18] | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/how-to-use-golangs-generics/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>How to Use Golang&#39;s Generics [Updated since 1.18]</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Generics in Go have been <a href="https://go.dev/blog/go1.18">released with Go 1.18</a>! This is one of the most eagerly-awaited features since the release of the language. Many devs have gone so far as to say Go’s previous lack of generic types made the language too painful to use at all. Let’s dive into what generics are, why you might use them in your own projects, and how they work in Go.</p>
+<h2 id="what-is-a-generic-type">
+  <span> What is a generic type?</span> <a href="#what-is-a-generic-type">🔗</a></h2>
+<p>Put simply, generics allow programmers to write behavior where the type can be specified later because the type isn’t immediately relevant. This is an amazing feature because it allows us to write abstract functions that drastically reduce code duplication. For example, the following generic function will split a slice in half, no matter what the types in the slice are.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>splitAnySlice</span><span>[</span><span>T</span> <span>any</span><span>](</span><span>s</span> <span>[]</span><span>T</span><span>)</span> <span>([]</span><span>T</span><span>,</span> <span>[]</span><span>T</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>mid</span> <span>:=</span> <span>len</span><span>(</span><span>s</span><span>)</span><span>/</span><span>2</span>
+</span></span><span><span>    <span>return</span> <span>s</span><span>[:</span><span>mid</span><span>],</span> <span>s</span><span>[</span><span>mid</span><span>:]</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Think about it, to split a slice into two halves, we don’t really care about whether it’s a slice of integers or a slice of strings, the logic is the same.</p>
+<p>For example, we could call it with the following code.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>firstInts</span><span>,</span> <span>secondInts</span> <span>:=</span> <span>splitAnySlice</span><span>([]</span><span>int</span><span>{</span><span>0</span><span>,</span> <span>1</span><span>,</span> <span>2</span><span>,</span> <span>3</span><span>})</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>firstInts</span><span>,</span> <span>secondInts</span><span>)</span>
+</span></span><span><span>    <span>// prints [0 1] [2 3]
+</span></span></span><span><span><span></span>
+</span></span><span><span>    <span>firstStrings</span><span>,</span> <span>secondStrings</span> <span>:=</span> <span>splitAnySlice</span><span>([]</span><span>string</span><span>{</span><span>&#34;zero&#34;</span><span>,</span> <span>&#34;one&#34;</span><span>,</span> <span>&#34;two&#34;</span><span>,</span> <span>&#34;three&#34;</span><span>})</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>firstStrings</span><span>,</span> <span>secondStrings</span><span>)</span>
+</span></span><span><span>    <span>// prints [zero one] [two three]
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><p>Generics are a feature of many popular strongly-typed programming languages due to their amazing ability to reduce duplicate code. In dynamically typed languages like JavaScript and Python, you wouldn’t need generics, but in Go, it’s an amazing addition to the language.</p>
+<h2 id="generics-in-go-the-tldr">
+  <span> Generics in Go, the tl;dr</span> <a href="#generics-in-go-the-tldr">🔗</a></h2>
+<p>I’ll try to summarize the <a href="https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md">specification</a> for generics in Go in a few bullet points.</p>
+<ul>
+<li>Functions and types can have an additional list of type parameters before their normal parameters, using square brackets to indicate the generic types used within the function body. These type parameters can be used like any other parameter in the rest of the definition and in the body of the text. For example,
+<ul>
+<li><code>func splitAnySlice[T any](s []T) ([]T, []T)</code></li>
+</ul>
+</li>
+<li>The type parameters are defined using “constraints”, which are interface types. Constraints define the required methods and allowed types for the type argument and describe the methods and operations available for the generic type.</li>
+<li>Type inference often allows type arguments to be omitted.</li>
+<li>A special built-in constraint called <code>any</code> behaves similarly to <code>interface{}</code>.</li>
+<li>A new package called <code>constraints</code> will exist in the standard library that will contain commonly used constraints.</li>
+</ul>
+<h2 id="why-should-i-care-about-generics">
+  <span> Why should I care about generics?</span> <a href="#why-should-i-care-about-generics">🔗</a></h2>
+<p>Go is an amazing language that places an emphasis on simplicity and backward compatibility. In other words, Go has <em>purposefully left out many features</em> other languages boast about because it counterintuitively makes the language better (at least in some people’s opinion, and for some use-cases). Go code in one codebase looks like Go code in another codebase. Generally speaking, there is “one way to do it”.</p>
+<p>According to <a href="https://go.dev/blog/survey2020-results">historical data from Go surveys</a>, Go’s lack of generics has always been listed as one of the top three biggest issues with the language. At a certain point, the cons associated with the lack of a feature justify the added complexity to the language. The community and the core team deliberated about it for years, but support for generics is overwhelming at this point it seems.</p>
+<p>In short, you should care about generics because they mean you don’t have to write as much code, especially if you’re in the business of writing packages and tooling. It can be frustrating to write utility functions without generics support. Think about common data structures like binary search trees and linked lists. Why would you want to rewrite them for every type they could possibly contain? <code>int</code>, <code>bool</code>, <code>float64</code>, and <code>string</code> aren’t the end of the list, because you may want to store a custom <code>struct</code> type.</p>
+<p>Generics will finally give Go developers an elegant way to write amazing utility packages.</p>
+<h2 id="what-is-a-constraint">
+  <span> What is a constraint?</span> <a href="#what-is-a-constraint">🔗</a></h2>
+<p>Sometimes you need the logic in your generic function to know a thing or two about the types in question. Constraints are <a href="https://blog.boot.dev/golang/golang-interfaces/">interfaces</a> that allow you to write generics that only operate within the constraint of a given interface type. In the first example above, we used the <code>any</code> constraint, which is comparable to the empty <code>interface{}</code>, because it means the type in question could be anything.</p>
+<h3 id="any-constraint">
+  <span> Any constraint</span> <a href="#any-constraint">🔗</a></h3>
+<p>The <code>any</code> “constraint” works great if you’re treating the value like a bucket of data, maybe you’re moving it around, but you don’t care at all about what’s in the bucket.</p>
+<p>According to <a href="https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md">the propsal</a>, the operations permitted for the <code>any</code> type are as follows.</p>
+<ul>
+<li>declare variables of those types</li>
+<li>assign other values of the same type to those variables</li>
+<li>pass those variables to functions or return them from functions</li>
+<li>take the address of those variables</li>
+<li>convert or assign values of those types to the type <code>interface{}</code></li>
+<li>convert a value of type <code>T</code> to type <code>T</code> (permitted but useless)</li>
+<li>use a type assertion to convert an interface value to the type</li>
+<li>use the type as a case in a type switch</li>
+<li>define and use composite types that use those types, such as a slice of that type</li>
+<li>pass the type to some predeclared functions such as <code>new</code></li>
+</ul>
+<p>If you do need to know more about the generic types you’re working on you can constrain them using interfaces. For example, maybe your function will work with any type that can represent itself as a string.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>stringer</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>String</span><span>()</span> <span>string</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>concat</span><span>[</span><span>T</span> <span>stringer</span><span>](</span><span>vals</span> <span>[]</span><span>T</span><span>)</span> <span>string</span> <span>{</span>
+</span></span><span><span>    <span>result</span> <span>:=</span> <span>&#34;&#34;</span>
+</span></span><span><span>    <span>for</span> <span>_</span><span>,</span> <span>val</span> <span>:=</span> <span>range</span> <span>vals</span> <span>{</span>
+</span></span><span><span>        <span>result</span> <span>+=</span> <span>val</span><span>.</span><span>String</span><span>()</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>return</span> <span>result</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h3 id="comparable-constraint">
+  <span> Comparable constraint</span> <a href="#comparable-constraint">🔗</a></h3>
+<p>The <code>comparable</code> constraint is a predefined constraint as well, just like the <code>any</code> constraint. When using the comparable constraint instead of the <code>any</code> constraint, you can use the <code>!=</code> and <code>==</code> operators within your function logic.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>indexOf</span><span>[</span><span>T</span> <span>comparable</span><span>](</span><span>s</span> <span>[]</span><span>T</span><span>,</span> <span>x</span> <span>T</span><span>)</span> <span>(</span><span>int</span><span>,</span> <span>error</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>for</span> <span>i</span><span>,</span> <span>v</span> <span>:=</span> <span>range</span> <span>s</span> <span>{</span>
+</span></span><span><span>        <span>if</span> <span>v</span> <span>==</span> <span>x</span> <span>{</span>
+</span></span><span><span>            <span>return</span> <span>i</span><span>,</span> <span>nil</span>
+</span></span><span><span>        <span>}</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>return</span> <span>0</span><span>,</span> <span>errors</span><span>.</span><span>New</span><span>(</span><span>&#34;not found&#34;</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>i</span><span>,</span> <span>err</span> <span>:=</span> <span>indexOf</span><span>([]</span><span>string</span><span>{</span><span>&#34;apple&#34;</span><span>,</span> <span>&#34;banana&#34;</span><span>,</span> <span>&#34;pear&#34;</span><span>},</span> <span>&#34;banana&#34;</span><span>)</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>i</span><span>,</span> <span>err</span><span>)</span>
+</span></span><span><span>    <span>// prints 1 &lt;nil&gt;
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="custom-constraints">
+  <span> Custom constraints</span> <a href="#custom-constraints">🔗</a></h2>
+<h3 id="parametric-constraints">
+  <span> Parametric constraints</span> <a href="#parametric-constraints">🔗</a></h3>
+<p>Your interface definitions, which can later be used as constraints can take their own type parameters.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>vehicleUpgrader</span><span>[</span><span>C</span> <span>car</span><span>,</span> <span>T</span> <span>truck</span><span>]</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>Upgrade</span><span>(</span><span>C</span><span>)</span> <span>T</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h3 id="type-lists">
+  <span> Type lists</span> <a href="#type-lists">🔗</a></h3>
+<p>From <a href="https://go.googlesource.com/proposal/+/refs/heads/master/design/43651-type-parameters.md#operations-based-on-type-sets">the proposal</a>, we can simply list a bunch of types to get a new interface/constraint.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// Ordered is a type constraint that matches any ordered type.
+</span></span></span><span><span><span>// An ordered type is one that supports the &lt;, &lt;=, &gt;, and &gt;= operators.
+</span></span></span><span><span><span></span><span>type</span> <span>Ordered</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>~</span><span>int</span> <span>|</span> <span>~</span><span>int8</span> <span>|</span> <span>~</span><span>int16</span> <span>|</span> <span>~</span><span>int32</span> <span>|</span> <span>~</span><span>int64</span> <span>|</span>
+</span></span><span><span>        <span>~</span><span>uint</span> <span>|</span> <span>~</span><span>uint8</span> <span>|</span> <span>~</span><span>uint16</span> <span>|</span> <span>~</span><span>uint32</span> <span>|</span> <span>~</span><span>uint64</span> <span>|</span> <span>~</span><span>uintptr</span> <span>|</span>
+</span></span><span><span>        <span>~</span><span>float32</span> <span>|</span> <span>~</span><span>float64</span> <span>|</span>
+</span></span><span><span>        <span>~</span><span>string</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h3 id="mixed">
+  <span> Mixed</span> <a href="#mixed">🔗</a></h3>
+<p>We can also mix up parameterized declarations and type lists to get new interfaces.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>ComparableStringer</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>comparable</span>
+</span></span><span><span>    <span>String</span><span>()</span> <span>string</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h3 id="self-referential">
+  <span> Self referential</span> <a href="#self-referential">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>Cloneable</span> <span>interface</span> <span>{</span>
+</span></span><span><span>    <span>Clone</span><span>()</span> <span>Cloneable</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="generic-types-vs-generic-functions">
+  <span> Generic Types vs Generic Functions</span> <a href="#generic-types-vs-generic-functions">🔗</a></h2>
+<p>So we know that we can write functions that use generic types, but what if we want to create a custom type that can contain generic types? For example, a slice of order-able objects. The new proposal makes this possible.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>comparableSlice</span><span>[</span><span>T</span> <span>comparable</span><span>]</span> <span>[]</span><span>T</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>allEqual</span><span>[</span><span>T</span> <span>comparable</span><span>](</span><span>s</span> <span>comparableSlice</span><span>[</span><span>T</span><span>])</span> <span>bool</span> <span>{</span>
+</span></span><span><span>    <span>if</span> <span>len</span><span>(</span><span>s</span><span>)</span> <span>==</span> <span>0</span> <span>{</span>
+</span></span><span><span>        <span>return</span> <span>true</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>last</span> <span>:=</span> <span>s</span><span>[</span><span>0</span><span>]</span>
+</span></span><span><span>    <span>for</span> <span>_</span><span>,</span> <span>cur</span> <span>:=</span> <span>range</span> <span>s</span><span>[</span><span>1</span><span>:]</span> <span>{</span>
+</span></span><span><span>        <span>if</span> <span>cur</span> <span>!=</span> <span>last</span> <span>{</span>
+</span></span><span><span>            <span>return</span> <span>false</span>
+</span></span><span><span>        <span>}</span>
+</span></span><span><span>        <span>last</span> <span>=</span> <span>cur</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>return</span> <span>true</span> 
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>allEqual</span><span>([]</span><span>int</span><span>{</span><span>4</span><span>,</span><span>6</span><span>,</span><span>2</span><span>}))</span>
+</span></span><span><span>    <span>// false
+</span></span></span><span><span><span></span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>allEqual</span><span>([]</span><span>int</span><span>{</span><span>1</span><span>,</span><span>1</span><span>,</span><span>1</span><span>}))</span>
+</span></span><span><span>    <span>// true
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="get-the-zero-value-of-a-generic">
+  <span> Get the zero value of a generic</span> <a href="#get-the-zero-value-of-a-generic">🔗</a></h2>
+<p>The <code>var name T</code> syntax is a simple way to generate the zero value of a generic type in Go. This is especially useful considering idiomatic Go’s consistent use of <a href="https://blog.boot.dev/clean-code/guard-clauses/">guard clauses</a>.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>returnZero</span><span>[</span><span>T</span> <span>any</span><span>](</span><span>s</span> <span>...</span><span>T</span><span>)</span> <span>T</span> <span>{</span>
+</span></span><span><span>    <span>var</span> <span>zero</span> <span>T</span>
+</span></span><span><span>    <span>return</span> <span>zero</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>returnZero</span><span>(</span><span>5</span><span>))</span>
+</span></span><span><span>    <span>// prints &#34;0&#34;
+</span></span></span><span><span><span></span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>returnZero</span><span>(</span><span>&#34;string&#34;</span><span>))</span>
+</span></span><span><span>    <span>// prints &#34;&#34;
+</span></span></span><span><span><span></span>    <span>fmt</span><span>.</span><span>Println</span><span>(</span><span>returnZero</span><span>(</span><span>true</span><span>))</span>
+</span></span><span><span>    <span>// prints &#34;false&#34;
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><h2 id="limitations-of-generics">
+  <span> Limitations of generics</span> <a href="#limitations-of-generics">🔗</a></h2>
+<h3 id="no-switching-on-a-generics-underlying-type">
+  <span> No switching on a generic’s underlying type</span> <a href="#no-switching-on-a-generics-underlying-type">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// DOES NOT WORK
+</span></span></span><span><span><span></span><span>func</span> <span>is64Bit</span><span>[</span><span>T</span> <span>Float</span><span>](</span><span>v</span> <span>T</span><span>)</span> <span>T</span> <span>{</span>
+</span></span><span><span>    <span>switch</span> <span>(</span><span>interface</span><span>{})(</span><span>v</span><span>).(</span><span>type</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>case</span> <span>float32</span><span>:</span>
+</span></span><span><span>        <span>return</span> <span>false</span>
+</span></span><span><span>    <span>case</span> <span>float64</span><span>:</span>
+</span></span><span><span>        <span>return</span> <span>true</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>The only way to get around this is to use an interface directly and perform a runtime type switch.</p>
+<h3 id="no-inheritence">
+  <span> No inheritence</span> <a href="#no-inheritence">🔗</a></h3>
+<p>If you were hoping generics would make Go an object-oriented language with full inheritance capabilities, then you’ll be disappointed. While generics reduce code duplication, you still won’t be able to subclass a hierarchy of types.</p>
+<h2 id="generics-vs-interfaces">
+  <span> Generics vs interfaces</span> <a href="#generics-vs-interfaces">🔗</a></h2>
+<p>Interfaces in Go are a form of generic programming in that they let us require disparate types to implement the same APIs. We then write functions that implement those interface types, and those functions will work for any type that implements those methods. Tada, we have a beautiful abstraction layer.</p>
+<p>The problem with this approach in many cases is that it requires each type to rewrite its logic, even if the logic is identical. Generics in Go use interfaces as constraints because interfaces are already the perfect thing to enforce the requisite APIs, but generics add a new feature, type parameters, which can <a href="https://blog.boot.dev/clean-code/dry-code/">DRY up our code</a>.</p>
+<h2 id="generics-vs-code-generation">
+  <span> Generics vs code generation</span> <a href="#generics-vs-code-generation">🔗</a></h2>
+<p>Go programmers have had a history of using code generation, the toolchain even has <a href="https://go.dev/blog/generate">go generate</a> built-in. In short, due to Go’s lack of generics, many developers in the past used code generation to work around the problem. They would generate copies of nearly identical functions, where the only real differences were the parameter’s types.</p>
+<p>Now, with generics, we can stop generating so much code! Code generation will still have a place in solving other problems, but anywhere we need to write the same logic for multiple types we should just use generics. Generics are a much more elegant solution.</p>
+<h2 id="using-generics-now">
+  <span> Using generics now</span> <a href="#using-generics-now">🔗</a></h2>
+<p>You can play with generics today with Go 1.18! Make sure you just get your local toolchain updated to the latest version. You can get going immediately by playing around on <a href="https://www.boot.dev/playground/go">boot.dev’s Golang playground</a>, it’s running 1.18 at the time of writing.</p>
+<h2 id="how-do-generics-work-under-the-hood">
+  <span> How do generics work under the hood?</span> <a href="#how-do-generics-work-under-the-hood">🔗</a></h2>
+<p>Generics are really just <a href="https://en.wikipedia.org/wiki/Syntactic_sugar">syntactic sugar</a>, nothing fundamental about your code’s runtime speed will be impacted much by using generics. Since the implementation isn’t fully released yet, we don’t quite know exactly what the performance impacts will be. That said, here are my guesses.</p>
+<ol>
+<li>Compilation time will take longer by some (likely negligible) nonzero factor. It doesn’t make sense to me that adding a new compile time feature would help the compiler run any faster.</li>
+<li>The runtime of generics vs single-type functions (whether written by hand or generated by code) will be nearly identical.</li>
+<li>Generics will generally outperform interfaces at runtime by some (likely negligible) nonzero factor. Interfaces seem likely to have some additional runtime overhead due to type assertions and such.</li>
+</ol>
+<h2 id="will-the-standard-library-use-generics-now">
+  <span> Will the standard library use generics now?</span> <a href="#will-the-standard-library-use-generics-now">🔗</a></h2>
+<p>For new functions, types, and methods the answer is yes. However, for existing APIs, the Go team seems to remain committed to not breaking backward compatibility, which is a great decision in my opinion. Russ Cox <a href="https://github.com/golang/go/discussions/48287">opened a discussion</a> to talk about this issue and has a proposal to rewrite the types and functions that clearly would use generics if we wrote them today.</p>
+<p>He suggests adopting an “Of” suffix for the updated functions. For example, <a href="https://pkg.go.dev/sync#Pool">sync.Pool</a> becomes sync.PoolOf.</p>
+<h2 id="do-generics-change-what-is-idiomatic">
+  <span> Do generics change what is “idiomatic”?</span> <a href="#do-generics-change-what-is-idiomatic">🔗</a></h2>
+<p>Definitely. A trivial example is that it used to be wise to <a href="https://blog.boot.dev/golang/default-native-types-golang/">use <code>float64</code> by default</a> if you need a numeric type. Now there are many cases where you can use some kind of numeric constraint and open your code up to more reuse.</p>
+<p>I’m excited to see what new best practices emerge as generics make their way into production code and we all get to play around with them.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

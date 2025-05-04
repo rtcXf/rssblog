@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Nuances of Constants in Go; Go Isn&#39;t JavaScript | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/constants-in-go-vs-javascript-and-when-to-use-them/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>The Nuances of Constants in Go; Go Isn&#39;t JavaScript</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Constants can be confusing and easy to misuse in Go if you are coming from an untyped language. Let’s take a look at some of the nuanced details of how they work in Go. It’s probably unsurprising, but Go’s constants are almost nothing like JavaScript’s bastardized version of the concept.</p>
+<h2 id="go-vs-javascript">
+  <span> Go vs JavaScript</span> <a href="#go-vs-javascript">🔗</a></h2>
+<p>Many programming languages support constants, often denoted by the keyword <code>const</code>.</p>
+<p>Go and JavaScript both declare new constants in the same way:</p>
+<pre tabindex="0"><code>const frameRate = 60
+</code></pre><h3 id="constants-in-go">
+  <span> Constants in Go</span> <a href="#constants-in-go">🔗</a></h3>
+<ul>
+<li>Must be able to be assigned at compile time. The value of a <code>const</code> can’t be the result of a runtime calculation</li>
+<li>Run faster because the compiler can make specific optimizations</li>
+<li>Cannot change. The compiler will not allow them to be re-assigned</li>
+<li>Only work with some types. <a href="https://blog.boot.dev/golang/golang-constant-maps-slices/">Arrays, Slices, Maps, Structs, etc… can’t be made constant (or can they?)</a></li>
+<li>Are not normal Go types unless explicitly assigned as such</li>
+</ul>
+<h3 id="constants-in-javascript">
+  <span> Constants in JavaScript</span> <a href="#constants-in-javascript">🔗</a></h3>
+<ul>
+<li>Can’t be reassigned, but <em>can</em> change. JavaScript’s constants are extremely misleading. the <code>const</code> keyword does NOT define a constant value. It defines a constant <em>reference</em> to a value.</li>
+<li>If the constant is a type that has inner workings that change, like an array or object then the inner references can be changed.</li>
+<li>Can be assigned using calculated values at runtime, but can’t be re-assigned.</li>
+</ul>
+<p>The takeaway if you are coming from JavaScript is that Go’s constants are just <em>different</em>. They deal with compile-time values, not immutable naming.</p>
+<p>In Go, constants provide <em>complete safety</em> in regard to the value they hold. They cannot be computed (making them used less often), but are guaranteed to always reference the same value.</p>
+<p>In JavaScript, all a <code>const</code> does is ensure that the same <a href="https://blog.boot.dev/clean-code/naming-variables">name</a> can’t be changed to reference a different variable in the same scope.</p>
+<h2 id="gos-constants-must-be-assigned-at-compile-time">
+  <span> Go’s Constants Must Be Assigned At Compile Time</span> <a href="#gos-constants-must-be-assigned-at-compile-time">🔗</a></h2>
+<p>Constants in Go must be assigned <em>before</em> the program runs. All constants are computed and saved when the program compiles using <code>go build</code>. Constants can rely on the value of other constants, but not on runtime calculations. For example:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>seconds</span> <span>=</span> <span>120</span>
+</span></span><span><span><span>const</span> <span>minutes</span> <span>=</span> <span>seconds</span> <span>/</span> <span>60</span>
+</span></span></code></pre></div><p>Works because both values can be known <em>before</em> the program runs. The following will not work:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>addMinutes</span><span>(</span><span>minutes</span> <span>int</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>const</span> <span>more</span> <span>=</span> <span>minutes</span> <span>+</span> <span>60</span>
+</span></span><span><span>	<span>return</span> <span>more</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>This won’t work because <code>more</code> relies on a runtime variable, <code>minutes</code>. Keep in mind that this would work in JavaScript because the only rule with constants in javascript is that they can’t be reassigned.</p>
+<h2 id="constants-are-faster">
+  <span> Constants Are Faster</span> <a href="#constants-are-faster">🔗</a></h2>
+<p>The Go compiler doesn’t need to worry about a <code>const</code> changing its value, so it can swap every instance of the <code>const</code> with an unchanging number. This makes constants slightly faster.</p>
+<h2 id="numeric-constants-are-just-numbers">
+  <span> Numeric Constants are Just Numbers</span> <a href="#numeric-constants-are-just-numbers">🔗</a></h2>
+<p>Numeric constants can be much <a href="https://blog.golang.org/constants#TOC_8.">larger and have much greater precision</a> than normal variables because they have <a href="https://en.wikipedia.org/wiki/Arbitrary-precision_arithmetic#:~:text=In%20computer%20science%2C%20arbitrary%2Dprecision,memory%20of%20the%20host%20system.">arbitrary-precision</a>. When numeric constants are assigned to a variable they must be able to fit the size of the type they are being assigned to. Take a look at the following examples:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>large</span> <span>=</span> <span>1e10000</span>
+</span></span><span><span><span>const</span> <span>E</span> <span>=</span> <span>2.71828182845904523536028747135266249775724709369995957496696763</span>
+</span></span></code></pre></div><p>The <code>large</code> number can’t be printed, but we can still use it in a calculation:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>fmt</span><span>.</span><span>Println</span><span>(</span><span>large</span><span>)</span> <span>// won&#39;t compile
+</span></span></span><span><span><span></span>
+</span></span><span><span><span>small</span> <span>:=</span> <span>(</span><span>large</span> <span>/</span> <span>1e9999</span><span>)</span> <span>// works as expected
+</span></span></span><span><span><span></span><span>fmt</span><span>.</span><span>Println</span><span>(</span><span>small</span><span>)</span> <span>// prints 10
+</span></span></span></code></pre></div><p>High-precision floating point numbers like E can still be used but the high precision is lost when assigned to a <code>float64</code> or <code>float32</code>.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>e</span> <span>:=</span> <span>math</span><span>.</span><span>E</span>
+</span></span><span><span><span>fmt</span><span>.</span><span>Println</span><span>(</span><span>e</span><span>)</span>
+</span></span><span><span><span>// prints 2.718281828459045
+</span></span></span></code></pre></div><h2 id="should-you-use-constants">
+  <span> Should You Use Constants?</span> <a href="#should-you-use-constants">🔗</a></h2>
+<p>Yes. Constants are safer.</p>
+<p>Use constants <em>wherever possible.</em> Why would you want to be able to accidentally mutate a value that you know should never change? Let the compiler save you from yourself, and use constants as much as possible.</p>
+<p>You may be familiar with the idea that global variables in programming are a bad idea. Variables should typically belong to the smallest scope possible.</p>
+<p>Constants in Go don’t apply to the global variable rule, there is <em>nothing wrong</em> with declaring global constants. Granted, if the constant is only used in one place, it may make sense to declare it there. The point however remains: <strong>it isn’t dangerous to declare constants globally</strong>.</p>
+<h2 id="declare-multiple-constants-as-a-block">
+  <span> Declare Multiple Constants as a Block</span> <a href="#declare-multiple-constants-as-a-block">🔗</a></h2>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>(</span>
+</span></span><span><span>	<span>pi</span> <span>=</span> <span>3.14</span>
+</span></span><span><span>	<span>timeout</span> <span>=</span> <span>120</span> <span>*</span> <span>time</span><span>.</span><span>Second</span>
+</span></span><span><span>	<span>maxGoroutines</span> <span>=</span> <span>20</span>
+</span></span><span><span><span>)</span>
+</span></span></code></pre></div><h2 id="only-some-types-can-be-constant">
+  <span> Only Some Types Can Be Constant</span> <a href="#only-some-types-can-be-constant">🔗</a></h2>
+<p>Numeric, boolean, and string types can all be made constant. This includes things like runes, floats, integers, and even custom types that are based on valid underlying types. For example:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>type</span> <span>myString</span> <span>string</span>
+</span></span><span><span>
+</span></span><span><span><span>const</span> <span>lane</span> <span>myString</span> <span>=</span> <span>&#34;wagslane&#34;</span>
+</span></span></code></pre></div><p>Other types like arrays, slices, and maps can not be declared as constant. This makes sense because those types are essentially just pointers, which are addresses of mutable data. However, I have written <a href="https://blog.boot.dev/golang/golang-constant-maps-slices/">another article on the elegant ways to get “effectively constant” slices and maps in Go</a>.</p>
+<p>By contrast, in JavaScript, <em>anything</em> can be made constant. JavaScript arrays can be declared as constant, but it doesn’t stop the programmer from mutating the elements of the array! The only safety JavaScript’s <code>const</code> provides is that the variable can’t be explicitly reassigned.</p>
+<h2 id="constants-are-untyped-by-default">
+  <span> Constants Are Untyped By Default</span> <a href="#constants-are-untyped-by-default">🔗</a></h2>
+<p>In Go, variables can have their typed inferred:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>thisIsAString</span> <span>:=</span> <span>&#34;@wagslane&#34;</span>
+</span></span></code></pre></div><p>Constants, on the other hand, get an untyped flag</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>unTypedString</span> <span>=</span> <span>&#34;@wagslane&#34;</span>
+</span></span></code></pre></div><p>An untyped string behaves <a href="https://blog.golang.org/constants#TOC_4.">mostly like a string</a>. That is, it’s a string type, but doesn’t have a Go value of type <strong>string</strong>. To give it the official Go type of string, it must be declared:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>const</span> <span>typedString</span> <span>string</span> <span>=</span> <span>&#34;@wagslane&#34;</span>
+</span></span></code></pre></div>  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

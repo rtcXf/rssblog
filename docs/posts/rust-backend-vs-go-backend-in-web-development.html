@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rust Backend vs Go Backend in Web Development | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/golang/rust-vs-go-in-backend-web-development/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Rust Backend vs Go Backend in Web Development</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Rust and Go are two of the industry’s biggest successes when it comes to developing modern programming languages. Both languages compete in terms of <a href="https://blog.boot.dev/backend/become-backend-developer/">backend web development</a>, and it’s a fierce competition. Golang and Rust are new languages, have growing communities, and are fast and efficient. When it comes to microservice architectures, frameworks, and apps, Rust and Go are household names on the backend.</p>
+<h2 id="similarities">
+  <span> Similarities</span> <a href="#similarities">🔗</a></h2>
+<h3 id="rich-standard-libraries">
+  <span> Rich Standard Libraries</span> <a href="#rich-standard-libraries">🔗</a></h3>
+<p>Rust and Go share many traits, especially when it comes to web development. They both have rich standard libraries, though Go tends to have more internet-focused protocols such as <a href="https://golang.org/pkg/net/http/">HTTP</a> supported of out the box.</p>
+<h3 id="open-source">
+  <span> Open-Source</span> <a href="#open-source">🔗</a></h3>
+<p>Both languages are open-source, meaning no company will be yanking the source code out from under us anytime soon, though it is worth noting that Google drives the development of Go, while Rust is more of a community project. There are pros and cons of company support. Go benefits from the resources and PR of a major tech company, while Rust will never have the risk of Google-specific agendas being pushed on the project.</p>
+<h3 id="relatively-new-languages">
+  <span> Relatively New Languages</span> <a href="#relatively-new-languages">🔗</a></h3>
+<p>Go and Rust are both new languages, which means they don’t come with the legacy and backward-compatibility baggage that you find with languages like Java and Javascript.</p>
+<p>Rust v1 released: May 15, 2015</p>
+<p>Go v1 released: March 28, 2012</p>
+<h2 id="performance">
+  <span> Performance</span> <a href="#performance">🔗</a></h2>
+<p>Performance metrics generally put Rust squarely ahead of Go, but not by a lot. The Rust compiler and language design allow developers to easily take advantage of optimizations that achieve speeds comparable to the likes of C. On the other hand, Go trades a small amount of speed for simplicity and elegant syntax.</p>
+<p><img src="https://blog.boot.dev/img/800/rust-vs-go-speed.png" alt=""/></p>
+<p><a href="https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust-go.html">benchmarksgame</a></p>
+<h2 id="memory-management">
+  <span> Memory Management</span> <a href="#memory-management">🔗</a></h2>
+<p>Both languages claim the title of “memory-safe” but take different approaches to achieve it. Rust catches memory errors at compile-time while Go uses a garbage collector at runtime.</p>
+<p>Rust makes use of compile-time ownership strategy through <a href="https://boats.gitlab.io/blog/post/zero-cost-abstractions/">zero-cost abstractions</a>. If a Rust program is not memory safe, it will fail to compile. To anyone who frequently deals with memory errors in C languages, this is recognized as an amazing feature. Instead of clever compiler optimizations, the Go compiler adds a small runtime to the completed executable that manages the allocation and release of memory.</p>
+<p>While both approaches have their pros and cons, generally speaking Rust’s compiler optimizations result in more performant programs. Alternatively, Go’s application code is cleaner because memory management is fully handled by the runtime.</p>
+<p><img src="https://blog.boot.dev/img/800/rust-vs-go-memory.png" alt=""/></p>
+<p><a href="https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust-go.html">benchmarksgame</a></p>
+<h2 id="development-speed">
+  <span> Development Speed</span> <a href="#development-speed">🔗</a></h2>
+<p>There are times during the development of a web application that development speed is more important than app speed. Python is a great example, it is one of the slowest languages but has some of the cleanest syntax. While Go is generally faster and uses less memory than languages like Java, C#, JavaScript, Python, and Ruby, it makes a performance trade-off to allow for fast and simple development.</p>
+<p>It’s also worth noting that Go and Rust are both growing in popularity. If you want to read more on that, take a look this related article, <a href="https://blog.boot.dev/golang/rust-vs-go-popularity/">“Rust vs Go - Which is More Popular?”</a>.</p>
+<h2 id="code-comparison">
+  <span> Code Comparison</span> <a href="#code-comparison">🔗</a></h2>
+<p>Now that we’ve compared and contrasted Rust and Go conceptually, let’s take a look at what a simple HTTP server would look like in both languages.</p>
+<h3 id="rust-http-backend-server-example">
+  <span> Rust HTTP Backend Server Example</span> <a href="#rust-http-backend-server-example">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="rust"><span><span><span>// example taken from https://gist.github.com/mjohnsullivan/e5182707caf0a9dbdf2d
+</span></span></span><span><span><span></span><span>
+</span></span></span><span><span><span></span><span>use</span><span> </span><span>std</span>::<span>net</span>::<span>{</span><span>TcpStream</span><span>,</span><span> </span><span>TcpListener</span><span>};</span><span>
+</span></span></span><span><span><span></span><span>use</span><span> </span><span>std</span>::<span>io</span>::<span>{</span><span>Read</span><span>,</span><span> </span><span>Write</span><span>};</span><span>
+</span></span></span><span><span><span></span><span>use</span><span> </span><span>std</span>::<span>thread</span><span>;</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>fn</span> <span>handle_read</span><span>(</span><span>mut</span><span> </span><span>stream</span>: <span>&amp;</span><span>TcpStream</span><span>)</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>mut</span><span> </span><span>buf</span><span> </span><span>=</span><span> </span><span>[</span><span>0</span><span>u8</span><span> </span><span>;</span><span>4096</span><span>];</span><span>
+</span></span></span><span><span><span>    </span><span>match</span><span> </span><span>stream</span><span>.</span><span>read</span><span>(</span><span>&amp;</span><span>mut</span><span> </span><span>buf</span><span>)</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>Ok</span><span>(</span><span>_</span><span>)</span><span> </span><span>=&gt;</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>            </span><span>let</span><span> </span><span>req_str</span><span> </span><span>=</span><span> </span><span>String</span>::<span>from_utf8_lossy</span><span>(</span><span>&amp;</span><span>buf</span><span>);</span><span>
+</span></span></span><span><span><span>            </span><span>println!</span><span>(</span><span>&#34;</span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>req_str</span><span>);</span><span>
+</span></span></span><span><span><span>            </span><span>},</span><span>
+</span></span></span><span><span><span>        </span><span>Err</span><span>(</span><span>e</span><span>)</span><span> </span><span>=&gt;</span><span> </span><span>println!</span><span>(</span><span>&#34;Unable to read stream: </span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>e</span><span>),</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>fn</span> <span>handle_write</span><span>(</span><span>mut</span><span> </span><span>stream</span>: <span>TcpStream</span><span>)</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>response</span><span> </span><span>=</span><span> </span><span>b</span><span>&#34;HTTP/1.1 200 OK</span><span>\r\n</span><span>Content-Type: text/html; charset=UTF-8</span><span>\r\n\r\n</span><span>&lt;html&gt;&lt;body&gt;Hello world&lt;/body&gt;&lt;/html&gt;</span><span>\r\n</span><span>&#34;</span><span>;</span><span>
+</span></span></span><span><span><span>    </span><span>match</span><span> </span><span>stream</span><span>.</span><span>write</span><span>(</span><span>response</span><span>)</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>Ok</span><span>(</span><span>_</span><span>)</span><span> </span><span>=&gt;</span><span> </span><span>println!</span><span>(</span><span>&#34;Response sent&#34;</span><span>),</span><span>
+</span></span></span><span><span><span>        </span><span>Err</span><span>(</span><span>e</span><span>)</span><span> </span><span>=&gt;</span><span> </span><span>println!</span><span>(</span><span>&#34;Failed sending response: </span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>e</span><span>),</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>fn</span> <span>handle_client</span><span>(</span><span>stream</span>: <span>TcpStream</span><span>)</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>handle_read</span><span>(</span><span>&amp;</span><span>stream</span><span>);</span><span>
+</span></span></span><span><span><span>    </span><span>handle_write</span><span>(</span><span>stream</span><span>);</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span></span><span>fn</span> <span>main</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>    </span><span>let</span><span> </span><span>listener</span><span> </span><span>=</span><span> </span><span>TcpListener</span>::<span>bind</span><span>(</span><span>&#34;127.0.0.1:8080&#34;</span><span>).</span><span>unwrap</span><span>();</span><span>
+</span></span></span><span><span><span>    </span><span>println!</span><span>(</span><span>&#34;Listening for connections on port </span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>8080</span><span>);</span><span>
+</span></span></span><span><span><span>
+</span></span></span><span><span><span>    </span><span>for</span><span> </span><span>stream</span><span> </span><span>in</span><span> </span><span>listener</span><span>.</span><span>incoming</span><span>()</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>        </span><span>match</span><span> </span><span>stream</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>            </span><span>Ok</span><span>(</span><span>stream</span><span>)</span><span> </span><span>=&gt;</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>                </span><span>thread</span>::<span>spawn</span><span>(</span><span>||</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>                    </span><span>handle_client</span><span>(</span><span>stream</span><span>)</span><span>
+</span></span></span><span><span><span>                </span><span>});</span><span>
+</span></span></span><span><span><span>            </span><span>}</span><span>
+</span></span></span><span><span><span>            </span><span>Err</span><span>(</span><span>e</span><span>)</span><span> </span><span>=&gt;</span><span> </span><span>{</span><span>
+</span></span></span><span><span><span>                </span><span>println!</span><span>(</span><span>&#34;Unable to connect: </span><span>{}</span><span>&#34;</span><span>,</span><span> </span><span>e</span><span>);</span><span>
+</span></span></span><span><span><span>            </span><span>}</span><span>
+</span></span></span><span><span><span>        </span><span>}</span><span>
+</span></span></span><span><span><span>    </span><span>}</span><span>
+</span></span></span><span><span><span></span><span>}</span><span>
+</span></span></span></code></pre></div><p>As you’ll notice in the code above, we can spin up a fairly simple HTTP server without anything more than the standard library, though we have to implement some of the HTTP protocol ourselves. Notice that we include the <code>HTTP/1.1 200 OK</code> response directly in the data stream we are responding with. This isn’t to say there aren’t other crates that would make our lives easier, but out-of-the-box Rust forces us to do more of the heavy lifting ourselves.</p>
+<p>If you take a look at the standard HTTP create, you’ll see that it’s an intentional choice not to standardize an implementation.</p>
+<blockquote>
+<p>You will notably <em>not</em> find an implementation of sending requests or spinning up a server in this crate. It’s intended that this crate is the “standard library” for HTTP clients and servers without dictating any particular implementation. Note that this crate is still early on in its lifecycle so the support libraries that integrate with the <code>http</code> crate are a work in progress! Stay tuned and we’ll be sure to highlight crates here in the future.</p>
+<p><a href="https://docs.rs/http/0.2.1/http/">http - Rust</a></p>
+</blockquote>
+<p>Golang HTTP Backend Server Example</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>package</span> <span>main</span>
+</span></span><span><span>
+</span></span><span><span><span>import</span> <span>(</span>
+</span></span><span><span>	<span>&#34;encoding/json&#34;</span>
+</span></span><span><span>	<span>&#34;net/http&#34;</span>
+</span></span><span><span><span>)</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>hello</span><span>(</span><span>w</span> <span>http</span><span>.</span><span>ResponseWriter</span><span>,</span> <span>req</span> <span>*</span><span>http</span><span>.</span><span>Request</span><span>)</span> <span>{</span>
+</span></span><span><span>	<span>type</span> <span>response</span> <span>struct</span> <span>{</span>
+</span></span><span><span>		<span>Message</span> <span>string</span> <span>`json:&#34;message&#34;`</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>resp</span> <span>:=</span> <span>response</span><span>{</span>
+</span></span><span><span>		<span>Message</span><span>:</span> <span>&#34;hello world&#34;</span><span>,</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span>	<span>respBytes</span><span>,</span> <span>_</span> <span>:=</span> <span>json</span><span>.</span><span>Marshal</span><span>(</span><span>resp</span><span>)</span>
+</span></span><span><span>	<span>w</span><span>.</span><span>Header</span><span>().</span><span>Set</span><span>(</span><span>&#34;Content-Type&#34;</span><span>,</span> <span>&#34;application/json&#34;</span><span>)</span>
+</span></span><span><span>	<span>w</span><span>.</span><span>WriteHeader</span><span>(</span><span>200</span><span>)</span>
+</span></span><span><span>	<span>w</span><span>.</span><span>Write</span><span>(</span><span>respBytes</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>main</span><span>()</span> <span>{</span>
+</span></span><span><span>	<span>http</span><span>.</span><span>HandleFunc</span><span>(</span><span>&#34;/hello&#34;</span><span>,</span> <span>hello</span><span>)</span>
+</span></span><span><span>	<span>http</span><span>.</span><span>ListenAndServe</span><span>(</span><span>&#34;:8080&#34;</span><span>,</span> <span>nil</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>With Go, on the other hand, it’s extremely easy to spin up a production web server, we even get <a href="https://blog.boot.dev/golang/json-golang/">support for JSON</a>, headers, and status codes right from the standard library.</p>
+<h2 id="concurrency">
+  <span> Concurrency</span> <a href="#concurrency">🔗</a></h2>
+<p>Concurrency is a necessity in backend applications. Some languages run in single-threaded environments which means they use some clever tricks to simulate concurrency without achieving true parallelism. Both Rust and Go have elegant solutions to build <a href="https://blog.boot.dev/rust/concurrency-in-rust-can-it-stack-up-against-gos-goroutines/">fully parallel applications</a>, but Go takes the cake again in terms of simplicity, with the <code>go</code> keyword being the only syntax necessary to spin up a new thread:</p>
+<pre tabindex="0"><code>go someFunc()
+</code></pre><h2 id="the-winner">
+  <span> The Winner</span> <a href="#the-winner">🔗</a></h2>
+<p>As usual, there is no outright winner, the results are more nuanced than that.</p>
+<h3 id="rust-is-favored-for">
+  <span> Rust is Favored For…</span> <a href="#rust-is-favored-for">🔗</a></h3>
+<ul>
+<li>Computation Speed</li>
+<li>Memory usage</li>
+<li>Fine-tuning and control over the final executable</li>
+</ul>
+<h3 id="go-is-favored-for">
+  <span> Go is Favored For…</span> <a href="#go-is-favored-for">🔗</a></h3>
+<ul>
+<li>Simple syntax</li>
+<li>Beginner-friendly</li>
+<li>Developer speed</li>
+<li>Concurrency mechanisms</li>
+</ul>
+<p>One mark of a successful <a href="https://blog.boot.dev/computer-science/comprehensive-guide-to-learn-computer-science-online/">computer scientist, even a self-taught one</a>, is being able to choose good tools for a given project. It doesn’t mean you need to be an expert with every language, database, technology, and framework under the sun, but it does mean you need to be familiar with enough of them to make informed decisions. Being capable to make those decisions will set you apart and give you more opportunities to advance your <a href="https://blog.boot.dev/computer-science/highest-paying-computer-science-jobs/">programming career</a>.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

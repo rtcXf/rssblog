@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Best Practices for Commenting Code | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/code-comments/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Best Practices for Commenting Code</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>I often hear that we need more and better comments in the code we write. In my experience, we frequently need <em>better</em> comments, we rarely need <em>more</em>, and we sometimes need <em>less</em>. Before you crucify me for my sacrilege, let me explain by giving you some of the “rules of thumb” I use for deciding when I should add a comment to my code.</p>
+
+<p>Incorrect documentation is <strong>worse</strong> than no documentation.</p>
+<p>When reading code, developers typically take the path of least resistance when trying to understand how it works. When provided a function with a comment, most developers will read the comment instead of reading the code itself, especially if the function is long and complex. Let’s take a look at this trivial example of a small function:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// replace changes all the commas in the text to colons
+</span></span></span><span><span><span></span><span>func</span> <span>replace</span><span>(</span><span>s</span> <span>string</span><span>)</span> <span>string</span> <span>{</span>
+</span></span><span><span>	<span>strings</span><span>.</span><span>Replace</span><span>(</span><span>s</span><span>,</span> <span>&#34;,&#34;</span><span>,</span> <span>&#34; &#34;</span><span>,</span> <span>-</span><span>1</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>When another developer decides to use this function, they expect that commas will be replaced by <em>colons</em>. As this code clearly shows, however, the commas will be replaced by <em>spaces</em>. Because of the incorrect comment, a reader will likely take any of the following actions:</p>
+<ul>
+<li>Assume the comment describes the expected behavior and potentially introduce a new bug</li>
+<li>Assume the code describes the expected behavior and potentially leave an existing bug</li>
+<li>Assume the comment describes what the code <em>actually</em> does, and use the function in new places, introducing more bugs.</li>
+</ul>
+<p>The best solution with a small function like this would probably be to give the function a <a href="https://blog.boot.dev/clean-code/naming-variables">more descriptive name</a> and delete the comment entirely.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>replaceCommasWithSpaces</span><span>(</span><span>s</span> <span>string</span><span>)</span> <span>string</span> <span>{</span>
+</span></span><span><span>	<span>strings</span><span>.</span><span>Replace</span><span>(</span><span>s</span><span>,</span> <span>&#34;,&#34;</span><span>,</span> <span>&#34; &#34;</span><span>,</span> <span>-</span><span>1</span><span>)</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>It’s worth pointing out that the function name and the behavior could conflict as well, but at least now we only have 2 things to keep in sync:</p>
+<ul>
+<li>The behavior</li>
+<li>The function name</li>
+</ul>
+<p>Instead of trying to keep 3 things in sync:</p>
+<ul>
+<li>The behavior</li>
+<li>The function name</li>
+<li>The comment</li>
+</ul>
+<p>We also have the added benefit of re-emphasizing the expected behavior to readers of the code that calls this function, rather than just the readers of the function definition.</p>
+
+<p>When a comment describes something that can easily be read in code, it runs the risk of being redundant. Redundancy in documentation is generally bad, especially if the code in question is updated frequently. With duplicate documentation, you run the risk of two different parts of the documentation disagreeing with each other. At that point, your reader will not only be confused but will be forced to go to the absolute source of truth, the code, to see what’s going on.</p>
+<p>Comments and documentation should, to some extent, follow the DRY principle (don’t repeat yourself). If the code <em>clearly</em> states what is happening, why add a comment? If the expected behavior changes then <em>two</em> things need to be updated instead of one!</p>
+<p>If your code doesn’t clearly state what is happening, your first instinct should be to make the code more readable. If the nature of the code is complex, or if you don’t have time due to business constraints to do some <a href="https://blog.boot.dev/clean-code/spend-time-refactoring/">refactoring</a>, then there is nothing wrong with adding explanatory comments.</p>
+
+<p>Comments and documentation that explain <em>why</em> something is happening are <em>extremely</em> important. As we’ve talked about so far, comments that explain <em>how</em> the code works are often redundant and unnecessary. For example,</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>cleanInput</span><span>(</span><span>input</span> <span>string</span><span>){</span>
+</span></span><span><span>	<span>input</span> <span>=</span> <span>strings</span><span>.</span><span>ReplaceAll</span><span>(</span><span>input</span><span>,</span> <span>&#34;^&#34;</span><span>,</span> <span>&#34;-&#34;</span><span>)</span>
+</span></span><span><span>	<span>input</span> <span>=</span> <span>strings</span><span>.</span><span>ReplaceAll</span><span>(</span><span>input</span><span>,</span> <span>&#34;?&#34;</span><span>,</span> <span>&#34;_&#34;</span><span>)</span>
+</span></span><span><span>	<span>...</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>It is clear by reading the code that all instances of carets and question marks are being replaced by dashes and underscores… but it’s not clear <em>why</em> would we want to replace them.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>cleanInput</span><span>(</span><span>input</span> <span>string</span><span>){</span>
+</span></span><span><span>	<span>// clean input so that it can be used in a regex
+</span></span></span><span><span><span></span>	<span>input</span> <span>=</span> <span>strings</span><span>.</span><span>ReplaceAll</span><span>(</span><span>input</span><span>,</span> <span>&#34;^&#34;</span><span>,</span> <span>&#34;-&#34;</span><span>)</span>
+</span></span><span><span>	<span>input</span> <span>=</span> <span>strings</span><span>.</span><span>ReplaceAll</span><span>(</span><span>input</span><span>,</span> <span>&#34;?&#34;</span><span>,</span> <span>&#34;_&#34;</span><span>)</span>
+</span></span><span><span>	<span>...</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>A comment that explains that carets and question marks are removed for later use in a regex is an example of a good comment because it’s often impossible to express the “why” in code.</p>
+
+<p>As we try to weigh the necessity of adding a comment to code, we should take into account that up until this point we’ve mostly been talking about comments for <strong>internal maintainers</strong> of the code base. The best practices change drastically when we write comments for external <em>users</em> of our code. A good example of this would be <code>godoc</code> comments on the exported functions of a package.</p>
+<p>When writing a package or library, we don’t want the users of our code (the developers running <code>go get</code> or <code>npm install</code>) to have to worry about the internal implementation details. Good abstractions are black boxes. The Go standard library has great examples of this:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// IndexRune returns the index of the first instance of the Unicode code point
+</span></span></span><span><span><span>// r, or -1 if rune is not present in s.
+</span></span></span><span><span><span>// If r is utf8.RuneError, it returns the first instance of any
+</span></span></span><span><span><span>// invalid UTF-8 byte sequence.
+</span></span></span><span><span><span></span><span>func</span> <span>IndexRune</span><span>(</span><span>s</span> <span>string</span><span>,</span> <span>r</span> <span>rune</span><span>)</span> <span>int</span> <span>{</span>
+</span></span><span><span>	<span>switch</span> <span>{</span>
+</span></span><span><span>	<span>case</span> <span>0</span> <span>&lt;=</span> <span>r</span> <span>&amp;&amp;</span> <span>r</span> <span>&lt;</span> <span>utf8</span><span>.</span><span>RuneSelf</span><span>:</span>
+</span></span><span><span>		<span>return</span> <span>IndexByte</span><span>(</span><span>s</span><span>,</span> <span>byte</span><span>(</span><span>r</span><span>))</span>
+</span></span><span><span>	<span>case</span> <span>r</span> <span>==</span> <span>utf8</span><span>.</span><span>RuneError</span><span>:</span>
+</span></span><span><span>		<span>for</span> <span>i</span><span>,</span> <span>r</span> <span>:=</span> <span>range</span> <span>s</span> <span>{</span>
+</span></span><span><span>			<span>if</span> <span>r</span> <span>==</span> <span>utf8</span><span>.</span><span>RuneError</span> <span>{</span>
+</span></span><span><span>				<span>return</span> <span>i</span>
+</span></span><span><span>			<span>}</span>
+</span></span><span><span>		<span>}</span>
+</span></span><span><span>		<span>return</span> <span>-</span><span>1</span>
+</span></span><span><span>	<span>case</span> <span>!</span><span>utf8</span><span>.</span><span>ValidRune</span><span>(</span><span>r</span><span>):</span>
+</span></span><span><span>		<span>return</span> <span>-</span><span>1</span>
+</span></span><span><span>	<span>default</span><span>:</span>
+</span></span><span><span>		<span>return</span> <span>Index</span><span>(</span><span>s</span><span>,</span> <span>string</span><span>(</span><span>r</span><span>))</span>
+</span></span><span><span>	<span>}</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Hopefully, these rules of thumb help when you are trying to clean up your code and write better comments!</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Top 8 Benefits of Functional Programming | Rahul Vishwakarma Blog</title>
+    <link rel="stylesheet" type="text/css" href="../styles.css" media="screen" />
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/index.html" aria-label="Go back to the homepage">← Back</a>
+        <a href="https://blog.boot.dev/clean-code/benefits-of-functional-programming/" target="_blank" rel="noopener noreferrer">
+            View Original
+        </a>
+    </nav>
+</header>
+
+<main>
+    <article>
+        <h1>Top 8 Benefits of Functional Programming</h1>
+        <section>
+            
+            <div id="readability-page-1" class="page"><div>
+           <p>Functional programming is a way to write code where programs are created strictly through functions. Functional programming has gained quite a bit of traction in recent years among the development community, mostly because of the benefits it provides.</p>
+<p>Functional programming is a declarative way to write provably correct code. Function definitions are expressions that simply map inputs to outputs, rather than a sequence of statements that update the state of the application.</p>
+<p>Let’s jump right into the top 8 reasons you should look into a functional style of coding, or perhaps switching to a completely functional programming language.</p>
+<h2 id="1-pure-functions-are-better-than-impure-functions">
+  <span> 1. Pure functions are better than impure functions</span> <a href="#1-pure-functions-are-better-than-impure-functions">🔗</a></h2>
+<p>A <a href="https://blog.boot.dev/golang/pure-functions-in-golang/">pure function</a> is a function that has both of the following properties:</p>
+<ul>
+<li>Its return value is the same for the same arguments (no variation with local static variables, non-local variables, mutable reference arguments, or input streams from I/O devices).</li>
+<li>Its evaluation has no side effects (no mutation of local static variables, non-local variables, mutable reference arguments or I/O streams).</li>
+</ul>
+<p>Because pure functions ensure that the state of the outside program isn’t altered, they are strictly better to write than impure functions where possible. In some cases, an impure function is necessary however, for example, if you need to make a network call, interact with a database, or print data to the console.</p>
+<h2 id="2-pure-functions-are-easier-to-test">
+  <span> 2. Pure functions are easier to test</span> <a href="#2-pure-functions-are-easier-to-test">🔗</a></h2>
+<p><img src="https://blog.boot.dev/img/800/testing-in-bio-lab-300x204.jpeg" alt=""/></p>
+<p>Pure functions are very easy to test for a couple of reasons:</p>
+<ul>
+<li>The outputs are always the same for any given input. This ensures determinism and predictability.</li>
+<li>Pure functions don’t depend on any state apart from the inputs, so there should be no scaffolding necessary to write a good test suite.</li>
+</ul>
+<p>Because testing is so important in programming, it’s nice when we make it easier to write tests because it encourages us to write more of them. By utilizing pure functions as much as possible, you’ll notice your programs will have more robust test harnesses.</p>
+<h2 id="3-functional-programming-leads-to-fewer-bugs">
+  <span> 3. Functional programming leads to fewer bugs</span> <a href="#3-functional-programming-leads-to-fewer-bugs">🔗</a></h2>
+<p>Debugging and writing code with fewer bugs becomes quite a bit easier with pure functions. Because each function is simply a mapping of inputs to outputs, a simple stack trace or print statement at each level will reveal the problem. With imperative paradigms, you could have shared or mutable state almost anywhere else in the codebase that’s potentially causing the bug.</p>
+<h2 id="4-functional-code-tends-to-have-its-state-isolated-making-it-easier-to-comprehend">
+  <span> 4. Functional code tends to have its state isolated, making it easier to comprehend</span> <a href="#4-functional-code-tends-to-have-its-state-isolated-making-it-easier-to-comprehend">🔗</a></h2>
+<p>Let’s take a look at the <a href="https://guide.elm-lang.org/architecture/">Elm architecture</a> as an example. Elm is a purely functional programming language used to render webpages on the front end of an application.</p>
+<p><img src="https://blog.boot.dev/img/800/elm-architecture-300x230.jpg" alt=""/></p>
+<p>The Elm code is purely functional. It takes “state” as input and converts it into the HTML that will render on the page. Whenever the user interacts with the page, the state is updated <em>outside</em> of the Elm code. That state is then fed back into the Elm code and a new HTML output is produced.</p>
+<p>As you may have realized, the stateful part of the system is not purely functional, the good news is it’s so simple that there are unlikely to be bugs there. The Elm code that does the bulk of the work is purely functional, however, so all the benefits are reaped by the majority of the codebase.</p>
+<h2 id="5-function-signatures-are-more-trusted">
+  <span> 5. Function signatures are more trusted</span> <a href="#5-function-signatures-are-more-trusted">🔗</a></h2>
+<p>Examine the following Go code:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>var</span> <span>radius</span> <span>=</span> <span>2.0</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>areaOfCircle</span><span>()</span> <span>float64</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>3.14</span> <span>*</span> <span>radius</span> <span>*</span> <span>radius</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>Technically this code will work. As long as everywhere I calculate the area of a circle I first update the global <code>radius</code> variable I’ll get the correct output. the problem is that examining the signature of the function doesn’t give the whole story. A pure function will have a signature that tells you all you need to know about its usage.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>// we don&#39;t know which circle&#39;s area is being computed, there&#39;s no explicit input
+</span></span></span><span><span><span></span><span>func</span> <span>areaOfCircle</span><span>()</span> <span>float64</span>
+</span></span></code></pre></div><p>We can fix the problem by making the function pure:</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>func</span> <span>areaOfCircle</span><span>(</span><span>radius</span> <span>float64</span><span>)</span> <span>float64</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>3.14</span> <span>*</span> <span>radius</span> <span>*</span> <span>radius</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="6-concurrency-is-more-easily-kept-safe">
+  <span> 6. Concurrency is more easily kept safe</span> <a href="#6-concurrency-is-more-easily-kept-safe">🔗</a></h2>
+<p>Pure functions are definitionally thread-safe. Code is thread-safe when we can guarantee that no two concurrent processes will be trying to access the same data at the same time. This is called a race condition and is one of the hardest kinds of bugs to pin down. Because pure functions never share state with other sections of a program they can’t have race conditions.</p>
+<p>For example, take the code from above again.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>var</span> <span>radius</span> <span>=</span> <span>2.0</span>
+</span></span><span><span>
+</span></span><span><span><span>func</span> <span>areaOfCircle</span><span>()</span> <span>float64</span> <span>{</span>
+</span></span><span><span>    <span>return</span> <span>3.14</span> <span>*</span> <span>radius</span> <span>*</span> <span>radius</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><p>If two separate threads (<a href="https://blog.boot.dev/rust/concurrency-in-rust-can-it-stack-up-against-gos-goroutines/?_ga=2.84789082.296037147.1649171050-1013439933.1641951325">goroutines</a>) are accessing the <code>areaOfCircle</code> function at the same time and altering the value of <code>radius</code>, one process could easily overwrite the other’s value of radius and one thread ends up with the output that was intended for the other thread.</p>
+<h2 id="7-recursion-is-simpler-though-not-necessarily-easier-to-learn">
+  <span> 7. Recursion is simpler, though not necessarily easier to learn</span> <a href="#7-recursion-is-simpler-though-not-necessarily-easier-to-learn">🔗</a></h2>
+<p>If you’ve ever tried to write an interpreter for a programming language, you’ve realized that recursion is a fairly easy concept to implement, at least when compared to imperative ideas like for-loops. Recursion simply requires that functions can call themselves, the rest is up to the developer. For-loops require a bunch of custom code in the interpreter or compiler that does the initialization, checks the end condition, executes the body, and then finally executes the update statement.</p>
+<div><pre tabindex="0"><code data-lang="go"><span><span><span>for</span> <span>(</span><span>initialization</span><span>;</span> <span>condition</span><span>;</span> <span>update</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>// body of for loop, executed once per iteration
+</span></span></span><span><span><span></span><span>}</span>
+</span></span></code></pre></div><p>I’ll readily admit that while recursion is simpler, it’s often harder for new programmers to wrap their heads around it. Take a look at the following examples of a <code>pow</code> function that computes the result of <code>x</code> raised to the <code>n</code> power.</p>
+<h3 id="imperative-power-function">
+  <span> Imperative power function</span> <a href="#imperative-power-function">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>pow</span><span>(</span><span>x</span><span>,</span> <span>n</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>let</span> <span>res</span> <span>=</span> <span>1</span><span>;</span>
+</span></span><span><span>    <span>for</span> <span>(</span><span>let</span> <span>i</span> <span>=</span> <span>0</span><span>;</span> <span>i</span> <span>&lt;</span> <span>n</span><span>;</span> <span>i</span><span>++</span><span>)</span> <span>{</span>
+</span></span><span><span>        <span>res</span> <span>*=</span> <span>x</span><span>;</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>return</span> <span>res</span><span>;</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h3 id="functional-power-function">
+  <span> Functional power function</span> <a href="#functional-power-function">🔗</a></h3>
+<div><pre tabindex="0"><code data-lang="js"><span><span><span>function</span> <span>pow</span><span>(</span><span>x</span><span>,</span> <span>n</span><span>)</span> <span>{</span>
+</span></span><span><span>    <span>if</span> <span>(</span><span>n</span> <span>===</span> <span>1</span><span>)</span> <span>{</span>
+</span></span><span><span>        <span>return</span> <span>x</span><span>;</span>
+</span></span><span><span>    <span>}</span>
+</span></span><span><span>    <span>return</span> <span>x</span> <span>*</span> <span>pow</span><span>(</span><span>x</span><span>,</span> <span>n</span> <span>-</span> <span>1</span><span>);</span>
+</span></span><span><span><span>}</span>
+</span></span></code></pre></div><h2 id="8-immutable-variables-lead-to-fewer-side-effects">
+  <span> 8. Immutable variables lead to fewer side-effects</span> <a href="#8-immutable-variables-lead-to-fewer-side-effects">🔗</a></h2>
+<p>The data inside of a functional program’s functions is immutable. We can always create new variables and data structures but we aren’t allowed to modify the existing values.</p>
+<p>If every value in a program is only assigned once, it’s easy to read the code and determine what the value is at any given point. If instead the named values are allowed to be updated it can be quite a bit harder to see what’s going on at different lines in the code. In short, immutability makes programs much simpler and improves developer speed.</p>
+<p>With that in mind, there are instances where immutability is a bad idea. This is most prevalent when your application needs to be performant and is continuously updating a value. Imagine a video game where your character’s size is constantly fluctuating. It would be quite a computational burden to deallocate the entire character and re-create them each time the size changes. In this situation, it’s probably worth the trade-off to use mutable data.</p>
+<h2 id="which-languages-are-purely-functional-programming-languages">
+  <span> Which languages are purely functional programming languages?</span> <a href="#which-languages-are-purely-functional-programming-languages">🔗</a></h2>
+<p>The following languages support purely functional styles. In other words, the language will enforce the rules of functional programming:</p>
+<ol>
+<li><a href="https://www.haskell.org/">Haskell</a></li>
+<li><a href="https://clojure.org/">Clojure</a></li>
+<li><a href="https://www.scala-lang.org/">Scala</a></li>
+<li><a href="https://www.purescript.org/">PureScript</a></li>
+<li><a href="https://elm-lang.org/">Elm</a></li>
+</ol>
+<p>Additionally, most general-purpose programming languages like Go, JavaScript, and Python will allow you to write functional programs, but won’t force you to do so.</p>
+  
+
+<div>
+  <h3>Find a problem with this article?</h3>
+  <p><a target="_blank" href="https://github.com/bootdotdev/blog/issues">Report an issue on GitHub</a>
+</p></div>
+ 
+        </div></div>
+        </section>
+    </article>
+</main>
+</body>
+</html>
